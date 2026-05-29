@@ -12,7 +12,13 @@ import polars as pl
 import requests
 from bs4 import BeautifulSoup, Tag
 
-from candidex.columns import AUTHORS, PAPER_PDF_URL, PAPER_TITLE, PAPER_URL
+from candidex.columns import (
+    AUTHORS,
+    PAPER_FILENAME,
+    PAPER_PDF_URL,
+    PAPER_TITLE,
+    PAPER_URL,
+)
 
 logger: logging.Logger = logging.getLogger(__name__)
 
@@ -31,6 +37,7 @@ PAPER_SCHEMA = {
     PAPER_TITLE: pl.String,
     PAPER_URL: pl.String,
     PAPER_PDF_URL: pl.String,
+    PAPER_FILENAME: pl.String,
     AUTHORS: pl.List(pl.String),
 }
 
@@ -145,7 +152,13 @@ def parse_paper(dt: Tag, base_url: str = BASE_URL) -> dict:
     if not pdf_url:
         logger.warning("No PDF URL found for paper: %s", title)
 
-    return {PAPER_TITLE: title, PAPER_URL: paper_url, PAPER_PDF_URL: pdf_url, AUTHORS: authors}
+    return {
+        PAPER_TITLE: title,
+        PAPER_URL: paper_url,
+        PAPER_PDF_URL: pdf_url,
+        AUTHORS: authors,
+        PAPER_FILENAME: pdf_url.split("/")[-1],
+    }
 
 
 def scrape_cvpr_papers(
