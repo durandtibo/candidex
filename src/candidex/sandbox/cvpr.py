@@ -1,0 +1,195 @@
+r"""Contain functionalities to find the CVPR papers from the website."""
+
+from __future__ import annotations
+
+__all__ = ["scrape_cvpr_papers"]
+
+
+import logging
+import re
+
+import polars as pl
+import requests
+from bs4 import BeautifulSoup, Tag
+
+logger: logging.Logger = logging.getLogger(__name__)
+
+
+BASE_URL = "https://openaccess.thecvf.com"
+
+HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/120.0 Safari/537.36"
+    )
+}
+
+PAPER_SCHEMA = {
+    "title": pl.String,
+    "paper_url": pl.String,
+    "pdf_url": pl.String,
+    "authors": pl.List(pl.String),
+}
+
+
+def fetch_page(url: str, timeout: int = 30) -> str:
+    """Fetch the raw HTML content of a webpage.
+
+    Args:
+        url:     The full URL to fetch.
+        timeout: Request timeout in seconds. Defaults to 30.
+
+    Returns:
+        The raw HTML string of the page.
+
+    Raises:
+        requests.exceptions.HTTPError:        On 4xx/5xx responses.
+        requests.exceptions.ConnectionError:  If the host is unreachable.
+        requests.exceptions.Timeout:          If the request exceeds `timeout`.
+        requests.exceptions.RequestException: For any other network failure.
+    """
+    logger.info("Fetching %s...", url)
+    response = requests.get(url, headers=HEADERS, timeout=timeout)
+    response.raise_for_status()
+    logger.debug(
+        "Response received: HTTP %d (%d bytes)", response.status_code, len(response.content)
+    )
+    return response.text
+
+
+def parse_paper_entries(html: str, limit: int | None = None) -> list[Tag]:
+    """Parse all paper entry tags from a CVPR OpenAccess listing page.
+
+    Each paper on the listing page is represented by a <dt class='ptitle'> tag,
+    which acts as the anchor for the title, authors, and PDF link.
+
+    Args:
+        html:  Raw HTML string of the CVPR listing page.
+        limit: Maximum number of entries to return. If None, returns all found.
+               Useful for quick tests or partial scrapes without fetching extra pages.
+
+    Returns:
+        A list of <dt> Tag objects, one per paper, up to `limit`.
+    """
+    soup = BeautifulSoup(html, "html.parser")
+    entries = soup.find_all("dt", class_="ptitle")
+    logger.debug("Found %d paper entries in HTML.", len(entries))
+
+    if limit is not None and len(entries) > limit:
+        logger.info("Limiting to %d of %d papers found.", limit, len(entries))
+        return entries[:limit]
+
+    return entries
+
+
+def parse_paper(dt: Tag, base_url: str = BASE_URL) -> dict:
+    """Extract all metadata for a single paper from its <dt> tag.
+
+    The CVPR listing page uses a definition list structure where each paper
+    occupies one <dt> (title) followed by two <dd> tags: the first holds the
+    authors as comma-separated text, and the second contains action links
+    including the PDF download.
+
+    Args:
+        dt:       The <dt class='ptitle'> Tag for a single paper entry.
+        base_url: Root URL used to resolve relative hrefs. Defaults to BASE_URL.
+
+    Returns:
+        A dict with keys:
+            - title      (str):       Paper title.
+            - paper_url  (str):       Absolute URL to the paper's HTML page.
+                                      Empty string if no link is found.
+            - pdf_url    (str):       Absolute URL to the PDF file.
+                                      Empty string if no PDF link is found.
+            - authors    (list[str]): Author names parsed from the first <dd>.
+                                      Empty list if the <dd> is missing.
+    """
+    # Title and paper URL from the <a> tag inside <dt>
+    a_tag = dt.find("a")
+    title = a_tag.get_text(strip=True) if a_tag else dt.get_text(strip=True)
+    relative_url = a_tag["href"] if a_tag and a_tag.get("href") else ""
+    paper_url = f"{base_url}{relative_url}" if relative_url else ""
+
+    if not paper_url:
+        logger.warning("No paper URL found for entry: %s", title)
+
+    # Authors from the first <dd> sibling
+    dd_authors = dt.find_next_sibling("dd")
+    authors = (
+        [
+            re.sub(r"\s+", " ", auth.strip())
+            for auth in dd_authors.get_text(strip=True).split(",")
+            if auth.strip()
+        ]
+        if dd_authors
+        else []
+    )
+
+    if not authors:
+        logger.warning("No authors found for paper: %s", title)
+
+    # PDF URL from subsequent <dd> siblings
+    pdf_url = ""
+    dd = dd_authors.find_next_sibling("dd") if dd_authors else dt.find_next_sibling("dd")
+    while dd:
+        a = dd.find("a", href=re.compile(r"\.pdf$", re.IGNORECASE))
+        if a:
+            href = a["href"]
+            pdf_url = href if href.startswith("http") else f"{base_url}{href}"
+            break
+        dd = dd.find_next_sibling("dd")
+
+    if not pdf_url:
+        logger.warning("No PDF URL found for paper: %s", title)
+
+    return {"title": title, "paper_url": paper_url, "pdf_url": pdf_url, "authors": authors}
+
+
+def scrape_cvpr_papers(
+    url: str,
+    base_url: str = BASE_URL,
+    limit: int | None = None,
+) -> pl.DataFrame:
+    """Scrape paper metadata from a CVPR OpenAccess listing page into a
+    DataFrame.
+
+    Fetches the listing page, parses each paper entry, and returns structured
+    metadata as a typed Polars DataFrame. On network failure the exception
+    propagates so callers can decide how to handle it (retry, log, etc.)
+    rather than silently returning an empty result.
+
+    Args:
+        url:      Full URL of the CVPR listing page, e.g.
+                  'https://openaccess.thecvf.com/CVPR2024?day=all'.
+        base_url: Root URL for resolving relative hrefs. Defaults to BASE_URL.
+        limit:    Maximum number of papers to scrape. Defaults to 100.
+                  Pass None to scrape the full listing (typically 2000+ papers).
+
+    Returns:
+        A Polars DataFrame with columns:
+            - title      (String):       Paper title.
+            - paper_url  (String):       URL to the paper's HTML page on CVF.
+            - pdf_url    (String):       Direct URL to the paper's PDF.
+            - authors    (List[String]): Author names.
+
+    Raises:
+        requests.exceptions.RequestException: On any network or HTTP error.
+
+    Example:
+        >>> df = scrape_cvpr_papers("https://openaccess.thecvf.com/CVPR2024?day=all")
+        >>> df.filter(pl.col("authors").list.len() > 5)
+    """
+    html = fetch_page(url)
+    entries = parse_paper_entries(html, limit=limit)
+
+    logger.info("Extracting data for %d papers...", len(entries))
+    records = [parse_paper(dt, base_url) for dt in entries]
+
+    df = pl.DataFrame(records, schema=PAPER_SCHEMA)
+    logger.info(
+        "Scraping complete. %d papers extracted, %d missing PDF URLs.",
+        len(df),
+        df["pdf_url"].is_in([""]).sum(),
+    )
+    return df
