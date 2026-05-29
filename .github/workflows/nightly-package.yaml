@@ -1,0 +1,79 @@
+# Nightly package testing workflow.
+# Tests the published package from PyPI every night.
+# Validates stable releases, pre-releases, and dependency compatibility.
+
+name: Nightly Package Tests
+on:
+  schedule:
+    - cron: '10 10 * * *' # Run at 10:10 AM UTC daily
+  workflow_dispatch:  # to trigger manually
+
+permissions:
+  contents: read
+
+jobs:
+  # Get dependency version information from config file
+  get-versions:
+    uses: ./.github/workflows/get-versions.yaml
+
+  # Test stable version from PyPI without extras
+  stable:
+    uses: ./.github/workflows/test-package.yaml
+    with:
+      install-cmd: 'uv pip install candidex'
+
+  # Test stable version from PyPI with all extras
+  stable-all:
+    uses: ./.github/workflows/test-package.yaml
+    with:
+      install-cmd: 'uv pip install "candidex[all]"'
+
+  # Test pre-release version from PyPI without extras
+  latest:
+    uses: ./.github/workflows/test-package.yaml
+    with:
+      install-cmd: 'uv pip install --pre candidex'
+
+  # Test pre-release version from PyPI with all extras
+  latest-all:
+    uses: ./.github/workflows/test-package.yaml
+    with:
+      install-cmd: 'uv pip install --pre "candidex[all]"'
+
+
+  ########################
+  #     Dependencies     #
+  ########################
+
+  coola:
+    needs: get-versions
+    uses: ./.github/workflows/test-package-dep.yaml
+    with:
+      package-name: coola
+      package-versions: ${{ toJson(fromJson(needs.get-versions.outputs.package_versions).coola) }}
+
+  polars:
+    needs: get-versions
+    uses: ./.github/workflows/test-package-dep.yaml
+    with:
+      package-name: polars
+      package-versions: ${{ toJson(fromJson(needs.get-versions.outputs.package_versions).polars) }}
+
+  rich:
+    needs: get-versions
+    uses: ./.github/workflows/test-package-dep.yaml
+    with:
+      package-name: rich
+      package-versions: ${{ toJson(fromJson(needs.get-versions.outputs.package_versions).rich) }}
+
+
+  #################################
+  #     Optional dependencies     #
+  #################################
+
+  colorlog:
+    needs: get-versions
+    uses: ./.github/workflows/test-package-dep.yaml
+    with:
+      package-name: colorlog
+      package-versions: ${{ toJson(fromJson(needs.get-versions.outputs.package_versions).colorlog) }}
