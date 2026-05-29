@@ -26,6 +26,7 @@ def fetch_package_versions() -> dict[str, list[str]]:
     """
     polars_verions = fetch_latest_minor_versions("polars", lower="1.0")
     return {
+        "beautifulsoup4": list(fetch_latest_minor_versions("beautifulsoup4", lower="4.14")),
         "coola": list(fetch_latest_minor_versions("coola", lower="1.1")),
         "polars": sort_versions(
             unique_versions(
