@@ -12,6 +12,8 @@ import polars as pl
 import requests
 from bs4 import BeautifulSoup, Tag
 
+from candidex.columns import AUTHORS, PAPER_PDF_URL, PAPER_TITLE, PAPER_URL
+
 logger: logging.Logger = logging.getLogger(__name__)
 
 
@@ -26,10 +28,10 @@ HEADERS = {
 }
 
 PAPER_SCHEMA = {
-    "title": pl.String,
-    "paper_url": pl.String,
-    "pdf_url": pl.String,
-    "authors": pl.List(pl.String),
+    PAPER_TITLE: pl.String,
+    PAPER_URL: pl.String,
+    PAPER_PDF_URL: pl.String,
+    AUTHORS: pl.List(pl.String),
 }
 
 
@@ -143,7 +145,7 @@ def parse_paper(dt: Tag, base_url: str = BASE_URL) -> dict:
     if not pdf_url:
         logger.warning("No PDF URL found for paper: %s", title)
 
-    return {"title": title, "paper_url": paper_url, "pdf_url": pdf_url, "authors": authors}
+    return {PAPER_TITLE: title, PAPER_URL: paper_url, PAPER_PDF_URL: pdf_url, AUTHORS: authors}
 
 
 def scrape_cvpr_papers(
@@ -178,7 +180,7 @@ def scrape_cvpr_papers(
 
     Example:
         >>> df = scrape_cvpr_papers("https://openaccess.thecvf.com/CVPR2024?day=all")
-        >>> df.filter(pl.col("authors").list.len() > 5)
+        >>> df.filter(pl.col(AUTHORS).list.len() > 5)
     """
     html = fetch_page(url)
     entries = parse_paper_entries(html, limit=limit)
@@ -190,6 +192,6 @@ def scrape_cvpr_papers(
     logger.info(
         "Scraping complete. %d papers extracted, %d missing PDF URLs.",
         len(df),
-        df["pdf_url"].is_in([""]).sum(),
+        df[PAPER_PDF_URL].is_in([""]).sum(),
     )
     return df

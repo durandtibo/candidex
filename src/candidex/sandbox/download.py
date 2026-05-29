@@ -1,3 +1,5 @@
+r"""Contain utilities to download papers."""
+
 from __future__ import annotations
 
 __all__ = ["download_papers"]
@@ -125,7 +127,7 @@ def download_papers(
     )
     with progress:
         task = progress.add_task("Downloading papers", total=len(valid_urls))
-        for i, url in enumerate(valid_urls, start=1):
+        for _i, url in enumerate(valid_urls, start=1):
             filename = url.split("/")[-1]
             dest = output_path.joinpath(filename)
             success = download_paper(url, dest, timeout=timeout)
