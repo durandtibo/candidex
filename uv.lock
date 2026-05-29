@@ -84,14 +84,12 @@ source = { editable = "." }
 dependencies = [
     { name = "coola" },
     { name = "polars" },
+    { name = "rich" },
 ]
 
 [package.optional-dependencies]
 colorlog = [
     { name = "colorlog" },
-]
-rich = [
-    { name = "rich" },
 ]
 
 [package.dev-dependencies]
@@ -122,9 +120,9 @@ requires-dist = [
     { name = "colorlog", marker = "extra == 'colorlog'", specifier = ">=6.10,<7.0" },
     { name = "coola", specifier = ">=1.1.7,<2.0" },
     { name = "polars", specifier = ">=1.0,<2.0" },
-    { name = "rich", marker = "extra == 'rich'", specifier = ">=15.0,<16.0" },
+    { name = "rich", specifier = ">=15.0,<16.0" },
 ]
-provides-extras = ["colorlog", "rich"]
+provides-extras = ["colorlog"]
 
 [package.metadata.requires-dev]
 dev = [

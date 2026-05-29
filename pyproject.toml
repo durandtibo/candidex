@@ -44,11 +44,11 @@ requires-python = ">=3.10"
 dependencies = [
     "coola >=1.1.7,<2.0",
     "polars >=1.0,<2.0",
+    "rich >=15.0,<16.0",
 ]
 
 [project.optional-dependencies]
 colorlog = ["colorlog >=6.10,<7.0"]
-rich = ["rich >=15.0,<16.0"]
 
 [dependency-groups]
 dev = [
