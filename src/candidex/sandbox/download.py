@@ -111,7 +111,7 @@ def download_papers(
     """
     output_path.mkdir(parents=True, exist_ok=True)
 
-    valid_urls = list(dict.fromkeys(url for url in urls if url))
+    valid_urls = list({url for url in urls if url})
     skipped = len(urls) - len(valid_urls)
     if skipped:
         logger.warning("Skipping %d empty or duplicate URLs.", skipped)
