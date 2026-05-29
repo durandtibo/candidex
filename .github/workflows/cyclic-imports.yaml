@@ -1,0 +1,58 @@
+# Cyclic import detection workflow.
+# Tests that the package can be imported without circular dependencies.
+# Validates key modules and submodules can be imported successfully.
+
+name: Cyclic Imports
+on:
+  workflow_call:
+  workflow_dispatch:  # to trigger manually
+
+permissions:
+  contents: read
+
+jobs:
+  cyclic-imports:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup python environment
+        uses: durandtibo/setup-venv-uv-action@v0.0.3
+
+      # Test main module imports to detect circular dependencies
+      - name: check candidex
+        run: |
+          python -c "import candidex"
+
+      # Test functional module imports
+      - name: check candidex.functional
+        run: |
+          python -c "from candidex import functional"
+
+      # Test metrics module imports
+      - name: check candidex.metrics
+        run: |
+          python -c "from candidex import metrics"
+
+      # Test result module imports
+      - name: check candidex.results
+        run: |
+          python -c "from candidex import results"
+
+      # Test testing module imports
+      - name: check candidex.testing
+        run: |
+          python -c "from candidex import testing"
+
+      # Test utils module imports
+      - name: check candidex.utils
+        run: |
+          python -c "from candidex import utils"
+      - name: check candidex.utils.array
+        run: |
+          python -c "from candidex.utils import array"
+      - name: check candidex.utils.imports
+        run: |
+          python -c "from candidex.utils import imports"
