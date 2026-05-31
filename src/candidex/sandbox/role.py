@@ -2,13 +2,13 @@ r"""Contain functionalities to find the current role of the authors."""
 
 from __future__ import annotations
 
-__all__ = ["find_and_save_authors_role"]
+__all__ = ["find_and_save_authors_role", "load_author_roles"]
 
 import logging
 from enum import StrEnum
 from typing import TYPE_CHECKING
 
-from iden.io import load_text, save_json
+from iden.io import load_json, load_text, save_json
 from langchain_community.tools import DuckDuckGoSearchRun
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, Field
@@ -415,6 +415,7 @@ def find_and_save_authors_role(
         ...     llm=llm,
         ... )
     """
+    logger.info("Finding authors roles and saving them at %s...", role_dir)
     role_dir.mkdir(parents=True, exist_ok=True)
     search = search or DuckDuckGoSearchRun()
     rows = list(papers.iter_rows(named=True))
@@ -448,3 +449,70 @@ def find_and_save_authors_role(
             logger.debug("Saved author roles to %s.", role_path.name)
 
             progress.advance(task)
+
+
+def load_author_roles(papers: pl.DataFrame, role_dir: Path) -> dict[str, list[AuthorRole]]:
+    """Load author roles from JSON files into a dictionary.
+
+    Iterates over a DataFrame of papers and loads the corresponding role JSON
+    file for each paper. Papers whose JSON file does not exist are logged and
+    skipped. Useful for downstream processing without re-running the role
+    lookup step.
+
+    Args:
+        papers:   Polars DataFrame produced by `scrape_cvpr_papers` or
+                  equivalent. Must contain a column named by `PAPER_STEM`
+                  with the PDF filename stem (i.e. without the `.pdf`
+                  extension) for each paper.
+        role_dir: Directory containing the role JSON files produced by
+                  `find_and_save_authors_role`. Each file must be named
+                  `{stem}.json` where `stem` matches the value in the
+                  `PAPER_STEM` column.
+
+    Returns:
+        A dictionary mapping each paper stem to its list of `AuthorRole`
+        objects. Papers with missing or unreadable JSON files are omitted
+        from the result.
+
+    Example:
+        >>> df = scrape_cvpr_papers("https://openaccess.thecvf.com/CVPR2024?day=all")
+        >>> roles = load_author_roles(df, Path("data/cvpr2024/roles"))
+        >>> roles["attention_is_all_you_need"][0].role
+    """
+    logger.info("Loading author roles from %s...", role_dir)
+
+    rows = list(papers.iter_rows(named=True))
+    roles: dict[str, list[AuthorRole]] = {}
+
+    with Progress(
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TaskProgressColumn(),
+        TimeRemainingColumn(),
+    ) as progress:
+        task = progress.add_task("Loading author roles", total=len(rows))
+        for row in rows:
+            stem = row[PAPER_STEM]
+            role_path = role_dir.joinpath(f"{stem}.json")
+
+            if not role_path.is_file():
+                logger.warning("Role file not found, skipping: %s.", role_path.name)
+                progress.advance(task)
+                continue
+
+            roles[stem] = [AuthorRole.model_validate(r) for r in load_json(role_path)]
+            progress.advance(task)
+
+    total_authors = sum(len(r) for r in roles.values())
+    resolved = sum(
+        1 for paper_roles in roles.values() for r in paper_roles if r.role != AcademicRole.UNKNOWN
+    )
+    logger.info(
+        "Loaded roles for %d/%d papers — %d/%d authors resolved, %d unknown.",
+        len(roles),
+        len(papers),
+        resolved,
+        total_authors,
+        total_authors - resolved,
+    )
+    return roles
