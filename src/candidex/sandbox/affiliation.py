@@ -197,27 +197,43 @@ def extract_and_save_affiliations(
 
     Iterates over a DataFrame of papers, extracts author affiliations from the
     first page of each PDF using an LLM, and writes the result to a JSON file
-    named after the PDF. Papers whose JSON file already exists are skipped,
+    in `affiliation_dir`. Papers whose JSON file already exists are skipped,
     making the function safe to call repeatedly and resilient to interruptions.
 
-    The JSON file for a paper named `paper.pdf` will be saved as `paper.json`
-    in the same `pdf_dir`. Each file contains a list of objects with `author`
-    and `affiliations` keys, matching the `PaperAffiliations` schema.
+    The JSON file for a paper with stem `paper` will be saved as `paper.json`
+    in `affiliation_dir`. Each file contains a serialised `PaperAffiliations`
+    object with `authors` and `affiliations` keys.
 
     Args:
-        papers:     Polars DataFrame produced by `scrape_cvpr_papers` or equivalent,
-                    must contain a column named `filename` with the PDF filename
-                    (not the full path) for each paper.
-        pdf_dir: Directory where both the PDFs and output JSON files reside.
-        llm:        Any LangChain-compatible chat model. The caller is responsible
-                    for initialising and configuring it, e.g.:
-                        ChatAnthropic(model="claude-3-5-sonnet-20241022")
-                        ChatOpenAI(model="gpt-4o")
+        papers:          Polars DataFrame produced by `scrape_cvpr_papers` or
+                         equivalent. Must contain a column named by `PAPER_STEM`
+                         with the PDF filename stem (i.e. without the `.pdf`
+                         extension) for each paper.
+        pdf_dir:         Directory where the PDF files are stored. Each PDF must
+                         be named `{stem}.pdf` where `stem` matches the value in
+                         the `PAPER_STEM` column.
+        affiliation_dir: Directory where affiliation JSON files will be written.
+                         Created automatically if it does not exist. Output files
+                         are named `{stem}.json` to match their source PDF.
+        llm:             Any LangChain-compatible chat model. The caller is
+                         responsible for initialising and configuring it, e.g.:
+                             ChatAnthropic(model="claude-3-5-sonnet-20241022")
+                             ChatOpenAI(model="gpt-4o")
+
+    Raises:
+        requests.exceptions.RequestException: If the LLM API call fails for
+            a paper. The error is logged and the paper is skipped rather than
+            aborting the entire batch.
 
     Example:
         >>> llm = ChatAnthropic(model="claude-3-5-sonnet-20241022")
         >>> df = scrape_cvpr_papers("https://openaccess.thecvf.com/CVPR2024?day=all")
-        >>> extract_and_save_affiliations(df, Path("papers/cvpr2024"), llm)
+        >>> extract_and_save_affiliations(
+        ...     papers=df,
+        ...     pdf_dir=Path("data/cvpr2024/pdfs"),
+        ...     affiliation_dir=Path("data/cvpr2024/affiliations"),
+        ...     llm=llm,
+        ... )
     """
     rows = list(papers.iter_rows(named=True))
     progress = Progress(

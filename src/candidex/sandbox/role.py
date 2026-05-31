@@ -25,6 +25,7 @@ from candidex.sandbox.affiliation import PaperAffiliations
 
 if TYPE_CHECKING:
     from pathlib import Path
+
     import polars as pl
     from langchain_core.language_models import BaseChatModel
 
