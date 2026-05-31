@@ -5,14 +5,15 @@ from __future__ import annotations
 __all__ = ["AFFILIATION_SYSTEM_PROMPT", "extract_and_save_affiliations", "load_affiliations"]
 
 import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import TYPE_CHECKING
 
-import pdfplumber
 from iden.io import load_json, save_json
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, Field
 
 from candidex.columns import PAPER_STEM
+from candidex.sandbox.pdf import PDFReadError, extract_first_page_text
 from candidex.sandbox.progressbar import make_progressbar
 
 if TYPE_CHECKING:
@@ -129,28 +130,6 @@ Return a structured result containing every author, their affiliations, and thei
 """
 
 
-def extract_first_page_text(pdf_path: Path) -> str:
-    """Extract raw text from the first page of a PDF.
-
-    Only the first page is read since author affiliations are always
-    listed there, avoiding the overhead of parsing the full document.
-
-    Args:
-        pdf_path: Path to the PDF file.
-
-    Returns:
-        Raw text content of the first page.
-
-    Raises:
-        FileNotFoundError: If the PDF does not exist at `pdf_path`.
-        pdfplumber.exceptions.PDFSyntaxError: If the file is not a valid PDF.
-    """
-    logger.debug("Extracting first page text from %s.", pdf_path)
-    with pdfplumber.open(pdf_path) as pdf:
-        first_page = pdf.pages[0]
-        return first_page.extract_text() or ""
-
-
 def extract_affiliations(
     pdf_path: Path,
     llm: BaseChatModel,
@@ -229,19 +208,82 @@ def extract_affiliations(
     return result
 
 
+def extract_and_save_paper_affiliations(
+    row: dict,
+    pdf_dir: Path,
+    affiliation_dir: Path,
+    llm: BaseChatModel,
+) -> None:
+    """Extract and save author affiliations for a single paper.
+
+    Extracts author affiliations from the first page of the PDF using an
+    LLM and writes the result to a JSON file in `affiliation_dir`. Skips
+    the paper if the affiliation file already exists or the PDF is not found.
+    Handles `PDFReadError` gracefully by logging a warning and returning
+    rather than raising.
+
+    This function is the single-paper counterpart to
+    `extract_and_save_affiliations`, which processes a full DataFrame of
+    papers concurrently by submitting this function to a thread pool.
+
+    Args:
+        row:             A single row from the papers DataFrame as a dict.
+                         Must contain a key matching `PAPER_STEM` with the
+                         PDF filename stem, and an `authors` key with the
+                         list of author names.
+        pdf_dir:         Directory where the PDF files are stored. The PDF
+                         must be named `{stem}.pdf`.
+        affiliation_dir: Directory where the affiliation JSON file will be
+                         written. Must already exist.
+        llm:             Any LangChain-compatible chat model. The caller is
+                         responsible for initialising and configuring it.
+
+    Raises:
+        Exception: Unexpected errors from the LLM call are logged and
+                   suppressed. Only truly unexpected errors propagate.
+
+    Example:
+        >>> llm = ChatAnthropic(model="claude-3-5-sonnet-20241022")
+        >>> extract_and_save_paper_affiliations(
+        ...     row={"stem": "attention", "authors": ["Vaswani", "Shazeer"]},
+        ...     pdf_dir=Path("data/cvpr2024/pdfs"),
+        ...     affiliation_dir=Path("data/cvpr2024/affiliations"),
+        ...     llm=llm,
+        ... )
+    """
+    stem = row[PAPER_STEM]
+    pdf_path = pdf_dir / f"{stem}.pdf"
+    affiliation_path = affiliation_dir / f"{stem}.json"
+
+    if affiliation_path.is_file():
+        logger.debug("Skipping %s, affiliation file already exists.", stem)
+        return
+
+    if not pdf_path.is_file():
+        logger.warning("PDF not found, skipping: %s.", pdf_path.name)
+        return
+
+    try:
+        affiliations = extract_affiliations(pdf_path, llm=llm, authors=row["authors"])
+        logger.info(f"Extracted author affiliations for {stem}\n{affiliations}")
+        save_json(affiliations.model_dump(), affiliation_path)
+        logger.debug("Saved affiliations to %s.", affiliation_path.name)
+    except PDFReadError as e:
+        logger.warning("Skipping %s — PDF could not be read: %s", pdf_path.name, e)
+
+
 def extract_and_save_affiliations(
     papers: pl.DataFrame,
     pdf_dir: Path,
     affiliation_dir: Path,
     llm: BaseChatModel,
+    max_workers: int = 4,
 ) -> None:
     """Extract author affiliations for each paper and save them as
     individual JSON files.
 
-    Iterates over a DataFrame of papers, extracts author affiliations from the
-    first page of each PDF using an LLM, and writes the result to a JSON file
-    in `affiliation_dir`. The known author list from the `authors` column is
-    passed to the LLM to improve extraction accuracy. Papers whose JSON file
+    Processes papers concurrently using a thread pool by delegating each
+    paper to `extract_and_save_paper_affiliations`. Papers whose JSON file
     already exists are skipped, making the function safe to call repeatedly
     and resilient to interruptions.
 
@@ -265,11 +307,8 @@ def extract_and_save_affiliations(
                          responsible for initialising and configuring it, e.g.:
                              ChatAnthropic(model="claude-3-5-sonnet-20241022")
                              ChatOpenAI(model="gpt-4o")
-
-    Raises:
-        requests.exceptions.RequestException: If the LLM API call fails for
-            a paper. The error is logged and the paper is skipped rather than
-            aborting the entire batch.
+        max_workers:     Maximum number of concurrent threads for LLM calls.
+                         Defaults to 4. Reduce if hitting API rate limits.
 
     Example:
         >>> llm = ChatAnthropic(model="claude-3-5-sonnet-20241022")
@@ -279,33 +318,31 @@ def extract_and_save_affiliations(
         ...     pdf_dir=Path("data/cvpr2024/pdfs"),
         ...     affiliation_dir=Path("data/cvpr2024/affiliations"),
         ...     llm=llm,
+        ...     max_workers=4,
         ... )
     """
     affiliation_dir.mkdir(parents=True, exist_ok=True)
     rows = list(papers.iter_rows(named=True))
 
+    logger.info(
+        "Extracting author affiliations from %d files to %s with %d workers...",
+        len(rows),
+        affiliation_dir,
+        max_workers,
+    )
+
     with make_progressbar() as progress:
         task = progress.add_task("Extracting author affiliations", total=len(rows))
-        for row in rows:
-            stem = row[PAPER_STEM]
-            pdf_path = pdf_dir.joinpath(f"{stem}.pdf")
-            affiliation_path = affiliation_dir.joinpath(f"{stem}.json")
-
-            if affiliation_path.is_file():
-                logger.debug("Skipping %s, affiliation file already exists.", pdf_path.name)
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {
+                executor.submit(
+                    extract_and_save_paper_affiliations, row, pdf_dir, affiliation_dir, llm
+                ): row
+                for row in rows
+            }
+            for future in as_completed(futures):
+                future.result()
                 progress.advance(task)
-                continue
-
-            if not pdf_path.is_file():
-                logger.warning("PDF not found, skipping: %s.", pdf_path)
-                progress.advance(task)
-                continue
-
-            affiliations = extract_affiliations(pdf_path, llm=llm, authors=row["authors"])
-            save_json(affiliations.model_dump(), affiliation_path)
-            logger.debug("Saved affiliations to %s.", affiliation_path.name)
-
-            progress.advance(task)
 
 
 def load_affiliations(papers: pl.DataFrame, affiliation_dir: Path) -> dict[str, PaperAffiliations]:

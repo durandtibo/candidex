@@ -34,7 +34,6 @@ logger: logging.Logger = logging.getLogger(__name__)
 
 
 logging.getLogger("ddgs").setLevel(logging.WARNING)
-logging.getLogger("duckduckgo_search").setLevel(logging.WARNING)
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("httpcore").setLevel(logging.WARNING)
 logging.getLogger("primp").setLevel(logging.WARNING)
@@ -47,16 +46,16 @@ def main() -> None:
 
     llm_affiliation_config = ChatModelConfig(
         # model="ollama:gemma3:12b",
-        # model="ollama:gemma4:latest",
-        model="anthropic:claude-haiku-4-5-20251001",
+        model="ollama:gemma4:latest",
+        # model="anthropic:claude-haiku-4-5-20251001",
         system_prompt=AFFILIATION_SYSTEM_PROMPT,
         temperature=0.0,
     )
 
     llm_role_config = ChatModelConfig(
         # model="ollama:gemma3:12b",
-        # model="ollama:gemma4:latest",
-        model="anthropic:claude-haiku-4-5-20251001",
+        model="ollama:gemma4:latest",
+        # model="anthropic:claude-haiku-4-5-20251001",
         system_prompt=ROLE_SYSTEM_PROMPT,
         temperature=0.0,
     )
@@ -70,9 +69,9 @@ def main() -> None:
     papers = find_and_save_papers(
         url="https://openaccess.thecvf.com/CVPR2026?day=all",
         filepath=data_path.joinpath("papers.parquet"),
-    ).head(10)
-    logger.info(papers)
+    )
 
+    # remove_unreadable_pdfs(papers=papers, pdf_dir=pdf_dir)
     download_papers(urls=papers[PAPER_PDF_URL].to_list(), output_path=pdf_dir)
 
     extract_and_save_affiliations(
@@ -83,6 +82,7 @@ def main() -> None:
     )
     affiliations = load_affiliations(papers=papers, affiliation_dir=affiliation_dir)
     logger.info(affiliations)
+    return
 
     find_and_save_authors_role(
         papers=papers,
