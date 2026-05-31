@@ -7,6 +7,7 @@ __all__ = ["scrape_cvpr_papers"]
 
 import logging
 import re
+from pathlib import Path
 from typing import Any
 
 import polars as pl
@@ -15,8 +16,8 @@ from bs4 import BeautifulSoup, Tag
 
 from candidex.columns import (
     AUTHORS,
-    PAPER_FILENAME,
     PAPER_PDF_URL,
+    PAPER_STEM,
     PAPER_TITLE,
     PAPER_URL,
 )
@@ -38,7 +39,7 @@ PAPER_SCHEMA: dict[str, Any] = {
     PAPER_TITLE: pl.String,
     PAPER_URL: pl.String,
     PAPER_PDF_URL: pl.String,
-    PAPER_FILENAME: pl.String,
+    PAPER_STEM: pl.String,
     AUTHORS: pl.List(pl.String),
 }
 
@@ -158,7 +159,7 @@ def parse_paper(dt: Tag, base_url: str = BASE_URL) -> dict[str, Any]:
         PAPER_URL: paper_url,
         PAPER_PDF_URL: pdf_url,
         AUTHORS: authors,
-        PAPER_FILENAME: pdf_url.split("/")[-1],
+        PAPER_STEM: Path(pdf_url.split("/")[-1]).stem,
     }
 
 
