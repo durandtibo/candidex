@@ -210,3 +210,47 @@ def scrape_cvpr_papers(
         df[PAPER_PDF_URL].is_in([""]).sum(),
     )
     return df
+
+
+def find_and_save_papers(url: str, filepath: Path) -> pl.DataFrame:
+    """Scrape CVPR papers from a listing page and cache the results to
+    disk.
+
+    On the first call, scrapes the CVPR listing page at `url`, saves the
+    results as a Parquet file at `filepath`, and returns the DataFrame.
+    On subsequent calls, skips the scrape entirely and loads directly from
+    the cached Parquet file, making repeated runs fast and
+    network-independent.
+
+    Args:
+        url:      Full URL of the CVPR listing page to scrape, e.g.
+                  'https://openaccess.thecvf.com/CVPR2024?day=all'.
+        filepath: Path where the Parquet file will be read from or written
+                  to. Parent directory must already exist.
+
+    Returns:
+        A Polars DataFrame with columns as returned by `scrape_cvpr_papers`:
+            - title      (String):       Paper title.
+            - paper_url  (String):       URL to the paper's HTML page on CVF.
+            - pdf_url    (String):       Direct URL to the paper's PDF.
+            - authors    (List[String]): Author names.
+
+    Raises:
+        requests.exceptions.RequestException: If the scrape fails due to a
+            network or HTTP error and no cached file exists.
+
+    Example:
+        >>> df = find_and_save_papers(
+        ...     url="https://openaccess.thecvf.com/CVPR2024?day=all",
+        ...     filepath=Path("data/cvpr2024.parquet"),
+        ... )
+    """
+    logger.info("Finding papers...")
+    logger.info(filepath)
+    if not filepath.is_file():
+        logger.info(f"No papers found in {filepath}. Generating the list of papers...")
+        papers = scrape_cvpr_papers(url, limit=100)
+        papers.write_parquet(filepath)
+
+    logger.info(f"Reading papers from file {filepath}...")
+    return pl.read_parquet(filepath)
