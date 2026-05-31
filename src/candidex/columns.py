@@ -5,8 +5,8 @@ from __future__ import annotations
 __all__ = [
     "AUTHORS",
     "AUTHOR_AFFILIATION",
-    "PAPER_FILENAME",
     "PAPER_PDF_URL",
+    "PAPER_STEM",
     "PAPER_TITLE",
     "PAPER_URL",
 ]
@@ -18,4 +18,4 @@ AUTHOR_NAME = "author_name"
 PAPER_PDF_URL = "paper_pdf_url"
 PAPER_TITLE = "paper_title"
 PAPER_URL = "paper_url"
-PAPER_FILENAME = "paper_filename"
+PAPER_STEM = "paper_stem"
