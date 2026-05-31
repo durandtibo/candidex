@@ -116,10 +116,10 @@ def download_papers(
     records = []
     with make_progressbar() as progress:
         task = progress.add_task("Downloading papers", total=len(valid_urls))
-        for _i, url in enumerate(valid_urls, start=1):
+        for url in valid_urls:
             filename = url.split("/")[-1]
             dest = output_path.joinpath(filename)
-            success = download_paper(url, dest, timeout=timeout)
+            success = True if dest.is_file() else download_paper(url, dest, timeout=timeout)
             records.append(
                 {
                     "url": url,
