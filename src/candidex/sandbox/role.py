@@ -45,6 +45,7 @@ class AcademicRole(StrEnum):
     FULL_PROFESSOR = "Full Professor"
     INDUSTRY_RESEARCHER = "Industry Researcher"
     UNKNOWN = "Unknown"
+    MISSING = "Missing"
 
 
 class AuthorRole(BaseModel):
@@ -55,12 +56,16 @@ class AuthorRole(BaseModel):
     - 'UNKNOWN':     The author has a PhD but the information is unavailable.
     - 'NO PhD':      The author has never pursued a PhD.
     - 'In Progress': The author is currently a PhD student (phd_end_year only).
-    - None:          Reserved for when role is AcademicRole.UNKNOWN only.
+    - None:          Reserved for when role is AcademicRole.UNKNOWN or
+                     AcademicRole.MISSING only.
 
     Attributes:
         name:           Full name of the author as it appears on the paper.
         affiliation:    Known institutional affiliation taken from the paper.
         role:           Current academic role from the `AcademicRole` enum.
+                        Use AcademicRole.UNKNOWN if the role cannot be determined
+                        from search results. AcademicRole.MISSING is reserved for
+                        system use only and must never be assigned by the LLM.
         phd_start_year: 4-digit year the PhD started (e.g. '2019').
         phd_end_year:   4-digit year the PhD was completed (e.g. '2023').
         phd_domain:     Research field of the PhD (e.g. 'Computer Vision').
@@ -83,7 +88,8 @@ class AuthorRole(BaseModel):
             "- Associate Professor: mid-career tenured or tenure-track faculty member\n"
             "- Full Professor: senior tenured faculty member\n"
             "- Industry Researcher: researcher or engineer working in industry outside of a research lab\n"
-            "- Unknown: role cannot be determined from available information"
+            "- Unknown: role cannot be determined from available information\n"
+            "- Missing: reserved for system use only — never assign this value"
         )
     )
     phd_start_year: str | None = Field(
@@ -166,7 +172,10 @@ Assign exactly one of the following roles:
 - Associate Professor: mid-career faculty, often tenured
 - Full Professor: senior faculty, full tenure
 - Industry Researcher: working in industry in a non-research or engineering role (e.g. Software Engineer, ML Engineer)
-- Unknown: insufficient information to determine the role
+- Unknown: insufficient information to determine the role — use this as a last resort only
+
+Do NOT assign the 'Missing' role — it is reserved for system use only and will
+be assigned automatically when a lookup fails entirely.
 
 PHD INFORMATION RULES:
 - If the author has completed or is currently pursuing a PhD, populate phd_start_year,
@@ -306,9 +315,9 @@ def find_authors_role(
 
     Iterates over each author in the provided `PaperAffiliations`, performs
     DuckDuckGo searches for their current position, and uses an LLM to extract
-    structured role and PhD information. Failures on individual authors are
-    logged and skipped so that a single lookup failure does not abort the
-    entire batch.
+    structured role and PhD information. If the lookup fails for an author, an
+    `AuthorRole` with `role` set to `AcademicRole.MISSING` is returned for that
+    author so the full author list is always preserved in the output.
 
     Note: DuckDuckGo may raise `DDGSException` on DNS or connectivity errors in
     restricted network environments. Consider using `GoogleSearchAPIWrapper` if
@@ -326,9 +335,9 @@ def find_authors_role(
                       for testing.
 
     Returns:
-        A list of `AuthorRole` objects, one per author for whom a lookup was
-        attempted. Authors that raised an exception are omitted from the list
-        rather than surfaced as partial results.
+        A list of `AuthorRole` objects, one per author. Authors for whom the
+        lookup failed have `role` set to `AcademicRole.MISSING` and all PhD
+        fields set to None.
 
     Example:
         >>> from langchain_anthropic import ChatAnthropic
@@ -352,20 +361,34 @@ def find_authors_role(
         for author in affiliations.authors:
             try:
                 role = find_author_role(author, llm=llm, search=search)
-                results.append(role)
             except Exception as e:
                 logger.warning("Failed to find role for %s: %s", author.author, e)
-            finally:
-                progress.advance(task)
+                affiliation_str = (
+                    ", ".join(author.affiliations) if author.affiliations else "Unknown"
+                )
+                role = AuthorRole(
+                    name=author.author,
+                    affiliation=affiliation_str,
+                    role=AcademicRole.MISSING,
+                    phd_start_year=None,
+                    phd_end_year=None,
+                    phd_domain=None,
+                    phd_university=None,
+                    details=None,
+                    source=None,
+                )
+            results.append(role)
+            progress.advance(task)
 
-    found = sum(1 for r in results if r.role != AcademicRole.UNKNOWN)
-    failed = total - len(results)
+    resolved = sum(1 for r in results if r.role not in {AcademicRole.UNKNOWN, AcademicRole.MISSING})
+    unknown = sum(1 for r in results if r.role == AcademicRole.UNKNOWN)
+    missing = sum(1 for r in results if r.role == AcademicRole.MISSING)
     logger.info(
-        "Author role lookup complete. %d/%d resolved, %d unknown, %d failed.",
-        found,
+        "Author role lookup complete. %d/%d resolved, %d unknown, %d missing.",
+        resolved,
         total,
-        len(results) - found,
-        failed,
+        unknown,
+        missing,
     )
     return results
 
@@ -505,14 +528,24 @@ def load_author_roles(papers: pl.DataFrame, role_dir: Path) -> dict[str, list[Au
 
     total_authors = sum(len(r) for r in roles.values())
     resolved = sum(
-        1 for paper_roles in roles.values() for r in paper_roles if r.role != AcademicRole.UNKNOWN
+        1
+        for paper_roles in roles.values()
+        for r in paper_roles
+        if r.role not in {AcademicRole.UNKNOWN, AcademicRole.MISSING}
+    )
+    unknown = sum(
+        1 for paper_roles in roles.values() for r in paper_roles if r.role == AcademicRole.UNKNOWN
+    )
+    missing = sum(
+        1 for paper_roles in roles.values() for r in paper_roles if r.role == AcademicRole.MISSING
     )
     logger.info(
-        "Loaded roles for %d/%d papers — %d/%d authors resolved, %d unknown.",
+        "Loaded roles for %d/%d papers — %d/%d authors resolved, %d unknown, %d missing.",
         len(roles),
         len(papers),
         resolved,
         total_authors,
-        total_authors - resolved,
+        unknown,
+        missing,
     )
     return roles
