@@ -6,8 +6,10 @@ __all__ = ["find_authors_status"]
 
 import logging
 from enum import StrEnum
+from pathlib import Path
 from typing import TYPE_CHECKING
 
+from iden.io import load_json, save_json
 from langchain_community.tools import DuckDuckGoSearchRun
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, Field
@@ -19,10 +21,14 @@ from rich.progress import (
     TimeRemainingColumn,
 )
 
+from candidex.columns import PAPER_FILENAME
+from candidex.sandbox.affiliation import PaperAffiliations
+
 if TYPE_CHECKING:
+    import polars as pl
     from langchain_core.language_models import BaseChatModel
 
-    from candidex.sandbox.affiliation import AuthorAffiliation, PaperAffiliations
+    from candidex.sandbox.affiliation import AuthorAffiliation
 
 logger: logging.Logger = logging.getLogger(__name__)
 
@@ -158,7 +164,7 @@ Prefer information from the following sources, in order:
 5. LinkedIn profile
 6. Any other credible web source
 
-Only report years if explicitly stated in the source. Do not infer or estimate years.
+Only report years if explicitly stated in the source. Do not infer or estimate years. Do not be lazy.
 Always record the URL of the source used in the source field.
 """
 
@@ -335,3 +341,84 @@ def find_authors_status(
         failed,
     )
     return results
+
+
+def find_and_save_authors_status(
+    papers: pl.DataFrame,
+    affiliations_dir: Path,
+    role_dir: Path,
+    llm: BaseChatModel,
+    search: DuckDuckGoSearchRun | None = None,
+) -> None:
+    """Find and save the academic status of all authors for each paper
+    to a JSON file.
+
+    For each paper in the DataFrame, loads the corresponding affiliations JSON
+    file, looks up the current academic role of each author, and writes the
+    results to a JSON file named after the paper. Papers whose status JSON file
+    already exists are skipped, making the function safe to call repeatedly and
+    resilient to interruptions.
+
+    The JSON file for a paper named `paper.pdf` will be saved as `paper.json`
+    in `role_dir`. Each file contains a list of serialised `AuthorStatus`
+    objects.
+
+    Args:
+        papers:           Polars DataFrame produced by `scrape_cvpr_papers` or
+                          equivalent, must contain a column named `filename`
+                          with the PDF filename (not the full path) for each paper.
+        affiliations_dir: Directory containing the affiliation JSON files produced
+                          by `extract_and_save_affiliations`. Each file must be
+                          named after its corresponding PDF (e.g. `paper.json`
+                          for `paper.pdf`).
+        role_dir:       Directory where author status JSON files will be saved.
+                          Created automatically if it does not exist.
+        llm:              Any LangChain-compatible chat model with structured output
+                          support. The caller is responsible for initialising and
+                          configuring it.
+        search:           A `DuckDuckGoSearchRun` instance. Defaults to a new
+                          instance if not provided. Override to inject a mock
+                          for testing.
+
+    Example:
+        >>> from langchain_anthropic import ChatAnthropic
+        >>> llm = ChatAnthropic(model="claude-3-5-sonnet-20241022")
+        >>> find_and_save_authors_status(
+        ...     papers=df,
+        ...     affiliations_dir=Path("papers/cvpr2024/affiliations"),
+        ...     role_dir=Path("papers/cvpr2024/status"),
+        ...     llm=llm,
+        ... )
+    """
+    role_dir.mkdir(parents=True, exist_ok=True)
+    search = search or DuckDuckGoSearchRun()
+    rows = list(papers.iter_rows(named=True))
+
+    with Progress(
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TaskProgressColumn(),
+        TimeRemainingColumn(),
+    ) as progress:
+        task = progress.add_task("Finding author statuses", total=len(rows))
+        for row in rows:
+            stem = Path(row[PAPER_FILENAME]).stem
+            affiliation_path = affiliations_dir.joinpath(f"{stem}.json")
+            status_path = role_dir.joinpath(f"{stem}.json")
+
+            if status_path.exists():
+                logger.debug("Skipping %s, status file already exists.", stem)
+                progress.advance(task)
+                continue
+
+            if not affiliation_path.exists():
+                logger.warning("Affiliation file not found, skipping: %s.", affiliation_path.name)
+                progress.advance(task)
+                continue
+
+            affiliations = PaperAffiliations.model_validate_json(load_json(affiliation_path))
+            statuses = find_authors_status(affiliations, llm=llm, search=search)
+            save_json([s.model_dump() for s in statuses], status_path)
+            logger.debug("Saved author statuses to %s.", status_path.name)
+
+            progress.advance(task)
