@@ -9,13 +9,8 @@ from typing import TYPE_CHECKING
 
 import polars as pl
 import requests
-from rich.progress import (
-    BarColumn,
-    Progress,
-    TaskProgressColumn,
-    TextColumn,
-    TimeRemainingColumn,
-)
+
+from candidex.sandbox.progressbar import make_progressbar
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -119,13 +114,7 @@ def download_papers(
     logger.info("Downloading %d files to %s...", len(valid_urls), output_path)
 
     records = []
-    progress = Progress(
-        TextColumn("[progress.description]{task.description}"),
-        BarColumn(),
-        TaskProgressColumn(),
-        TimeRemainingColumn(),
-    )
-    with progress:
+    with make_progressbar() as progress:
         task = progress.add_task("Downloading papers", total=len(valid_urls))
         for _i, url in enumerate(valid_urls, start=1):
             filename = url.split("/")[-1]

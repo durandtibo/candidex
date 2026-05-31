@@ -54,7 +54,7 @@ PAPER_SCHEMA: dict[str, Any] = {
 }
 
 
-def fetch_page(url: str, timeout: int = 300, max_retries: int = 3) -> str:
+def fetch_page(url: str, timeout: int = 30, max_retries: int = 3) -> str:
     """Fetch the raw HTML content of a webpage with automatic retries.
 
     Mounts a retry adapter with exponential backoff on the session to handle
@@ -64,7 +64,7 @@ def fetch_page(url: str, timeout: int = 300, max_retries: int = 3) -> str:
 
     Args:
         url:         The full URL to fetch.
-        timeout:     Request timeout in seconds per attempt. Defaults to 300.
+        timeout:     Request timeout in seconds per attempt. Defaults to 30.
         max_retries: Maximum number of retry attempts on failure. Defaults to 3.
                      Set to 0 to disable retries.
 
