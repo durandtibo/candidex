@@ -14,6 +14,15 @@ import polars as pl
 import requests
 from bs4 import BeautifulSoup, Tag
 from coola.utils.timing import timeblock
+from requests.adapters import HTTPAdapter
+from rich.progress import (
+    BarColumn,
+    Progress,
+    TaskProgressColumn,
+    TextColumn,
+    TimeRemainingColumn,
+)
+from urllib3.util.retry import Retry
 
 from candidex.columns import (
     AUTHORS,
@@ -45,25 +54,50 @@ PAPER_SCHEMA: dict[str, Any] = {
 }
 
 
-def fetch_page(url: str, timeout: int = 300) -> str:
-    """Fetch the raw HTML content of a webpage.
+def fetch_page(url: str, timeout: int = 300, max_retries: int = 3) -> str:
+    """Fetch the raw HTML content of a webpage with automatic retries.
+
+    Mounts a retry adapter with exponential backoff on the session to handle
+    transient network failures, connection timeouts, and 5xx server errors.
+    Each retry waits progressively longer before attempting again:
+    1s, 2s, 4s, ... up to `max_retries` attempts.
 
     Args:
-        url:     The full URL to fetch.
-        timeout: Request timeout in seconds. Defaults to 300.
+        url:         The full URL to fetch.
+        timeout:     Request timeout in seconds per attempt. Defaults to 300.
+        max_retries: Maximum number of retry attempts on failure. Defaults to 3.
+                     Set to 0 to disable retries.
 
     Returns:
         The raw HTML string of the page.
 
     Raises:
-        requests.exceptions.HTTPError:        On 4xx/5xx responses.
-        requests.exceptions.ConnectionError:  If the host is unreachable.
-        requests.exceptions.Timeout:          If the request exceeds `timeout`.
-        requests.exceptions.RequestException: For any other network failure.
+        requests.exceptions.ConnectTimeout:   If all retry attempts exceed `timeout`.
+        requests.exceptions.HTTPError:        On 4xx/5xx responses that are not retried.
+        requests.exceptions.ConnectionError:  If the host is unreachable after all retries.
+        requests.exceptions.RequestException: For any other unrecoverable network failure.
+
+    Example:
+        >>> html = fetch_page("https://openaccess.thecvf.com/CVPR2024?day=all")
     """
     logger.info("Fetching %s...", url)
-    with timeblock("Time for fetching the page: {time}"):
-        response = requests.get(url, headers=HEADERS, timeout=timeout)
+
+    retry_strategy = Retry(
+        total=max_retries,
+        backoff_factor=1,
+        status_forcelist=[429, 500, 502, 503, 504],
+        allowed_methods=["GET"],
+        raise_on_status=False,
+    )
+    adapter = HTTPAdapter(max_retries=retry_strategy)
+
+    with requests.Session() as session:
+        session.mount("https://", adapter)
+        session.mount("http://", adapter)
+
+        with timeblock("Time for fetching the page: {time}"):
+            response = session.get(url, headers=HEADERS, timeout=timeout)
+
     response.raise_for_status()
     logger.debug(
         "Response received: HTTP %d (%d bytes)", response.status_code, len(response.content)
@@ -203,7 +237,17 @@ def scrape_cvpr_papers(
     entries = parse_paper_entries(html, limit=limit)
 
     logger.info("Extracting data for %d papers...", len(entries))
-    records = [parse_paper(dt, base_url) for dt in entries]
+    records = []
+    with Progress(
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TaskProgressColumn(),
+        TimeRemainingColumn(),
+    ) as progress:
+        task = progress.add_task("Parsing papers", total=len(entries))
+        for dt in entries:
+            records.append(parse_paper(dt, base_url))
+            progress.advance(task)
 
     df = pl.DataFrame(records, schema=PAPER_SCHEMA)
     logger.info(
@@ -253,10 +297,9 @@ def find_and_save_papers(
         ...     filepath=Path("data/cvpr2024.parquet"),
         ... )
     """
-    logger.info("Finding papers...")
-    logger.info(filepath)
+    logger.info("Finding CVPR papers...")
     if not filepath.is_file():
-        logger.info(f"No papers found in {filepath}. Generating the list of papers...")
+        logger.info(f"{filepath} not found. Generating the list of papers from {url}...")
         papers = scrape_cvpr_papers(url, limit=limit)
         papers.write_parquet(filepath)
 
