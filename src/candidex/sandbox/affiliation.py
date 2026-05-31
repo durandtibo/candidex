@@ -11,15 +11,9 @@ import pdfplumber
 from iden.io import load_json, save_json
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, Field
-from rich.progress import (
-    BarColumn,
-    Progress,
-    TaskProgressColumn,
-    TextColumn,
-    TimeRemainingColumn,
-)
 
 from candidex.columns import PAPER_STEM
+from candidex.sandbox.progressbar import make_progressbar
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -97,6 +91,13 @@ You are an expert at parsing academic paper metadata.
 TASK:
 Extract every author and their full institutional affiliations and email address from the first page of an academic paper.
 
+AUTHOR LIST:
+A known list of authors will be provided alongside the text. Use it to:
+- Verify you have extracted every author without omission.
+- Resolve ambiguous name formats — if the text contains 'J. Smith' but the author list contains 'Jane Smith', use 'Jane Smith'.
+- Anchor affiliation markers (superscripts, symbols) to the correct author when the text layout is ambiguous.
+- Preserve the exact order from the author list, which reflects the order on the paper.
+
 AUTHOR EXTRACTION RULES:
 - Extract every author exactly as their name appears on the paper. Do not normalise, expand initials, or infer missing name parts.
 - Preserve the exact order in which authors appear on the paper.
@@ -150,14 +151,19 @@ def extract_first_page_text(pdf_path: Path) -> str:
         return first_page.extract_text() or ""
 
 
-def extract_affiliations(pdf_path: Path, llm: BaseChatModel) -> PaperAffiliations:
+def extract_affiliations(
+    pdf_path: Path,
+    llm: BaseChatModel,
+    authors: list[str] | None = None,
+) -> PaperAffiliations:
     """Extract author affiliations from the first page of a research
     paper PDF.
 
     Reads the first page of the PDF, then uses an LLM with structured output
-    to parse each author's name and their associated affiliations. Affiliations
-    are typically denoted by superscript numbers or symbols next to author names
-    on the first page of academic papers.
+    to parse each author's name and their associated affiliations. When a list
+    of known author names is provided, it is passed to the LLM alongside the
+    text to improve accuracy — particularly useful for resolving ambiguous name
+    formats and anchoring affiliation markers to the correct author.
 
     Uses LangChain's `with_structured_output` to enforce a typed Pydantic response,
     avoiding brittle string parsing of the LLM output.
@@ -169,20 +175,30 @@ def extract_affiliations(pdf_path: Path, llm: BaseChatModel) -> PaperAffiliation
                       ChatAnthropic(model="claude-3-5-sonnet-20241022")
                       ChatOpenAI(model="gpt-4o")
                       ChatGoogleGenerativeAI(model="gemini-1.5-pro")
+        authors:  Optional list of known author names for this paper, typically
+                  taken from the `authors` column of the papers DataFrame. When
+                  provided, the LLM uses it to verify completeness, resolve
+                  ambiguous name formats, and anchor affiliation markers more
+                  accurately. Defaults to None.
 
     Returns:
         A `PaperAffiliations` object containing a list of `AuthorAffiliation`
-        entries, each with the author's full name and their list of affiliations.
-        Authors with no detectable affiliation will have an empty list.
+        entries, each with the author's full name, list of affiliations, and
+        email address if found. Authors with no detectable affiliation will
+        have an empty affiliations list.
 
     Raises:
         FileNotFoundError: If the PDF does not exist at `pdf_path`.
 
     Example:
         >>> llm = ChatAnthropic(model="claude-3-5-sonnet-20241022")
-        >>> result = extract_affiliations(Path("papers/attention.pdf"), llm)
+        >>> result = extract_affiliations(
+        ...     Path("papers/attention.pdf"),
+        ...     llm,
+        ...     authors=["Ashish Vaswani", "Noam Shazeer", "Niki Parmar"],
+        ... )
         >>> for entry in result.authors:
-        ...     print(entry.author, entry.affiliations)
+        ...     print(entry.author, entry.affiliations, entry.email)
     """
     text = extract_first_page_text(pdf_path)
     if not text:
@@ -191,11 +207,21 @@ def extract_affiliations(pdf_path: Path, llm: BaseChatModel) -> PaperAffiliation
 
     logger.debug("Extracting affiliations from %s.", pdf_path)
 
-    structured_llm = llm.with_structured_output(PaperAffiliations)
+    author_block = (
+        "\nKnown authors for this paper (in order):\n" + "\n".join(f"- {a}" for a in authors)
+        if authors
+        else ""
+    )
 
+    structured_llm = llm.with_structured_output(PaperAffiliations)
     messages = [
         SystemMessage(content=AFFILIATION_SYSTEM_PROMPT),
-        HumanMessage(content=f"Extract the author affiliations from this text:\n\n{text}"),
+        HumanMessage(
+            content=(
+                f"Extract the author affiliations from this text:{author_block}\n\n"
+                f"Paper text:\n{text}"
+            )
+        ),
     ]
 
     result = structured_llm.invoke(messages)
@@ -214,18 +240,21 @@ def extract_and_save_affiliations(
 
     Iterates over a DataFrame of papers, extracts author affiliations from the
     first page of each PDF using an LLM, and writes the result to a JSON file
-    in `affiliation_dir`. Papers whose JSON file already exists are skipped,
-    making the function safe to call repeatedly and resilient to interruptions.
+    in `affiliation_dir`. The known author list from the `authors` column is
+    passed to the LLM to improve extraction accuracy. Papers whose JSON file
+    already exists are skipped, making the function safe to call repeatedly
+    and resilient to interruptions.
 
     The JSON file for a paper with stem `paper` will be saved as `paper.json`
     in `affiliation_dir`. Each file contains a serialised `PaperAffiliations`
-    object with `authors` and `affiliations` keys.
+    object with `authors`, `affiliations`, and `email` keys.
 
     Args:
         papers:          Polars DataFrame produced by `scrape_cvpr_papers` or
                          equivalent. Must contain a column named by `PAPER_STEM`
                          with the PDF filename stem (i.e. without the `.pdf`
-                         extension) for each paper.
+                         extension), and an `authors` column with the list of
+                         author names for each paper.
         pdf_dir:         Directory where the PDF files are stored. Each PDF must
                          be named `{stem}.pdf` where `stem` matches the value in
                          the `PAPER_STEM` column.
@@ -252,20 +281,15 @@ def extract_and_save_affiliations(
         ...     llm=llm,
         ... )
     """
+    affiliation_dir.mkdir(parents=True, exist_ok=True)
     rows = list(papers.iter_rows(named=True))
-    progress = Progress(
-        TextColumn("[progress.description]{task.description}"),
-        BarColumn(),
-        TaskProgressColumn(),
-        TimeRemainingColumn(),
-    )
 
-    with progress:
-        task = progress.add_task("Extracting affiliations", total=len(rows))
+    with make_progressbar() as progress:
+        task = progress.add_task("Extracting author affiliations", total=len(rows))
         for row in rows:
             stem = row[PAPER_STEM]
             pdf_path = pdf_dir.joinpath(f"{stem}.pdf")
-            affiliation_path = affiliation_dir.joinpath(rf"{stem}.json")
+            affiliation_path = affiliation_dir.joinpath(f"{stem}.json")
 
             if affiliation_path.is_file():
                 logger.debug("Skipping %s, affiliation file already exists.", pdf_path.name)
@@ -277,8 +301,9 @@ def extract_and_save_affiliations(
                 progress.advance(task)
                 continue
 
-            affiliations = extract_affiliations(pdf_path, llm=llm)
+            affiliations = extract_affiliations(pdf_path, llm=llm, authors=row["authors"])
             save_json(affiliations.model_dump(), affiliation_path)
+            logger.debug("Saved affiliations to %s.", affiliation_path.name)
 
             progress.advance(task)
 
@@ -312,16 +337,22 @@ def load_affiliations(papers: pl.DataFrame, affiliation_dir: Path) -> dict[str, 
     """
     logger.info("Loading author affiliations from %s...", affiliation_dir)
 
+    rows = list(papers.iter_rows(named=True))
     affiliations = {}
-    for row in papers.iter_rows(named=True):
-        stem = row[PAPER_STEM]
-        affiliation_path = affiliation_dir / f"{stem}.json"
 
-        if not affiliation_path.is_file():
-            logger.warning("Affiliation file not found, skipping: %s.", affiliation_path.name)
-            continue
+    with make_progressbar() as progress:
+        task = progress.add_task("Loading author affiliations", total=len(rows))
+        for row in rows:
+            stem = row[PAPER_STEM]
+            affiliation_path = affiliation_dir.joinpath(f"{stem}.json")
 
-        affiliations[stem] = PaperAffiliations.model_validate(load_json(affiliation_path))
+            if not affiliation_path.is_file():
+                logger.warning("Affiliation file not found, skipping: %s.", affiliation_path.name)
+                progress.advance(task)
+                continue
+
+            affiliations[stem] = PaperAffiliations.model_validate(load_json(affiliation_path))
+            progress.advance(task)
 
     logger.info("Loaded author affiliations for %d/%d papers.", len(affiliations), len(papers))
     return affiliations
