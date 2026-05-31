@@ -5,11 +5,14 @@ from __future__ import annotations
 __all__ = ["find_and_save_authors_role", "load_author_roles"]
 
 import logging
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from enum import StrEnum
 from typing import TYPE_CHECKING
 
+from ddgs import DDGS
+from ddgs.exceptions import DDGSException
 from iden.io import load_json, load_text, save_json
-from langchain_community.tools import DuckDuckGoSearchRun
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, Field
 
@@ -138,22 +141,23 @@ Use the following search strategies in order of priority to find the most
 accurate and up-to-date information:
 
 1. Resume or CV search — most reliable source for PhD details and career history:
-   "{author_name}" (intitle:resume OR intitle:cv OR inurl:resume OR inurl:cv) filetype:pdf
-   "{author_name}" "{affiliation}" (resume OR cv OR curriculum vitae)
+   "{author_name}" "{affiliation}" resume OR CV OR curriculum vitae
 
 2. GitHub profile — useful for current role, affiliations listed in bio, and linked personal sites:
    "{author_name}" "{affiliation}" site:github.com
-   "{author_name}" site:github.com machine learning
 
-3. Academic profile pages:
+3. OpenReview — lists author affiliation at time of paper submission, useful for confirming
+   institutional affiliation and academic role:
+   "{author_name}" "{affiliation}" site:openreview.net
+
+4. University or lab profile page — most reliable for current faculty and student roles:
+   "{author_name}" "{affiliation}" (Master student OR PhD student OR postdoc OR professor OR researcher) -linkedin
+
+5. Google Scholar — confirms academic role and institutional affiliation:
    "{author_name}" "{affiliation}" site:scholar.google.com
-   "{author_name}" "{affiliation}" (professor OR researcher OR "PhD student" OR postdoc)
 
-4. University and lab pages:
-   "{author_name}" site:{affiliation_domain} (e.g. site:mit.edu, site:stanford.edu)
-
-5. General web search as a fallback:
-   "{author_name}" "{affiliation}" academic position
+6. LinkedIn — current job title and employment history, useful for industry roles:
+   "{author_name}" "{affiliation}" site:linkedin.com
 
 ROLE ASSIGNMENT:
 Assign exactly one of the following roles:
@@ -180,16 +184,24 @@ PHD INFORMATION RULES:
 - Only use None for PhD fields if the role itself is 'Unknown' and no information
   is available at all.
 
+DETAILS RULES:
+- Use the details field to capture any additional context that does not fit in
+  other fields, such as lab name, research group, supervisor, or university department.
+- Keep it concise — 200 characters maximum.
+- Write as a short phrase, not a full sentence (e.g. 'CSAIL, advised by Prof. Smith').
+- Set to None if no additional context is available.
+
 SOURCE RULES:
 - The source field must contain exactly one URL — the single most authoritative
   source used to determine the role and PhD information.
 - Choose the URL according to this priority:
   1. Personal CV or resume (PDF)
   2. GitHub profile bio and linked personal website
-  3. University or lab profile page
-  4. Google Scholar profile
-  5. LinkedIn profile
-  6. Any other credible web source
+  3. OpenReview profile page
+  4. University or lab profile page
+  5. Google Scholar profile
+  6. LinkedIn profile
+  7. Any other credible web source
 - Never include multiple URLs, comma-separated links, or prose descriptions in
   the source field. Only a single raw URL (e.g. 'https://example.com/cv.pdf').
 - If no credible source was found, set source to None.
@@ -199,48 +211,119 @@ Always record the URL of the source used in the source field.
 """
 
 
-def _run_searches(author: AuthorAffiliation, search: DuckDuckGoSearchRun) -> str:
-    """Run multiple targeted DuckDuckGo searches for an author and
-    return combined results.
+def _run_single_query(query: str, max_retries: int, backoff_factor: float) -> str | None:
+    """Run a single DuckDuckGo query with retries.
 
-    Executes two queries in sequence: one targeting CV or resume documents,
-    and one targeting academic profile pages. Results from both queries are
-    combined into a single formatted string for the LLM to reason over.
+    Returns formatted results or None.
+    """
+    for attempt in range(max_retries):
+        try:
+            with DDGS() as ddgs:
+                results = ddgs.text(query, max_results=5)
+            if results:
+                return "\n\n".join(
+                    f"URL: {r['href']}\nTitle: {r['title']}\n{r['body']}" for r in results
+                )
+            return None
+        except DDGSException as e:
+            wait = backoff_factor**attempt
+            if attempt < max_retries - 1:
+                logger.debug(
+                    "Search failed for query '%s' (attempt %d/%d): %s. Retrying in %.0fs...",
+                    query,
+                    attempt + 1,
+                    max_retries,
+                    e,
+                    wait,
+                )
+                time.sleep(wait)
+            else:
+                logger.warning(
+                    "Search failed for query '%s' after %d attempts: %s.",
+                    query,
+                    max_retries,
+                    e,
+                )
+    return None
 
-    Unlike `GoogleSearchAPIWrapper`, `DuckDuckGoSearchRun.run()` returns a
-    plain text string rather than a list of structured dicts, so results are
-    concatenated directly without per-field formatting.
+
+def _run_searches(
+    author: AuthorAffiliation,
+    max_retries: int = 3,
+    backoff_factor: float = 2.0,
+    max_workers: int = 3,
+) -> str:
+    """Run multiple targeted DuckDuckGo searches for an author in
+    parallel and return combined results.
+
+    Executes six queries concurrently using a thread pool, each targeting
+    a different source type in order of reliability for academic role and
+    PhD information:
+
+    1. CV/resume PDF — most reliable for PhD details and career history.
+    2. GitHub profile — bio and linked personal site often contain current role.
+    3. OpenReview — confirms academic affiliation at time of paper submission.
+    4. University or lab profile page — role and department details.
+    5. Google Scholar — confirms academic role and institutional affiliation.
+    6. LinkedIn — current job title and employment history.
+
+    Results are reassembled in query order regardless of completion order,
+    so the LLM always receives results from more reliable sources first.
+    Each query is retried up to `max_retries` times with exponential backoff
+    on timeout or connectivity errors.
 
     Args:
-        author: An `AuthorAffiliation` object containing the author's name
-                and known affiliations.
-        search: A configured `DuckDuckGoSearchRun` instance.
+        author:         An `AuthorAffiliation` object containing the author's
+                        name and known affiliations.
+        max_retries:    Maximum number of retry attempts per query on timeout
+                        or connectivity errors. Defaults to 3.
+        backoff_factor: Multiplier for the wait time between retries.
+                        Wait times are: 2s, 4s, 8s, ... Defaults to 2.0.
+        max_workers:    Maximum number of concurrent threads. Defaults to 3
+                        to avoid rate limiting from DuckDuckGo.
 
     Returns:
-        A formatted string of search results from both queries, separated by
-        a divider. Returns an empty string if all queries return no results.
+        A formatted string of search results from all queries, separated by
+        a divider, in query priority order. Returns an empty string if all
+        queries return no results after retries.
     """
     affiliation_str = ", ".join(author.affiliations) if author.affiliations else "Unknown"
+    name = author.author
 
     queries = [
-        f'"{author.author}" (intitle:resume OR intitle:cv OR inurl:resume OR inurl:cv)',
-        f'"{author.author}" "{affiliation_str}" PhD student professor researcher',
+        # 1. CV/resume — most reliable for PhD details and career history
+        f'"{name}" "{affiliation_str}" resume OR CV OR curriculum vitae',
+        # 2. GitHub — bio and linked personal site often contain current role
+        f'"{name}" "{affiliation_str}" site:github.com',
+        # 3. OpenReview — confirms academic affiliation at time of submission
+        f'"{name}" "{affiliation_str}" site:openreview.net',
+        # 4. University or lab profile page
+        f'"{name}" "{affiliation_str}" (Master student OR PhD student OR postdoc OR professor OR researcher) -linkedin',
+        # 5. Google Scholar — confirms academic role and institutional affiliation
+        f'"{name}" "{affiliation_str}" site:scholar.google.com',
+        # 6. LinkedIn — current job title and employment history
+        f'"{name}" "{affiliation_str}" site:linkedin.com',
     ]
 
-    sections = []
-    for query in queries:
-        result = search.run(query)
-        if result:
-            sections.append(result)
+    # Map future -> original index to reassemble results in priority order
+    index_map = {}
+    sections = [None] * len(queries)
 
-    return "\n\n---\n\n".join(sections)
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        for i, query in enumerate(queries):
+            future = executor.submit(_run_single_query, query, max_retries, backoff_factor)
+            index_map[future] = i
+
+        for future in as_completed(index_map):
+            i = index_map[future]
+            result = future.result()
+            if result:
+                sections[i] = result
+
+    return "\n\n---\n\n".join(s for s in sections if s)
 
 
-def find_author_role(
-    author: AuthorAffiliation,
-    llm: BaseChatModel,
-    search: DuckDuckGoSearchRun,
-) -> AuthorRole:
+def find_author_role(author: AuthorAffiliation, llm: BaseChatModel) -> AuthorRole:
     """Find the current academic role of an author using DuckDuckGo
     search and an LLM.
 
@@ -257,7 +340,6 @@ def find_author_role(
                 known affiliations from the paper.
         llm:    Any LangChain-compatible chat model with structured output support.
                 The caller is responsible for initialising and configuring it.
-        search: A configured `DuckDuckGoSearchRun` instance.
 
     Returns:
         An `AuthorRole` object with the author's current role, PhD details,
@@ -271,15 +353,14 @@ def find_author_role(
     Example:
         >>> from langchain_anthropic import ChatAnthropic
         >>> llm = ChatAnthropic(model="claude-3-5-sonnet-20241022")
-        >>> search = DuckDuckGoSearchRun()
         >>> author = AuthorAffiliation(author="Jane Smith", affiliations=["MIT CSAIL"])
-        >>> role = find_author_role(author, llm, search)
+        >>> role = find_author_role(author, llm)
         >>> print(role.role, role.phd_start_year)
     """
     affiliation_str = ", ".join(author.affiliations) if author.affiliations else "Unknown"
     logger.debug("Searching for author role: %s (%s).", author.author, affiliation_str)
 
-    search_text = _run_searches(author, search)
+    search_text = _run_searches(author)
     logger.debug("Search results retrieved for %s.", author.author)
 
     structured_llm = llm.with_structured_output(AuthorRole)
@@ -303,7 +384,6 @@ def find_author_role(
 def find_authors_role(
     affiliations: PaperAffiliations,
     llm: BaseChatModel,
-    search: DuckDuckGoSearchRun | None = None,
 ) -> list[AuthorRole]:
     """Find the current academic role for all authors in a paper.
 
@@ -341,7 +421,6 @@ def find_authors_role(
         >>> for r in roles:
         ...     print(r.name, r.role, r.phd_start_year, r.phd_end_year)
     """
-    search = search or DuckDuckGoSearchRun()
     results = []
     total = len(affiliations.authors)
 
@@ -349,7 +428,7 @@ def find_authors_role(
         task = progress.add_task("Finding author roles", total=total)
         for author in affiliations.authors:
             try:
-                role = find_author_role(author, llm=llm, search=search)
+                role = find_author_role(author, llm=llm)
             except Exception as e:
                 logger.warning("Failed to find role for %s: %s", author.author, e)
                 affiliation_str = (
@@ -387,7 +466,6 @@ def find_and_save_authors_role(
     affiliations_dir: Path,
     role_dir: Path,
     llm: BaseChatModel,
-    search: DuckDuckGoSearchRun | None = None,
 ) -> None:
     """Find and save the academic role of all authors for each paper to
     a JSON file.
@@ -429,7 +507,6 @@ def find_and_save_authors_role(
     """
     logger.info("Finding authors roles and saving them at %s...", role_dir)
     role_dir.mkdir(parents=True, exist_ok=True)
-    search = search or DuckDuckGoSearchRun()
     rows = list(papers.iter_rows(named=True))
 
     with make_progressbar() as progress:
@@ -450,7 +527,7 @@ def find_and_save_authors_role(
                 continue
 
             affiliations = PaperAffiliations.model_validate_json(load_text(affiliation_path))
-            roles = find_authors_role(affiliations, llm=llm, search=search)
+            roles = find_authors_role(affiliations, llm=llm)
             save_json([r.model_dump() for r in roles], role_path)
             logger.info(roles)
             logger.debug("Saved author roles to %s.", role_path.name)

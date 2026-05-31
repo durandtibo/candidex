@@ -6,7 +6,6 @@ import logging
 from pathlib import Path
 
 from dotenv import load_dotenv
-from langchain_community.tools import DuckDuckGoSearchRun
 from rich.logging import RichHandler
 
 from candidex.chat_model import create_chat_model
@@ -48,13 +47,14 @@ def main() -> None:
 
     llm_affiliation_config = ChatModelConfig(
         # model="ollama:gemma3:12b",
-        model="anthropic:claude-haiku-4-5-20251001",
+        model="ollama:gemma4:latest",
         system_prompt=AFFILIATION_SYSTEM_PROMPT,
         temperature=0.0,
     )
 
     llm_role_config = ChatModelConfig(
-        model="ollama:gemma3:12b",
+        # model="ollama:gemma3:12b",
+        model="ollama:gemma4:latest",
         system_prompt=ROLE_SYSTEM_PROMPT,
         temperature=0.0,
     )
@@ -87,7 +87,6 @@ def main() -> None:
         affiliations_dir=affiliation_dir,
         role_dir=role_dir,
         llm=create_chat_model(llm_role_config),
-        search=DuckDuckGoSearchRun(),
     )
     roles = load_author_roles(papers=papers, role_dir=role_dir)
     logger.info(roles)
