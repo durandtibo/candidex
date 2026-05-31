@@ -6,7 +6,6 @@ __all__ = ["find_authors_status"]
 
 import logging
 from enum import StrEnum
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 from iden.io import load_text, save_json
@@ -21,10 +20,11 @@ from rich.progress import (
     TimeRemainingColumn,
 )
 
-from candidex.columns import PAPER_FILENAME
+from candidex.columns import PAPER_STEM
 from candidex.sandbox.affiliation import PaperAffiliations
 
 if TYPE_CHECKING:
+    from pathlib import Path
     import polars as pl
     from langchain_core.language_models import BaseChatModel
 
@@ -106,7 +106,7 @@ class AuthorStatus(BaseModel):
     source: str | None = Field(description="URL of the source where the information was found.")
 
 
-AUTHOR_SYSTEM_PROMPT = """
+ROLE_SYSTEM_PROMPT = """
 You are an expert at finding information about academic researchers.
 Given an author's name and affiliation, determine their current academic role
 and PhD information.
@@ -259,7 +259,7 @@ def find_author_status(
 
     structured_llm = llm.with_structured_output(AuthorStatus)
     messages = [
-        SystemMessage(content=AUTHOR_SYSTEM_PROMPT),
+        SystemMessage(content=ROLE_SYSTEM_PROMPT),
         HumanMessage(
             content=(
                 f"Find the current academic role for this author:\n\n"
@@ -407,7 +407,7 @@ def find_and_save_authors_status(
     ) as progress:
         task = progress.add_task("Processing papers", total=len(rows))
         for row in rows:
-            stem = Path(row[PAPER_FILENAME]).stem
+            stem = row[PAPER_STEM]
             affiliation_path = affiliations_dir.joinpath(f"{stem}.json")
             status_path = role_dir.joinpath(f"{stem}.json")
 
@@ -424,6 +424,7 @@ def find_and_save_authors_status(
             affiliations = PaperAffiliations.model_validate_json(load_text(affiliation_path))
             statuses = find_authors_status(affiliations, llm=llm, search=search)
             save_json([s.model_dump() for s in statuses], status_path)
+            logger.info(statuses)
             logger.debug("Saved author statuses to %s.", status_path.name)
 
             progress.advance(task)
