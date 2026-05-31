@@ -2,7 +2,7 @@ r"""Contain functionalities to find the CVPR papers from the website."""
 
 from __future__ import annotations
 
-__all__ = ["scrape_cvpr_papers"]
+__all__ = ["find_and_save_papers"]
 
 
 import logging
@@ -13,6 +13,7 @@ from typing import Any
 import polars as pl
 import requests
 from bs4 import BeautifulSoup, Tag
+from coola.utils.timing import timeblock
 
 from candidex.columns import (
     AUTHORS,
@@ -44,12 +45,12 @@ PAPER_SCHEMA: dict[str, Any] = {
 }
 
 
-def fetch_page(url: str, timeout: int = 30) -> str:
+def fetch_page(url: str, timeout: int = 300) -> str:
     """Fetch the raw HTML content of a webpage.
 
     Args:
         url:     The full URL to fetch.
-        timeout: Request timeout in seconds. Defaults to 30.
+        timeout: Request timeout in seconds. Defaults to 300.
 
     Returns:
         The raw HTML string of the page.
@@ -61,7 +62,8 @@ def fetch_page(url: str, timeout: int = 30) -> str:
         requests.exceptions.RequestException: For any other network failure.
     """
     logger.info("Fetching %s...", url)
-    response = requests.get(url, headers=HEADERS, timeout=timeout)
+    with timeblock("Time for fetching the page: {time}"):
+        response = requests.get(url, headers=HEADERS, timeout=timeout)
     response.raise_for_status()
     logger.debug(
         "Response received: HTTP %d (%d bytes)", response.status_code, len(response.content)
@@ -212,7 +214,11 @@ def scrape_cvpr_papers(
     return df
 
 
-def find_and_save_papers(url: str, filepath: Path) -> pl.DataFrame:
+def find_and_save_papers(
+    url: str,
+    filepath: Path,
+    limit: int | None = None,
+) -> pl.DataFrame:
     """Scrape CVPR papers from a listing page and cache the results to
     disk.
 
@@ -227,6 +233,8 @@ def find_and_save_papers(url: str, filepath: Path) -> pl.DataFrame:
                   'https://openaccess.thecvf.com/CVPR2024?day=all'.
         filepath: Path where the Parquet file will be read from or written
                   to. Parent directory must already exist.
+        limit:    Maximum number of papers to scrape. Defaults to 100.
+                  Pass None to scrape the full listing (typically 2000+ papers).
 
     Returns:
         A Polars DataFrame with columns as returned by `scrape_cvpr_papers`:
@@ -249,7 +257,7 @@ def find_and_save_papers(url: str, filepath: Path) -> pl.DataFrame:
     logger.info(filepath)
     if not filepath.is_file():
         logger.info(f"No papers found in {filepath}. Generating the list of papers...")
-        papers = scrape_cvpr_papers(url, limit=100)
+        papers = scrape_cvpr_papers(url, limit=limit)
         papers.write_parquet(filepath)
 
     logger.info(f"Reading papers from file {filepath}...")
