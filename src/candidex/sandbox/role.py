@@ -218,7 +218,7 @@ def _run_single_query(query: str, max_retries: int, backoff_factor: float) -> st
     for attempt in range(max_retries):
         try:
             with DDGS() as ddgs:
-                results = ddgs.text(query, max_results=5)
+                results = ddgs.text(query, max_results=3)
             if results:
                 return "\n\n".join(
                     f"URL: {r['href']}\nTitle: {r['title']}\n{r['body']}" for r in results
