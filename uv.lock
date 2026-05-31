@@ -458,7 +458,7 @@ provides-extras = ["colorlog"]
 [package.metadata.requires-dev]
 dev = [
     { name = "black", specifier = ">=26.5.1" },
-    { name = "coverage", extras = ["toml"], specifier = ">=7.14,<8.0" },
+    { name = "coverage", extras = ["toml"], specifier = ">=7.14.1,<8.0" },
     { name = "docformatter", extras = ["tomli"], specifier = ">=1.7.8,<2.0" },
     { name = "feu", extras = ["all"], specifier = ">=0.6.2,<1.0" },
     { name = "invoke", specifier = ">=3.0,<4.0" },
