@@ -47,14 +47,16 @@ def main() -> None:
 
     llm_affiliation_config = ChatModelConfig(
         # model="ollama:gemma3:12b",
-        model="ollama:gemma4:latest",
+        # model="ollama:gemma4:latest",
+        model="anthropic:claude-haiku-4-5-20251001",
         system_prompt=AFFILIATION_SYSTEM_PROMPT,
         temperature=0.0,
     )
 
     llm_role_config = ChatModelConfig(
         # model="ollama:gemma3:12b",
-        model="ollama:gemma4:latest",
+        # model="ollama:gemma4:latest",
+        model="anthropic:claude-haiku-4-5-20251001",
         system_prompt=ROLE_SYSTEM_PROMPT,
         temperature=0.0,
     )
@@ -87,6 +89,7 @@ def main() -> None:
         affiliations_dir=affiliation_dir,
         role_dir=role_dir,
         llm=create_chat_model(llm_role_config),
+        max_authors=20,
     )
     roles = load_author_roles(papers=papers, role_dir=role_dir)
     logger.info(roles)

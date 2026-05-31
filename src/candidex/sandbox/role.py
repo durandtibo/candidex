@@ -465,6 +465,7 @@ def find_and_save_authors_role(
     affiliations_dir: Path,
     role_dir: Path,
     llm: BaseChatModel,
+    max_authors: int = 20,
 ) -> None:
     """Find and save the academic role of all authors for each paper to
     a JSON file.
@@ -474,6 +475,10 @@ def find_and_save_authors_role(
     results to a JSON file named after the paper. Papers whose role JSON file
     already exists are skipped, making the function safe to call repeatedly and
     resilient to interruptions.
+
+    Only the first `max_authors` authors per paper are processed. This is
+    useful for large papers with many authors where processing all of them
+    would be too slow or costly.
 
     The JSON file for a paper with stem `paper` will be saved as `paper.json`
     in `role_dir`. Each file contains a list of serialised `AuthorRole` objects.
@@ -490,9 +495,9 @@ def find_and_save_authors_role(
         llm:              Any LangChain-compatible chat model with structured output
                           support. The caller is responsible for initialising and
                           configuring it.
-        search:           A `DuckDuckGoSearchRun` instance. Defaults to a new
-                          instance if not provided. Override to inject a mock
-                          for testing.
+        max_authors:      Maximum number of authors to process per paper, taking
+                          the first N authors in the order they appear. Defaults
+                          to 20. Set to None to process all authors.
 
     Example:
         >>> from langchain_anthropic import ChatAnthropic
@@ -502,6 +507,7 @@ def find_and_save_authors_role(
         ...     affiliations_dir=Path("papers/cvpr2024/affiliations"),
         ...     role_dir=Path("papers/cvpr2024/roles"),
         ...     llm=llm,
+        ...     max_authors=10,
         ... )
     """
     logger.info("Finding authors roles and saving them at %s...", role_dir)
@@ -526,12 +532,131 @@ def find_and_save_authors_role(
                 continue
 
             affiliations = PaperAffiliations.model_validate_json(load_text(affiliation_path))
+            affiliations.authors = affiliations.authors[:max_authors]
+
+            if len(affiliations.authors) < len(
+                PaperAffiliations.model_validate_json(load_text(affiliation_path)).authors
+            ):
+                logger.debug(
+                    "Processing first %d of %d authors for %s.",
+                    len(affiliations.authors),
+                    len(PaperAffiliations.model_validate_json(load_text(affiliation_path)).authors),
+                    stem,
+                )
+
             roles = find_authors_role(affiliations, llm=llm)
             save_json([r.model_dump() for r in roles], role_path)
-            logger.info(roles)
             logger.debug("Saved author roles to %s.", role_path.name)
 
             progress.advance(task)
+
+
+def retry_authors_role(
+    papers: pl.DataFrame,
+    role_dir: Path,
+    llm: BaseChatModel,
+    retry_role: AcademicRole = AcademicRole.MISSING,
+    max_authors: int = 20,
+) -> None:
+    """Retry finding the academic role for authors with a specific role
+    value.
+
+    For each paper in the DataFrame, loads the existing role JSON file, finds
+    all authors whose role matches `retry_role`, re-runs the role lookup for
+    those authors, and saves the updated results back to the same file. Authors
+    whose role does not match `retry_role` are left unchanged.
+
+    Only the first `max_authors` authors per paper are considered for retry.
+    Authors beyond this limit are left unchanged regardless of their role.
+
+    Useful for recovering from failed lookups (`AcademicRole.MISSING`) or
+    refining ambiguous results (`AcademicRole.UNKNOWN`) without re-processing
+    the entire dataset.
+
+    Args:
+        papers:      Polars DataFrame produced by `scrape_cvpr_papers` or
+                     equivalent. Must contain a column named by `PAPER_STEM`
+                     with the PDF filename stem for each paper.
+        role_dir:    Directory containing the role JSON files produced by
+                     `find_and_save_authors_role`. Each file must be named
+                     `{stem}.json` where `stem` matches `PAPER_STEM`. Files
+                     are updated in place.
+        llm:         Any LangChain-compatible chat model with structured output
+                     support. The caller is responsible for initialising and
+                     configuring it.
+        retry_role:  The `AcademicRole` value that triggers a retry. Only
+                     authors whose current role matches this value will be
+                     re-processed. Defaults to `AcademicRole.MISSING`.
+        max_authors: Maximum number of authors to consider per paper, taking
+                     the first N authors in the order they appear. Authors
+                     beyond this limit are left unchanged. Defaults to 20.
+                     Set to None to consider all authors.
+
+    Example:
+        >>> from langchain_anthropic import ChatAnthropic
+        >>> llm = ChatAnthropic(model="claude-3-5-sonnet-20241022")
+        >>> retry_authors_role(df, Path("data/cvpr2024/roles"), llm)
+        >>> retry_authors_role(
+        ...     df,
+        ...     Path("data/cvpr2024/roles"),
+        ...     llm,
+        ...     retry_role=AcademicRole.UNKNOWN,
+        ...     max_authors=10,
+        ... )
+    """
+    logger.info("Retrying author role lookup for role '%s'...", retry_role)
+    rows = list(papers.iter_rows(named=True))
+
+    with make_progressbar() as progress:
+        task = progress.add_task(f"Retrying '{retry_role}' authors", total=len(rows))
+        for row in rows:
+            stem = row[PAPER_STEM]
+            role_path = role_dir.joinpath(f"{stem}.json")
+
+            if not role_path.is_file():
+                logger.debug("Role file not found, skipping: %s.", role_path.name)
+                progress.advance(task)
+                continue
+
+            try:
+                roles = [AuthorRole.model_validate(r) for r in load_json(role_path)]
+            except Exception as e:
+                logger.warning("Failed to load role file %s: %s", role_path.name, e)
+                progress.advance(task)
+                continue
+
+            to_retry = [r for r in roles[:max_authors] if r.role == retry_role]
+            if not to_retry:
+                progress.advance(task)
+                continue
+
+            logger.debug(
+                "Retrying %d/%d authors in %s.",
+                len(to_retry),
+                len(roles),
+                role_path.name,
+            )
+
+            role_map = {r.name: r for r in roles}
+            for author_role in to_retry:
+                author = AuthorAffiliation(
+                    author=author_role.name,
+                    affiliations=[author_role.affiliation],
+                )
+                try:
+                    updated = find_author_role(author, llm=llm)
+                except Exception as e:
+                    logger.warning("Failed to retry role for %s: %s", author_role.name, e)
+                    updated = author_role
+                role_map[author_role.name] = updated
+
+            updated_roles = [role_map[r.name] for r in roles]
+            save_json([r.model_dump() for r in updated_roles], role_path)
+            logger.debug("Updated role file %s.", role_path.name)
+
+            progress.advance(task)
+
+    logger.info("Retry complete for role '%s'.", retry_role)
 
 
 def load_author_roles(papers: pl.DataFrame, role_dir: Path) -> dict[str, list[AuthorRole]]:
@@ -604,98 +729,3 @@ def load_author_roles(papers: pl.DataFrame, role_dir: Path) -> dict[str, list[Au
         missing,
     )
     return roles
-
-
-def retry_authors_role(
-    papers: pl.DataFrame,
-    role_dir: Path,
-    llm: BaseChatModel,
-    retry_role: AcademicRole = AcademicRole.MISSING,
-) -> None:
-    """Retry finding the academic role for authors with a specific role
-    value.
-
-    For each paper in the DataFrame, loads the existing role JSON file, finds
-    all authors whose role matches `retry_role`, re-runs the role lookup for
-    those authors, and saves the updated results back to the same file. Authors
-    whose role does not match `retry_role` are left unchanged.
-
-    Useful for recovering from failed lookups (`AcademicRole.MISSING`) or
-    refining ambiguous results (`AcademicRole.UNKNOWN`) without re-processing
-    the entire dataset.
-
-    Args:
-        papers:      Polars DataFrame produced by `scrape_cvpr_papers` or
-                     equivalent. Must contain a column named by `PAPER_STEM`
-                     with the PDF filename stem for each paper.
-        role_dir:    Directory containing the role JSON files produced by
-                     `find_and_save_authors_role`. Each file must be named
-                     `{stem}.json` where `stem` matches `PAPER_STEM`. Files
-                     are updated in place.
-        llm:         Any LangChain-compatible chat model with structured output
-                     support. The caller is responsible for initialising and
-                     configuring it.
-        retry_role:  The `AcademicRole` value that triggers a retry. Only
-                     authors whose current role matches this value will be
-                     re-processed. Defaults to `AcademicRole.MISSING`.
-
-    Example:
-        >>> from langchain_anthropic import ChatAnthropic
-        >>> llm = ChatAnthropic(model="claude-3-5-sonnet-20241022")
-        >>> # Retry all authors where lookup previously failed
-        >>> retry_authors_role(df, Path("data/cvpr2024/roles"), llm)
-        >>> # Retry all authors where role could not be determined
-        >>> retry_authors_role(
-        ...     df,
-        ...     Path("data/cvpr2024/roles"),
-        ...     llm,
-        ...     retry_role=AcademicRole.UNKNOWN,
-        ... )
-    """
-    logger.info("Retrying author role lookup for role '%s'...", retry_role)
-    rows = list(papers.iter_rows(named=True))
-
-    with make_progressbar() as progress:
-        task = progress.add_task(f"Retrying '{retry_role}' authors", total=len(rows))
-        for row in rows:
-            stem = row[PAPER_STEM]
-            role_path = role_dir.joinpath(f"{stem}.json")
-
-            if not role_path.is_file():
-                logger.debug("Role file not found, skipping: %s.", role_path.name)
-                progress.advance(task)
-                continue
-
-            roles = [AuthorRole.model_validate(r) for r in load_json(role_path)]
-            to_retry = [r for r in roles if r.role == retry_role]
-            if not to_retry:
-                progress.advance(task)
-                continue
-
-            logger.debug(
-                "Retrying %d/%d authors in %s.",
-                len(to_retry),
-                len(roles),
-                role_path.name,
-            )
-
-            role_map = {r.name: r for r in roles}
-            for author_role in to_retry:
-                author = AuthorAffiliation(
-                    author=author_role.name,
-                    affiliations=[author_role.affiliation],
-                )
-                try:
-                    updated = find_author_role(author, llm=llm)
-                except Exception as e:
-                    logger.warning("Failed to retry role for %s: %s", author_role.name, e)
-                    updated = author_role
-                role_map[author_role.name] = updated
-
-            updated_roles = [role_map[r.name] for r in roles]
-            save_json([r.model_dump() for r in updated_roles], role_path)
-            logger.debug("Updated role file %s.", role_path.name)
-
-            progress.advance(task)
-
-    logger.info("Retry complete for role '%s'.", retry_role)
