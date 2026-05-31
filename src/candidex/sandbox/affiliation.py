@@ -46,6 +46,9 @@ class AuthorAffiliation(BaseModel):
                       entry should be a complete affiliation string as it appears
                       on the paper (e.g. 'MIT CSAIL, Cambridge, MA, USA').
                       Use an empty list if no affiliation can be determined.
+        email:        Email address of the author if explicitly stated on the
+                      paper. None if not present or not determinable. Do not
+                      infer or construct email addresses from names or affiliations.
     """
 
     author: str = Field(description="Full name of the author exactly as it appears on the paper.")
@@ -53,6 +56,13 @@ class AuthorAffiliation(BaseModel):
         description=(
             "List of institutional affiliations for this author. Each entry is a complete "
             "affiliation string as it appears on the paper. Empty list if none can be determined."
+        )
+    )
+    email: str | None = Field(
+        description=(
+            "Email address of the author if explicitly stated on the paper "
+            "(e.g. 'jane.smith@mit.edu'). Set to None if not present. "
+            "Do not infer or construct email addresses from names or affiliations."
         )
     )
 
@@ -85,12 +95,12 @@ AFFILIATION_SYSTEM_PROMPT = """
 You are an expert at parsing academic paper metadata.
 
 TASK:
-Extract every author and their full institutional affiliations from the first page of an academic paper.
+Extract every author and their full institutional affiliations and email address from the first page of an academic paper.
 
 AUTHOR EXTRACTION RULES:
 - Extract every author exactly as their name appears on the paper. Do not normalise, expand initials, or infer missing name parts.
 - Preserve the exact order in which authors appear on the paper.
-- Do not omit any author, including those with no detectable affiliation.
+- Do not omit any author, including those with no detectable affiliation or email.
 
 AFFILIATION EXTRACTION RULES:
 - An author may have multiple affiliations, typically indicated by superscript numbers, letters, or symbols (e.g. ¹, ², *, †) placed after the author name and before the corresponding affiliation entry.
@@ -99,15 +109,22 @@ AFFILIATION EXTRACTION RULES:
 - If no affiliation can be determined for an author, return an empty list for that author.
 - Do not infer or guess affiliations that are not explicitly stated in the text.
 
+EMAIL EXTRACTION RULES:
+- Extract the email address only if it is explicitly stated on the paper for that author.
+- Emails may appear inline next to the author name, in a footnote, or in a correspondence block (e.g. 'Correspondence to: jane.smith@mit.edu').
+- If an email is listed for a group of authors without individual attribution (e.g. '{alice,bob}@mit.edu'), expand it to each individual address (e.g. 'alice@mit.edu', 'bob@mit.edu').
+- Set email to None if no email is present or if it cannot be unambiguously attributed to a specific author.
+- Do not infer, construct, or guess email addresses from author names or affiliations.
+
 COMMON PATTERNS TO HANDLE:
 - Superscript markers: "Alice Smith¹, Bob Jones¹²" where ¹ and ² map to listed institutions.
 - Footnote-style: affiliations listed at the bottom of the author block with matching markers.
 - Inline style: affiliation written directly after the author name in parentheses or on the next line.
 - Equal contribution markers (e.g. *, †): these denote contribution, not affiliation — ignore them unless they also map to an institution.
-- Corresponding author markers (e.g. ✉): ignore unless they also map to an institution.
+- Corresponding author markers (e.g. ✉): use to attribute an email to a specific author if accompanied by an email address.
 
 OUTPUT:
-Return a structured result containing every author and their affiliations in the order they appear on the paper.
+Return a structured result containing every author, their affiliations, and their email address (if available) in the order they appear on the paper.
 """
 
 
