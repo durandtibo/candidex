@@ -9,7 +9,7 @@ from enum import StrEnum
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from iden.io import load_json, save_json, load_text
+from iden.io import load_text, save_json
 from langchain_community.tools import DuckDuckGoSearchRun
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, Field
