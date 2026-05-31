@@ -310,6 +310,8 @@ def load_affiliations(papers: pl.DataFrame, affiliation_dir: Path) -> dict[str, 
         >>> affiliations = load_affiliations(df, Path("data/cvpr2024/affiliations"))
         >>> affiliations["attention_is_all_you_need"].authors
     """
+    logger.info("Loading author affiliations from %s...", affiliation_dir)
+
     affiliations = {}
     for row in papers.iter_rows(named=True):
         stem = row[PAPER_STEM]
@@ -321,5 +323,5 @@ def load_affiliations(papers: pl.DataFrame, affiliation_dir: Path) -> dict[str, 
 
         affiliations[stem] = PaperAffiliations.model_validate(load_json(affiliation_path))
 
-    logger.info("Loaded affiliations for %d/%d papers.", len(affiliations), len(papers))
+    logger.info("Loaded author affiliations for %d/%d papers.", len(affiliations), len(papers))
     return affiliations
