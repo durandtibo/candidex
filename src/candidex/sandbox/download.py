@@ -5,6 +5,7 @@ from __future__ import annotations
 __all__ = ["download_papers"]
 
 import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import TYPE_CHECKING
 
 import polars as pl
@@ -72,23 +73,27 @@ def download_papers(
     urls: list[str],
     output_path: Path,
     timeout: int = 30,
+    max_workers: int = 4,
 ) -> pl.DataFrame:
-    """Download a list of files from URLs into a directory, with a
-    progress bar.
+    """Download a list of files from URLs into a directory in parallel,
+    with a progress bar.
 
-    Iterates over each URL, derives a filename from the URL's last path
-    segment, and streams the file to disk. Skips files that already exist,
-    making repeated calls safe for resuming interrupted downloads. Failures
-    on individual URLs are logged as warnings and recorded in the returned
+    Downloads files concurrently using a thread pool, deriving each filename
+    from the URL's last path segment. Skips files that already exist, making
+    repeated calls safe for resuming interrupted downloads. Failures on
+    individual URLs are logged as warnings and recorded in the returned
     summary rather than raising, so a single bad URL does not abort the
     entire batch.
 
     Args:
-        urls:       List of direct file URLs to download. Empty strings and
-                    duplicates are silently skipped.
+        urls:        List of direct file URLs to download. Empty strings and
+                     duplicates are silently skipped.
         output_path: Directory to save downloaded files into. Created
-                    automatically if it does not exist.
-        timeout:    Per-request timeout in seconds. Defaults to 30.
+                     automatically if it does not exist.
+        timeout:     Per-request timeout in seconds. Defaults to 30.
+        max_workers: Maximum number of concurrent download threads. Defaults
+                     to 5. Increase for faster downloads on a fast connection;
+                     reduce if the server rate-limits parallel requests.
 
     Returns:
         A Polars DataFrame summarising the result of each download attempt,
@@ -106,28 +111,40 @@ def download_papers(
     """
     output_path.mkdir(parents=True, exist_ok=True)
 
-    valid_urls = list({url for url in urls if url})
+    valid_urls = list(dict.fromkeys(url for url in urls if url))
     skipped = len(urls) - len(valid_urls)
     if skipped:
         logger.warning("Skipping %d empty or duplicate URLs.", skipped)
 
-    logger.info("Downloading %d files to %s...", len(valid_urls), output_path)
+    logger.info(
+        "Downloading %d files to %s with %d workers...",
+        len(valid_urls),
+        output_path,
+        max_workers,
+    )
 
-    records = []
+    def _download(url: str) -> dict:
+        filename = url.rsplit("/", maxsplit=1)[-1]
+        dest = output_path / filename
+        success = dest.is_file() or download_paper(url, dest, timeout=timeout)
+        return {
+            "url": url,
+            "dest": str(dest.resolve()) if success else "",
+            "success": success,
+        }
+
+    records = [None] * len(valid_urls)
+
     with make_progressbar() as progress:
         task = progress.add_task("Downloading papers", total=len(valid_urls))
-        for url in valid_urls:
-            filename = url.split("/")[-1]
-            dest = output_path.joinpath(filename)
-            success = True if dest.is_file() else download_paper(url, dest, timeout=timeout)
-            records.append(
-                {
-                    "url": url,
-                    "dest": str(dest.resolve()) if success else "",
-                    "success": success,
-                }
-            )
-            progress.advance(task)
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_to_index = {
+                executor.submit(_download, url): i for i, url in enumerate(valid_urls)
+            }
+            for future in as_completed(future_to_index):
+                i = future_to_index[future]
+                records[i] = future.result()
+                progress.advance(task)
 
     df = pl.DataFrame(records, schema={"url": pl.String, "dest": pl.String, "success": pl.Boolean})
 
