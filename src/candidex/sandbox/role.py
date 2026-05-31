@@ -12,16 +12,10 @@ from iden.io import load_json, load_text, save_json
 from langchain_community.tools import DuckDuckGoSearchRun
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, Field
-from rich.progress import (
-    BarColumn,
-    Progress,
-    TaskProgressColumn,
-    TextColumn,
-    TimeRemainingColumn,
-)
 
 from candidex.columns import PAPER_STEM
 from candidex.sandbox.affiliation import PaperAffiliations
+from candidex.sandbox.progressbar import make_progressbar
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -351,12 +345,7 @@ def find_authors_role(
     results = []
     total = len(affiliations.authors)
 
-    with Progress(
-        TextColumn("[progress.description]{task.description}"),
-        BarColumn(),
-        TaskProgressColumn(),
-        TimeRemainingColumn(),
-    ) as progress:
+    with make_progressbar() as progress:
         task = progress.add_task("Finding author roles", total=total)
         for author in affiliations.authors:
             try:
@@ -443,12 +432,7 @@ def find_and_save_authors_role(
     search = search or DuckDuckGoSearchRun()
     rows = list(papers.iter_rows(named=True))
 
-    with Progress(
-        TextColumn("[progress.description]{task.description}"),
-        BarColumn(),
-        TaskProgressColumn(),
-        TimeRemainingColumn(),
-    ) as progress:
+    with make_progressbar() as progress:
         task = progress.add_task("Processing papers", total=len(rows))
         for row in rows:
             stem = row[PAPER_STEM]
@@ -507,12 +491,7 @@ def load_author_roles(papers: pl.DataFrame, role_dir: Path) -> dict[str, list[Au
     rows = list(papers.iter_rows(named=True))
     roles: dict[str, list[AuthorRole]] = {}
 
-    with Progress(
-        TextColumn("[progress.description]{task.description}"),
-        BarColumn(),
-        TaskProgressColumn(),
-        TimeRemainingColumn(),
-    ) as progress:
+    with make_progressbar() as progress:
         task = progress.add_task("Loading author roles", total=len(rows))
         for row in rows:
             stem = row[PAPER_STEM]
