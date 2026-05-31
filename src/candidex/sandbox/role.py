@@ -1,8 +1,8 @@
-r"""Contain functionalities to find the role of the authors."""
+r"""Contain functionalities to find the current role of the authors."""
 
 from __future__ import annotations
 
-__all__ = ["find_authors_status"]
+__all__ = ["find_and_save_authors_role"]
 
 import logging
 from enum import StrEnum
@@ -47,7 +47,28 @@ class AcademicRole(StrEnum):
     UNKNOWN = "Unknown"
 
 
-class AuthorStatus(BaseModel):
+class AuthorRole(BaseModel):
+    """Represents the current academic role and PhD history of a single
+    author.
+
+    PhD fields use the following sentinel strings instead of None:
+    - 'UNKNOWN':     The author has a PhD but the information is unavailable.
+    - 'NO PhD':      The author has never pursued a PhD.
+    - 'In Progress': The author is currently a PhD student (phd_end_year only).
+    - None:          Reserved for when role is AcademicRole.UNKNOWN only.
+
+    Attributes:
+        name:           Full name of the author as it appears on the paper.
+        affiliation:    Known institutional affiliation taken from the paper.
+        role:           Current academic role from the `AcademicRole` enum.
+        phd_start_year: 4-digit year the PhD started (e.g. '2019').
+        phd_end_year:   4-digit year the PhD was completed (e.g. '2023').
+        phd_domain:     Research field of the PhD (e.g. 'Computer Vision').
+        phd_university: Institution where the PhD was or is being completed.
+        details:        Additional context such as lab, supervisor, or department.
+        source:         Single raw URL of the most authoritative source used.
+    """
+
     name: str = Field(description="Full name of the author.")
     affiliation: str = Field(description="Known affiliation of the author.")
     role: AcademicRole = Field(
@@ -212,11 +233,11 @@ def _run_searches(author: AuthorAffiliation, search: DuckDuckGoSearchRun) -> str
     return "\n\n---\n\n".join(sections)
 
 
-def find_author_status(
+def find_author_role(
     author: AuthorAffiliation,
     llm: BaseChatModel,
     search: DuckDuckGoSearchRun,
-) -> AuthorStatus:
+) -> AuthorRole:
     """Find the current academic role of an author using DuckDuckGo
     search and an LLM.
 
@@ -236,7 +257,7 @@ def find_author_status(
         search: A configured `DuckDuckGoSearchRun` instance.
 
     Returns:
-        An `AuthorStatus` object with the author's current role, PhD details,
+        An `AuthorRole` object with the author's current role, PhD details,
         and source URL. If no information can be found, `role` is set to
         `AcademicRole.UNKNOWN` and all PhD fields are None.
 
@@ -249,16 +270,16 @@ def find_author_status(
         >>> llm = ChatAnthropic(model="claude-3-5-sonnet-20241022")
         >>> search = DuckDuckGoSearchRun()
         >>> author = AuthorAffiliation(author="Jane Smith", affiliations=["MIT CSAIL"])
-        >>> status = find_author_status(author, llm, search)
-        >>> print(status.role, status.phd_start_year)
+        >>> role = find_author_role(author, llm, search)
+        >>> print(role.role, role.phd_start_year)
     """
     affiliation_str = ", ".join(author.affiliations) if author.affiliations else "Unknown"
-    logger.debug("Searching for author status: %s (%s).", author.author, affiliation_str)
+    logger.debug("Searching for author role: %s (%s).", author.author, affiliation_str)
 
     search_text = _run_searches(author, search)
     logger.debug("Search results retrieved for %s.", author.author)
 
-    structured_llm = llm.with_structured_output(AuthorStatus)
+    structured_llm = llm.with_structured_output(AuthorRole)
     messages = [
         SystemMessage(content=ROLE_SYSTEM_PROMPT),
         HumanMessage(
@@ -276,11 +297,11 @@ def find_author_status(
     return result
 
 
-def find_authors_status(
+def find_authors_role(
     affiliations: PaperAffiliations,
     llm: BaseChatModel,
     search: DuckDuckGoSearchRun | None = None,
-) -> list[AuthorStatus]:
+) -> list[AuthorRole]:
     """Find the current academic role for all authors in a paper.
 
     Iterates over each author in the provided `PaperAffiliations`, performs
@@ -305,7 +326,7 @@ def find_authors_status(
                       for testing.
 
     Returns:
-        A list of `AuthorStatus` objects, one per author for whom a lookup was
+        A list of `AuthorRole` objects, one per author for whom a lookup was
         attempted. Authors that raised an exception are omitted from the list
         rather than surfaced as partial results.
 
@@ -313,9 +334,9 @@ def find_authors_status(
         >>> from langchain_anthropic import ChatAnthropic
         >>> llm = ChatAnthropic(model="claude-3-5-sonnet-20241022")
         >>> affiliations = extract_affiliations(Path("papers/attention.pdf"), llm)
-        >>> statuses = find_authors_status(affiliations, llm)
-        >>> for s in statuses:
-        ...     print(s.name, s.role, s.phd_start_year, s.phd_end_year)
+        >>> roles = find_authors_role(affiliations, llm)
+        >>> for r in roles:
+        ...     print(r.name, r.role, r.phd_start_year, r.phd_end_year)
     """
     search = search or DuckDuckGoSearchRun()
     results = []
@@ -330,17 +351,17 @@ def find_authors_status(
         task = progress.add_task("Finding author roles", total=total)
         for author in affiliations.authors:
             try:
-                status = find_author_status(author, llm=llm, search=search)
-                results.append(status)
+                role = find_author_role(author, llm=llm, search=search)
+                results.append(role)
             except Exception as e:
-                logger.warning("Failed to find status for %s: %s", author.author, e)
+                logger.warning("Failed to find role for %s: %s", author.author, e)
             finally:
                 progress.advance(task)
 
     found = sum(1 for r in results if r.role != AcademicRole.UNKNOWN)
     failed = total - len(results)
     logger.info(
-        "Author status lookup complete. %d/%d resolved, %d unknown, %d failed.",
+        "Author role lookup complete. %d/%d resolved, %d unknown, %d failed.",
         found,
         total,
         len(results) - found,
@@ -349,35 +370,33 @@ def find_authors_status(
     return results
 
 
-def find_and_save_authors_status(
+def find_and_save_authors_role(
     papers: pl.DataFrame,
     affiliations_dir: Path,
     role_dir: Path,
     llm: BaseChatModel,
     search: DuckDuckGoSearchRun | None = None,
 ) -> None:
-    """Find and save the academic status of all authors for each paper
-    to a JSON file.
+    """Find and save the academic role of all authors for each paper to
+    a JSON file.
 
     For each paper in the DataFrame, loads the corresponding affiliations JSON
     file, looks up the current academic role of each author, and writes the
-    results to a JSON file named after the paper. Papers whose status JSON file
+    results to a JSON file named after the paper. Papers whose role JSON file
     already exists are skipped, making the function safe to call repeatedly and
     resilient to interruptions.
 
-    The JSON file for a paper named `paper.pdf` will be saved as `paper.json`
-    in `role_dir`. Each file contains a list of serialised `AuthorStatus`
-    objects.
+    The JSON file for a paper with stem `paper` will be saved as `paper.json`
+    in `role_dir`. Each file contains a list of serialised `AuthorRole` objects.
 
     Args:
         papers:           Polars DataFrame produced by `scrape_cvpr_papers` or
-                          equivalent, must contain a column named `filename`
-                          with the PDF filename (not the full path) for each paper.
+                          equivalent. Must contain a column named by `PAPER_STEM`
+                          with the PDF filename stem for each paper.
         affiliations_dir: Directory containing the affiliation JSON files produced
                           by `extract_and_save_affiliations`. Each file must be
-                          named after its corresponding PDF (e.g. `paper.json`
-                          for `paper.pdf`).
-        role_dir:         Directory where author status JSON files will be saved.
+                          named `{stem}.json` where `stem` matches `PAPER_STEM`.
+        role_dir:         Directory where author role JSON files will be saved.
                           Created automatically if it does not exist.
         llm:              Any LangChain-compatible chat model with structured output
                           support. The caller is responsible for initialising and
@@ -389,10 +408,10 @@ def find_and_save_authors_status(
     Example:
         >>> from langchain_anthropic import ChatAnthropic
         >>> llm = ChatAnthropic(model="claude-3-5-sonnet-20241022")
-        >>> find_and_save_authors_status(
+        >>> find_and_save_authors_role(
         ...     papers=df,
         ...     affiliations_dir=Path("papers/cvpr2024/affiliations"),
-        ...     role_dir=Path("papers/cvpr2024/status"),
+        ...     role_dir=Path("papers/cvpr2024/roles"),
         ...     llm=llm,
         ... )
     """
@@ -410,10 +429,10 @@ def find_and_save_authors_status(
         for row in rows:
             stem = row[PAPER_STEM]
             affiliation_path = affiliations_dir.joinpath(f"{stem}.json")
-            status_path = role_dir.joinpath(f"{stem}.json")
+            role_path = role_dir.joinpath(f"{stem}.json")
 
-            if status_path.exists():
-                logger.debug("Skipping %s, status file already exists.", stem)
+            if role_path.exists():
+                logger.debug("Skipping %s, role file already exists.", stem)
                 progress.advance(task)
                 continue
 
@@ -423,9 +442,9 @@ def find_and_save_authors_status(
                 continue
 
             affiliations = PaperAffiliations.model_validate_json(load_text(affiliation_path))
-            statuses = find_authors_status(affiliations, llm=llm, search=search)
-            save_json([s.model_dump() for s in statuses], status_path)
-            logger.info(statuses)
-            logger.debug("Saved author statuses to %s.", status_path.name)
+            roles = find_authors_role(affiliations, llm=llm, search=search)
+            save_json([r.model_dump() for r in roles], role_path)
+            logger.info(roles)
+            logger.debug("Saved author roles to %s.", role_path.name)
 
             progress.advance(task)
