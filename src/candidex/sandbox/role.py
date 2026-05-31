@@ -1,4 +1,4 @@
-r"""Contain functionalities to find the role of the authors."""
+r"""Contain functionalities to find the current role of the authors."""
 
 from __future__ import annotations
 
@@ -48,6 +48,27 @@ class AcademicRole(StrEnum):
 
 
 class AuthorStatus(BaseModel):
+    """Represents the current academic status and PhD history of a
+    single author.
+
+    PhD fields use the following sentinel strings instead of None:
+    - 'UNKNOWN':     The author has a PhD but the information is unavailable.
+    - 'NO PhD':      The author has never pursued a PhD.
+    - 'In Progress': The author is currently a PhD student (phd_end_year only).
+    - None:          Reserved for when role is AcademicRole.UNKNOWN only.
+
+    Attributes:
+        name:           Full name of the author as it appears on the paper.
+        affiliation:    Known institutional affiliation taken from the paper.
+        role:           Current academic role from the `AcademicRole` enum.
+        phd_start_year: 4-digit year the PhD started (e.g. '2019').
+        phd_end_year:   4-digit year the PhD was completed (e.g. '2023').
+        phd_domain:     Research field of the PhD (e.g. 'Computer Vision').
+        phd_university: Institution where the PhD was or is being completed.
+        details:        Additional context such as lab, supervisor, or department.
+        source:         Single raw URL of the most authoritative source used.
+    """
+
     name: str = Field(description="Full name of the author.")
     affiliation: str = Field(description="Known affiliation of the author.")
     role: AcademicRole = Field(
@@ -349,7 +370,7 @@ def find_authors_status(
     return results
 
 
-def find_and_save_authors_status(
+def find_and_save_authors_role(
     papers: pl.DataFrame,
     affiliations_dir: Path,
     role_dir: Path,
@@ -389,7 +410,7 @@ def find_and_save_authors_status(
     Example:
         >>> from langchain_anthropic import ChatAnthropic
         >>> llm = ChatAnthropic(model="claude-3-5-sonnet-20241022")
-        >>> find_and_save_authors_status(
+        >>> find_and_save_authors_role(
         ...     papers=df,
         ...     affiliations_dir=Path("papers/cvpr2024/affiliations"),
         ...     role_dir=Path("papers/cvpr2024/status"),
