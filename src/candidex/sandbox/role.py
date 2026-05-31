@@ -9,7 +9,7 @@ from enum import StrEnum
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from iden.io import load_json, save_json
+from iden.io import load_json, save_json, load_text
 from langchain_community.tools import DuckDuckGoSearchRun
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, Field
@@ -155,14 +155,19 @@ PHD INFORMATION RULES:
 - Only use None for PhD fields if the role itself is 'Unknown' and no information
   is available at all.
 
-SOURCE PRIORITY:
-Prefer information from the following sources, in order:
-1. Personal CV or resume (PDF)
-2. GitHub profile bio and linked personal website
-3. University or lab profile page
-4. Google Scholar profile
-5. LinkedIn profile
-6. Any other credible web source
+SOURCE RULES:
+- The source field must contain exactly one URL — the single most authoritative
+  source used to determine the role and PhD information.
+- Choose the URL according to this priority:
+  1. Personal CV or resume (PDF)
+  2. GitHub profile bio and linked personal website
+  3. University or lab profile page
+  4. Google Scholar profile
+  5. LinkedIn profile
+  6. Any other credible web source
+- Never include multiple URLs, comma-separated links, or prose descriptions in
+  the source field. Only a single raw URL (e.g. 'https://example.com/cv.pdf').
+- If no credible source was found, set source to None.
 
 Only report years if explicitly stated in the source. Do not infer or estimate years. Do not be lazy.
 Always record the URL of the source used in the source field.
@@ -321,7 +326,7 @@ def find_authors_status(
         TaskProgressColumn(),
         TimeRemainingColumn(),
     ) as progress:
-        task = progress.add_task("Finding author statuses", total=total)
+        task = progress.add_task("Finding author roles", total=total)
         for author in affiliations.authors:
             try:
                 status = find_author_status(author, llm=llm, search=search)
@@ -371,7 +376,7 @@ def find_and_save_authors_status(
                           by `extract_and_save_affiliations`. Each file must be
                           named after its corresponding PDF (e.g. `paper.json`
                           for `paper.pdf`).
-        role_dir:       Directory where author status JSON files will be saved.
+        role_dir:         Directory where author status JSON files will be saved.
                           Created automatically if it does not exist.
         llm:              Any LangChain-compatible chat model with structured output
                           support. The caller is responsible for initialising and
@@ -400,7 +405,7 @@ def find_and_save_authors_status(
         TaskProgressColumn(),
         TimeRemainingColumn(),
     ) as progress:
-        task = progress.add_task("Finding author statuses", total=len(rows))
+        task = progress.add_task("Processing papers", total=len(rows))
         for row in rows:
             stem = Path(row[PAPER_FILENAME]).stem
             affiliation_path = affiliations_dir.joinpath(f"{stem}.json")
@@ -416,7 +421,7 @@ def find_and_save_authors_status(
                 progress.advance(task)
                 continue
 
-            affiliations = PaperAffiliations.model_validate_json(load_json(affiliation_path))
+            affiliations = PaperAffiliations.model_validate_json(load_text(affiliation_path))
             statuses = find_authors_status(affiliations, llm=llm, search=search)
             save_json([s.model_dump() for s in statuses], status_path)
             logger.debug("Saved author statuses to %s.", status_path.name)
