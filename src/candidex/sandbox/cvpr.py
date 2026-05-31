@@ -7,6 +7,7 @@ __all__ = ["scrape_cvpr_papers"]
 
 import logging
 import re
+from typing import Any
 
 import polars as pl
 import requests
@@ -33,7 +34,7 @@ HEADERS = {
     )
 }
 
-PAPER_SCHEMA = {
+PAPER_SCHEMA: dict[str, Any] = {
     PAPER_TITLE: pl.String,
     PAPER_URL: pl.String,
     PAPER_PDF_URL: pl.String,
@@ -92,7 +93,7 @@ def parse_paper_entries(html: str, limit: int | None = None) -> list[Tag]:
     return entries
 
 
-def parse_paper(dt: Tag, base_url: str = BASE_URL) -> dict:
+def parse_paper(dt: Tag, base_url: str = BASE_URL) -> dict[str, Any]:
     """Extract all metadata for a single paper from its <dt> tag.
 
     The CVPR listing page uses a definition list structure where each paper
