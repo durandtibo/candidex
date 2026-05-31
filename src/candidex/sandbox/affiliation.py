@@ -2,13 +2,13 @@ r"""Contain functionalities to extract author affiliations from PDF."""
 
 from __future__ import annotations
 
-__all__ = ["AFFILIATION_SYSTEM_PROMPT", "extract_and_save_affiliations"]
+__all__ = ["AFFILIATION_SYSTEM_PROMPT", "extract_and_save_affiliations", "load_affiliations"]
 
 import logging
 from typing import TYPE_CHECKING
 
 import pdfplumber
-from iden.io import save_json
+from iden.io import load_json, save_json
 from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, Field
 from rich.progress import (
@@ -264,3 +264,45 @@ def extract_and_save_affiliations(
             save_json(affiliations.model_dump(), affiliation_path)
 
             progress.advance(task)
+
+
+def load_affiliations(papers: pl.DataFrame, affiliation_dir: Path) -> dict[str, PaperAffiliations]:
+    """Load author affiliations from JSON files into a dictionary.
+
+    Iterates over a DataFrame of papers and loads the corresponding affiliation
+    JSON file for each paper. Papers whose JSON file does not exist are logged
+    and skipped. Useful for downstream processing without re-running the
+    extraction step.
+
+    Args:
+        papers:          Polars DataFrame produced by `scrape_cvpr_papers` or
+                         equivalent. Must contain a column named by `PAPER_STEM`
+                         with the PDF filename stem (i.e. without the `.pdf`
+                         extension) for each paper.
+        affiliation_dir: Directory containing the affiliation JSON files produced
+                         by `extract_and_save_affiliations`. Each file must be
+                         named `{stem}.json` where `stem` matches the value in
+                         the `PAPER_STEM` column.
+
+    Returns:
+        A dictionary mapping each paper stem to its `PaperAffiliations` object.
+        Papers with missing or unreadable JSON files are omitted from the result.
+
+    Example:
+        >>> df = scrape_cvpr_papers("https://openaccess.thecvf.com/CVPR2024?day=all")
+        >>> affiliations = load_affiliations(df, Path("data/cvpr2024/affiliations"))
+        >>> affiliations["attention_is_all_you_need"].authors
+    """
+    affiliations = {}
+    for row in papers.iter_rows(named=True):
+        stem = row[PAPER_STEM]
+        affiliation_path = affiliation_dir / f"{stem}.json"
+
+        if not affiliation_path.is_file():
+            logger.warning("Affiliation file not found, skipping: %s.", affiliation_path.name)
+            continue
+
+        affiliations[stem] = PaperAffiliations.model_validate(load_json(affiliation_path))
+
+    logger.info("Loaded affiliations for %d/%d papers.", len(affiliations), len(papers))
+    return affiliations
