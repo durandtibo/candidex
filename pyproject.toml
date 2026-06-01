@@ -94,13 +94,6 @@ homepage = "https://github.com/durandtibo/candidex"
 repository = "https://github.com/durandtibo/candidex"
 documentation = "https://durandtibo.github.io/candidex/"
 
-[tool.uv]
-# Force uv to swap out the problematic package for the pure-wheel fork
-override-dependencies = [
-    "editdistance == 0.8.1; sys_platform == 'never_match'", # Disables original
-    "editdistance-s"
-]
-
 [tool.uv.pip]
 torch-backend = "auto"
 
