@@ -42,9 +42,10 @@ classifiers = [
 
 requires-python = ">=3.10"
 dependencies = [
-    "iden >= 0.4,<1.0",
     "beautifulsoup4 >=4.14,<5.0",
     "coola >=1.1.7,<2.0",
+    "iden >= 0.4,<1.0",
+    "openreview-py>=2.2,<3.0",
     "pdfplumber >=0.11.9,<5.0",
     "polars >=1.0,<2.0",
     "python-dotenv >= 1.2,<2.0",
@@ -92,6 +93,13 @@ docs = [
 homepage = "https://github.com/durandtibo/candidex"
 repository = "https://github.com/durandtibo/candidex"
 documentation = "https://durandtibo.github.io/candidex/"
+
+[tool.uv]
+# Force uv to swap out the problematic package for the pure-wheel fork
+override-dependencies = [
+    "editdistance == 0.8.1; sys_platform == 'never_match'", # Disables original
+    "editdistance-s"
+]
 
 [tool.uv.pip]
 torch-backend = "auto"
