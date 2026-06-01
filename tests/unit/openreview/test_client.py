@@ -5,7 +5,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from candidex.openreview.client import create_openreview_client
+from candidex.openreview import create_openreview_client
 
 MODULE = "candidex.openreview.client"
 
