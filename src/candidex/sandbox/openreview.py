@@ -6,6 +6,7 @@ __all__ = ["fetch_openreview_profile"]
 
 import logging
 import urllib
+from typing import Any
 
 import httpx
 
@@ -17,7 +18,7 @@ OPENREVIEW_API_URL = "https://api2.openreview.net/profiles"
 OPENREVIEW_PROFILE_PREFIX = "https://openreview.net/profile?id="
 
 
-def fetch_openreview_profile(url: str, timeout: int = 30) -> dict | None:
+def fetch_openreview_profile(url: str, timeout: int = 30) -> dict[str, Any] | None:
     """Fetch and parse an OpenReview profile from a profile page URL.
 
     Extracts the OpenReview user ID from the profile URL, queries the
@@ -91,7 +92,7 @@ def fetch_openreview_profile(url: str, timeout: int = 30) -> dict | None:
     return profiles[0]
 
 
-def fetch_openreview_profile_content(url: str, timeout: int = 30) -> dict | None:
+def fetch_openreview_profile_content(url: str, timeout: int = 30) -> dict[str, Any] | None:
     """Fetch and parse an OpenReview profile from a profile page URL.
 
     Extracts the OpenReview user ID from the profile URL, queries the
@@ -125,6 +126,8 @@ def fetch_openreview_profile_content(url: str, timeout: int = 30) -> dict | None
         ...     print(profile["content"]["names"])
     """
     profile = fetch_openreview_profile(url=url, timeout=timeout)
+    if not profile:
+        return None
     return remove_keys(
         {"id": profile["id"]}
         | {"names": profile["content"]["names"]}
