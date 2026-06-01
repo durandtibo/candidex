@@ -6,7 +6,7 @@ __all__ = ["AFFILIATION_SYSTEM_PROMPT", "extract_and_save_affiliations", "load_a
 
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from iden.io import load_json, save_json
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -209,7 +209,7 @@ def extract_affiliations(
 
 
 def extract_and_save_paper_affiliations(
-    row: dict,
+    row: dict[str, Any],
     pdf_dir: Path,
     affiliation_dir: Path,
     llm: BaseChatModel,

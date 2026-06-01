@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
 
-def remove_keys(data: dict[Any, Any], keys: Sequence[Any]) -> dict:
+def remove_keys(data: dict[Any, Any], keys: Sequence[Any]) -> dict[Any, Any]:
     """Return a copy of a dict with the specified keys removed.
 
     Does not modify the original dict. Keys that are not present in the
