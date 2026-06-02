@@ -2,7 +2,7 @@ r"""Contain utilities for finding OpenReview profiles."""
 
 from __future__ import annotations
 
-__all__ = ["find_author_profile_ids"]
+__all__ = ["find_author_profile_ids", "get_unique_profiles"]
 
 import logging
 from typing import TYPE_CHECKING
@@ -15,9 +15,45 @@ from candidex.openreview.filtering import (
 from candidex.openreview.search import search_profiles_by_name
 
 if TYPE_CHECKING:
+    from openreview import Profile
     from openreview.api import OpenReviewClient
 
 logger: logging.Logger = logging.getLogger(__name__)
+
+
+def get_unique_profiles(profiles_list: list[list[Profile]]) -> list[Profile]:
+    """Return a deduplicated list of profiles from a list of profile
+    lists.
+
+    Flattens the input into a single list and deduplicates by profile ID,
+    preserving the first occurrence of each profile when duplicates are found.
+
+    Args:
+        profiles_list: A list of profile lists, as returned by multiple
+                       calls to `search_openreview_profiles`. May contain
+                       duplicates across lists.
+
+    Returns:
+        A flat list of unique `openreview.Profile` objects, deduplicated
+            by `Profile.id`. Order reflects first occurrence across the input
+            lists. Returns an empty list if the input is empty or all lists
+            are empty.
+
+    Example:
+        >>> results = [
+        ...     search_openreview_profiles("Jane Smith"),
+        ...     search_openreview_profiles("Jane Smith"),
+        ... ] # doctest: +SKIP
+        >>> unique = get_unique_profiles(results) # doctest: +SKIP
+    """
+    seen: set[str] = set()
+    unique: list[Profile] = []
+    for profiles in profiles_list:
+        for profile in profiles:
+            if profile.id not in seen:
+                seen.add(profile.id)
+                unique.append(profile)
+    return unique
 
 
 def find_author_profile_ids(
@@ -73,9 +109,6 @@ def find_author_profile_ids(
     if profiles is None:
         logger.warning("Profile search failed for %s.", name)
         return None
-    if not profiles:
-        logger.debug("No profiles found for %s.", name)
-        return []
 
     logger.debug("Found %d profile(s) for %s.", len(profiles), name)
 
