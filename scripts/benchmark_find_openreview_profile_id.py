@@ -10,9 +10,9 @@ from dotenv import load_dotenv
 from rich.console import Console
 from rich.table import Table
 
+from candidex.author import Author
 from candidex.openreview import create_client, find_author_profile_ids
 from candidex.sandbox.progressbar import make_progressbar
-from candidex.schemas import AuthorAffiliation
 
 if TYPE_CHECKING:
     from openreview.api import OpenReviewClient
@@ -20,9 +20,11 @@ if TYPE_CHECKING:
 console = Console()
 
 
-@dataclass
+@dataclass()
 class Sample:
-    author: AuthorAffiliation
+    r"""Define the sample class used to evaluate the performance."""
+
+    author: Author
     profile_ids: list[str]
 
     def __post_init__(self) -> None:
@@ -103,7 +105,7 @@ def _evaluate_sample(
     expected_str = "; ".join(sample.profile_ids) if sample.has_profile else "[dim]none[/dim]"
 
     result = find_author_profile_ids(
-        name=sample.author.author,
+        name=sample.author.name,
         affiliation=affiliation_str,
         email=sample.author.email,
         client=client,
@@ -115,7 +117,7 @@ def _evaluate_sample(
         if not result:
             return (
                 index,
-                sample.author.author,
+                sample.author.name,
                 affiliation_str,
                 "[bold green]PASS[/bold green]",
                 "[dim]—[/dim]",
@@ -123,7 +125,7 @@ def _evaluate_sample(
             )
         return (
             index,
-            sample.author.author,
+            sample.author.name,
             affiliation_str,
             "[bold red]UNEXPECTED[/bold red]",
             f"[red]{got_str}[/red]",
@@ -133,7 +135,7 @@ def _evaluate_sample(
     if result is None:
         return (
             index,
-            sample.author.author,
+            sample.author.name,
             affiliation_str,
             "[bold red]MISSING[/bold red]",
             "[dim]—[/dim]",
@@ -143,7 +145,7 @@ def _evaluate_sample(
     if not result:
         return (
             index,
-            sample.author.author,
+            sample.author.name,
             affiliation_str,
             "[bold red]MISSING[/bold red]",
             "[dim]—[/dim]",
@@ -156,7 +158,7 @@ def _evaluate_sample(
     if got_set <= expected_set:
         return (
             index,
-            sample.author.author,
+            sample.author.name,
             affiliation_str,
             "[bold green]PASS[/bold green]",
             f"[green]{got_str}[/green]",
@@ -165,7 +167,7 @@ def _evaluate_sample(
 
     return (
         index,
-        sample.author.author,
+        sample.author.name,
         affiliation_str,
         "[bold red]MISMATCH[/bold red]",
         f"[red]{got_str}[/red]",
@@ -201,6 +203,9 @@ def _run_evaluation(
         return []
 
     results = [None] * len(samples)
+    console.print(
+        f"Evaluating the perfomances on {len(samples)} samples with {max_workers} concurrent threads..."
+    )
 
     with make_progressbar() as progress:
         task = progress.add_task("Evaluating samples", total=len(samples))
@@ -242,9 +247,11 @@ def evaluate(samples: list[Sample], max_workers: int = 4) -> None:
     table, correct, missing, mismatch, unexpected = _build_results_table(results)
 
     console.print(table)
+    total = len(samples)
+    pct = correct / total * 100 if total > 0 else float("nan")
     console.print(
         f"\n[bold]Results:[/bold] "
-        f"[green]{correct}/{len(samples)} correct[/green], "
+        f"[green]{correct}/{total} correct ({pct:.1f}%)[/green], "
         f"[red]{missing} missing[/red], "
         f"[red]{mismatch} mismatch[/red], "
         f"[red]{unexpected} unexpected[/red]"
@@ -266,340 +273,318 @@ def make_dataset() -> list[Sample]:
     """
     return [
         Sample(
-            AuthorAffiliation(author="Thibaut Durand", affiliations=["LIP6"], email=None),
+            Author.from_raw(name="Thibaut Durand", affiliations=["LIP6"], email=None),
             profile_ids=["~Thibaut_Durand1", "~Thibaut_Durand2"],
         ),
         Sample(
-            AuthorAffiliation(author="Thibaut Durand", affiliations=["SFU"], email=None),
+            Author.from_raw(name="Thibaut Durand", affiliations=["SFU"], email=None),
             profile_ids=["~Thibaut_Durand1", "~Thibaut_Durand2"],
         ),
         Sample(
-            AuthorAffiliation(
-                author="Thibaut Durand", affiliations=["Simon Fraser University"], email=None
+            Author.from_raw(
+                name="Thibaut Durand", affiliations=["Simon Fraser University"], email=None
             ),
             profile_ids=["~Thibaut_Durand1", "~Thibaut_Durand2"],
         ),
         Sample(
-            AuthorAffiliation(author="Thibaut Durand", affiliations=["Borealis AI"], email=None),
+            Author.from_raw(name="Thibaut Durand", affiliations=["Borealis AI"], email=None),
             profile_ids=["~Thibaut_Durand1", "~Thibaut_Durand2"],
         ),
         Sample(
-            AuthorAffiliation(author="Thibaut Durand", affiliations=["RBC Borealis"], email=None),
+            Author.from_raw(name="Thibaut Durand", affiliations=["RBC Borealis"], email=None),
             profile_ids=["~Thibaut_Durand1", "~Thibaut_Durand2"],
         ),
         Sample(
-            AuthorAffiliation(
-                author="Thibaut Durand", affiliations=["RBC Borealis AI"], email=None
-            ),
+            Author.from_raw(name="Thibaut Durand", affiliations=["RBC Borealis AI"], email=None),
             profile_ids=["~Thibaut_Durand1", "~Thibaut_Durand2"],
         ),
         Sample(
-            AuthorAffiliation(author="Sepidehsadat Hosseini", affiliations=["SFU"], email=None),
+            Author.from_raw(name="Sepidehsadat Hosseini", affiliations=["SFU"], email=None),
             profile_ids=["~Sepidehsadat_Hosseini2"],
         ),
         Sample(
-            AuthorAffiliation(
-                author="Sepidehsadat Hosseini", affiliations=["Simon Fraser University"], email=None
-            ),
-            profile_ids=["~Sepidehsadat_Hosseini2"],
-        ),
-        Sample(
-            AuthorAffiliation(
-                author="Sepidehsadat Hosseini", affiliations=["RBC Borealis"], email=None
+            Author.from_raw(
+                name="Sepidehsadat Hosseini", affiliations=["Simon Fraser University"], email=None
             ),
             profile_ids=["~Sepidehsadat_Hosseini2"],
         ),
         Sample(
-            AuthorAffiliation(author="Greg Mori", affiliations=["SFU"], email=None),
-            profile_ids=["~Greg_Mori1", "~Greg_Mori2"],
-        ),
-        Sample(
-            AuthorAffiliation(
-                author="Greg Mori", affiliations=["Simon Fraser University"], email=None
+            Author.from_raw(
+                name="Sepidehsadat Hosseini", affiliations=["RBC Borealis"], email=None
             ),
+            profile_ids=["~Sepidehsadat_Hosseini2"],
+        ),
+        Sample(
+            Author.from_raw(name="Greg Mori", affiliations=["SFU"], email=None),
             profile_ids=["~Greg_Mori1", "~Greg_Mori2"],
         ),
         Sample(
-            AuthorAffiliation(author="Greg Mori", affiliations=["RBC Borealis"], email=None),
+            Author.from_raw(name="Greg Mori", affiliations=["Simon Fraser University"], email=None),
             profile_ids=["~Greg_Mori1", "~Greg_Mori2"],
         ),
         Sample(
-            AuthorAffiliation(author="Greg Mori", affiliations=["RBC Borealis", "SFU"], email=None),
+            Author.from_raw(name="Greg Mori", affiliations=["RBC Borealis"], email=None),
             profile_ids=["~Greg_Mori1", "~Greg_Mori2"],
         ),
         Sample(
-            AuthorAffiliation(author="Taylor Mordan", affiliations=["MobiLysis"], email=None),
+            Author.from_raw(name="Greg Mori", affiliations=["RBC Borealis", "SFU"], email=None),
+            profile_ids=["~Greg_Mori1", "~Greg_Mori2"],
+        ),
+        Sample(
+            Author.from_raw(name="Taylor Mordan", affiliations=["MobiLysis"], email=None),
             profile_ids=["~Taylor_Mordan1"],
         ),
         Sample(
-            AuthorAffiliation(author="Taylor Mordan", affiliations=["VITA, EPFL"], email=None),
+            Author.from_raw(name="Taylor Mordan", affiliations=["VITA, EPFL"], email=None),
             profile_ids=["~Taylor_Mordan1"],
         ),
         Sample(
-            AuthorAffiliation(
-                author="Taylor Mordan", affiliations=["MLIA, Sorbonne Université"], email=None
+            Author.from_raw(
+                name="Taylor Mordan", affiliations=["MLIA, Sorbonne Université"], email=None
             ),
             profile_ids=["~Taylor_Mordan1"],
         ),
         Sample(
-            AuthorAffiliation(
-                author="Matthieu Cord", affiliations=["Sorbonne Université"], email=None
-            ),
+            Author.from_raw(name="Matthieu Cord", affiliations=["Sorbonne Université"], email=None),
             profile_ids=["~Matthieu_Cord1"],
         ),
         Sample(
-            AuthorAffiliation(author="Matthieu Cord", affiliations=["Valeo"], email=None),
+            Author.from_raw(name="Matthieu Cord", affiliations=["Valeo"], email=None),
             profile_ids=["~Matthieu_Cord1"],
         ),
         Sample(
-            AuthorAffiliation(author="Patrick Perez", affiliations=["Kyutai"], email=None),
+            Author.from_raw(name="Patrick Perez", affiliations=["Kyutai"], email=None),
             profile_ids=["~Patrick_Perez1", "~Patrick_Perez2"],
         ),
         Sample(
-            AuthorAffiliation(author="Patrick Perez", affiliations=["Valeo"], email=None),
+            Author.from_raw(name="Patrick Perez", affiliations=["Valeo"], email=None),
             profile_ids=["~Patrick_Perez1", "~Patrick_Perez2"],
         ),
         Sample(
-            AuthorAffiliation(author="David Picard", affiliations=["LIGM, ENPC"], email=None),
+            Author.from_raw(name="David Picard", affiliations=["LIGM, ENPC"], email=None),
             profile_ids=["~David_Picard1"],
         ),
         Sample(
-            AuthorAffiliation(author="Nazanin Mehrasa", affiliations=["SFU"], email=None),
+            Author.from_raw(name="Nazanin Mehrasa", affiliations=["SFU"], email=None),
             profile_ids=["~Nazanin_Mehrasa2"],
         ),
         Sample(
-            AuthorAffiliation(author="Nazanin Mehrasa", affiliations=["Borealis AI"], email=None),
+            Author.from_raw(name="Nazanin Mehrasa", affiliations=["Borealis AI"], email=None),
             profile_ids=["~Nazanin_Mehrasa2"],
         ),
         Sample(
-            AuthorAffiliation(author="Jiawei He", affiliations=["SFU"], email=None),
+            Author.from_raw(name="Jiawei He", affiliations=["SFU"], email=None),
             profile_ids=["~Jiawei_He1"],
         ),
         Sample(
-            AuthorAffiliation(
-                author="Jiawei He", affiliations=["Simon Fraser University"], email=None
-            ),
+            Author.from_raw(name="Jiawei He", affiliations=["Simon Fraser University"], email=None),
             profile_ids=["~Jiawei_He1"],
         ),
         Sample(
-            AuthorAffiliation(author="Jiawei He", affiliations=["Borealis AI"], email=None),
+            Author.from_raw(name="Jiawei He", affiliations=["Borealis AI"], email=None),
             profile_ids=["~Jiawei_He1"],
         ),
         Sample(
-            AuthorAffiliation(author="Jiawei He", affiliations=["RBC Borealis"], email=None),
+            Author.from_raw(name="Jiawei He", affiliations=["RBC Borealis"], email=None),
             profile_ids=["~Jiawei_He1"],
         ),
         Sample(
-            AuthorAffiliation(author="Jeff Dean", affiliations=["Google"], email=None),
+            Author.from_raw(name="Jeff Dean", affiliations=["Google"], email=None),
             profile_ids=["~Jeff_Dean1"],
         ),
         Sample(
-            AuthorAffiliation(
-                author="Yoshua Bengio", affiliations=["Université de Montréal"], email=None
+            Author.from_raw(
+                name="Yoshua Bengio", affiliations=["Université de Montréal"], email=None
             ),
             profile_ids=["~Yoshua_Bengio1"],
         ),
         Sample(
-            AuthorAffiliation(
-                author="Geoffrey Hinton", affiliations=["University of Toronto"], email=None
+            Author.from_raw(
+                name="Yoshua Bengio", affiliations=["University of Montreal"], email=None
+            ),
+            profile_ids=["~Yoshua_Bengio1"],
+        ),
+        Sample(
+            Author.from_raw(
+                name="Geoffrey Hinton", affiliations=["University of Toronto"], email=None
             ),
             profile_ids=["~Geoffrey_Hinton1"],
         ),
         Sample(
-            AuthorAffiliation(
-                author="Yann LeCun", affiliations=["New York University"], email=None
-            ),
+            Author.from_raw(name="Yann LeCun", affiliations=["New York University"], email=None),
             profile_ids=["~Yann_LeCun1"],
         ),
         Sample(
-            AuthorAffiliation(author="Ilya Sutskever", affiliations=["OpenAI"], email=None),
+            Author.from_raw(name="Ilya Sutskever", affiliations=["OpenAI"], email=None),
             profile_ids=["~Ilya_Sutskever2"],
         ),
         Sample(
-            AuthorAffiliation(author="Oriol Vinyals", affiliations=["Google DeepMind"], email=None),
+            Author.from_raw(name="Oriol Vinyals", affiliations=["Google DeepMind"], email=None),
             profile_ids=["~Oriol_Vinyals1"],
         ),
         Sample(
-            AuthorAffiliation(
-                author="Percy Liang", affiliations=["Stanford University"], email=None
-            ),
+            Author.from_raw(name="Percy Liang", affiliations=["Stanford University"], email=None),
             profile_ids=["~Percy_Liang1"],
         ),
         Sample(
-            AuthorAffiliation(
-                author="Chelsea Finn", affiliations=["Stanford University"], email=None
-            ),
+            Author.from_raw(name="Chelsea Finn", affiliations=["Stanford University"], email=None),
             profile_ids=["~Chelsea_Finn1"],
         ),
         Sample(
-            AuthorAffiliation(author="Hugo Larochelle", affiliations=["Google Brain"], email=None),
+            Author.from_raw(name="Hugo Larochelle", affiliations=["Google Brain"], email=None),
             profile_ids=["~Hugo_Larochelle1"],
         ),
         Sample(
-            AuthorAffiliation(
-                author="Ian Goodfellow", affiliations=["Google DeepMind"], email=None
-            ),
+            Author.from_raw(name="Ian Goodfellow", affiliations=["Google DeepMind"], email=None),
             profile_ids=["~Ian_Goodfellow1"],
         ),
         Sample(
-            AuthorAffiliation(author="Pieter Abbeel", affiliations=["UC Berkeley"], email=None),
+            Author.from_raw(name="Pieter Abbeel", affiliations=["UC Berkeley"], email=None),
             profile_ids=["~Pieter_Abbeel2"],
         ),
         Sample(
-            AuthorAffiliation(author="Pieter Abbeel", affiliations=["amazon"], email=None),
+            Author.from_raw(name="Pieter Abbeel", affiliations=["amazon"], email=None),
             profile_ids=["~Pieter_Abbeel2"],
         ),
         Sample(
-            AuthorAffiliation(author="Pieter Abbeel", affiliations=["covariant"], email=None),
+            Author.from_raw(name="Pieter Abbeel", affiliations=["covariant"], email=None),
             profile_ids=["~Pieter_Abbeel2"],
         ),
         # --- Authors from Asian universities with verified OpenReview profiles ---
         Sample(
-            AuthorAffiliation(author="Jun Zhu", affiliations=["Tsinghua University"], email=None),
+            Author.from_raw(name="Jun Zhu", affiliations=["Tsinghua University"], email=None),
             profile_ids=["~Jun_Zhu2"],
         ),
         Sample(
-            AuthorAffiliation(
-                author="Shanghang Zhang", affiliations=["Peking University"], email=None
-            ),
+            Author.from_raw(name="Shanghang Zhang", affiliations=["Peking University"], email=None),
             profile_ids=["~Shanghang_Zhang1", "~Shanghang_Zhang2", "~Shanghang_Zhang4"],
         ),
         Sample(
-            AuthorAffiliation(
-                author="Baobao Chang", affiliations=["Peking University"], email=None
-            ),
+            Author.from_raw(name="Baobao Chang", affiliations=["Peking University"], email=None),
             profile_ids=["~Baobao_Chang1"],
         ),
         Sample(
-            AuthorAffiliation(
-                author="Masashi Sugiyama", affiliations=["University of Tokyo"], email=None
+            Author.from_raw(
+                name="Masashi Sugiyama", affiliations=["University of Tokyo"], email=None
             ),
             profile_ids=["~Masashi_Sugiyama1"],
         ),
         Sample(
-            AuthorAffiliation(
-                author="Tatsuya Harada", affiliations=["University of Tokyo"], email=None
+            Author.from_raw(
+                name="Tatsuya Harada", affiliations=["University of Tokyo"], email=None
             ),
             profile_ids=["~Tatsuya_Harada1"],
         ),
         Sample(
-            AuthorAffiliation(
-                author="Issei Sato", affiliations=["University of Tokyo"], email=None
-            ),
+            Author.from_raw(name="Issei Sato", affiliations=["University of Tokyo"], email=None),
             profile_ids=["~Issei_Sato1", "~Issei_Sato2"],
         ),
         Sample(
-            AuthorAffiliation(author="Juho Lee", affiliations=["KAIST"], email=None),
+            Author.from_raw(name="Juho Lee", affiliations=["KAIST"], email=None),
             profile_ids=["~Juho_Lee2"],
         ),
         Sample(
-            AuthorAffiliation(
-                author="Ajit Rajwade",
+            Author.from_raw(
+                name="Ajit Rajwade",
                 affiliations=["Indian Institute of Technology Bombay"],
                 email=None,
             ),
             profile_ids=["~Ajit_Rajwade1"],
         ),
         Sample(
-            AuthorAffiliation(author="Juho Lee", affiliations=["POSTECH"], email=None),
+            Author.from_raw(name="Juho Lee", affiliations=["POSTECH"], email=None),
             profile_ids=["~Juho_Lee2"],
         ),
         # --- Authors from European universities with verified OpenReview profiles ---
         Sample(
-            AuthorAffiliation(author="Andreas Krause", affiliations=["ETH Zurich"], email=None),
+            Author.from_raw(name="Andreas Krause", affiliations=["ETH Zurich"], email=None),
             profile_ids=["~Andreas_Krause1"],
         ),
         Sample(
-            AuthorAffiliation(author="Melanie Zeilinger", affiliations=["ETH Zurich"], email=None),
+            Author.from_raw(name="Melanie Zeilinger", affiliations=["ETH Zurich"], email=None),
             profile_ids=["~Melanie_Zeilinger1"],
         ),
         Sample(
-            AuthorAffiliation(author="Siddhartha Mishra", affiliations=["ETH Zurich"], email=None),
+            Author.from_raw(name="Siddhartha Mishra", affiliations=["ETH Zurich"], email=None),
             profile_ids=["~Siddhartha_Mishra1"],
         ),
         Sample(
-            AuthorAffiliation(author="Volkan Cevher", affiliations=["EPFL"], email=None),
+            Author.from_raw(name="Volkan Cevher", affiliations=["EPFL"], email=None),
             profile_ids=["~Volkan_Cevher1"],
         ),
         Sample(
-            AuthorAffiliation(
-                author="Yee Whye Teh", affiliations=["University of Oxford"], email=None
-            ),
+            Author.from_raw(name="Yee Whye Teh", affiliations=["University of Oxford"], email=None),
             profile_ids=["~Yee_Whye_Teh1", "~Yee_Whye_Teh2"],
         ),
         Sample(
-            AuthorAffiliation(
-                author="Tom Rainforth", affiliations=["University of Oxford"], email=None
+            Author.from_raw(
+                name="Tom Rainforth", affiliations=["University of Oxford"], email=None
             ),
             profile_ids=["~Tom_Rainforth1"],
         ),
         Sample(
-            AuthorAffiliation(
-                author="Yingzhen Li", affiliations=["Imperial College London"], email=None
+            Author.from_raw(
+                name="Yingzhen Li", affiliations=["Imperial College London"], email=None
             ),
             profile_ids=["~Yingzhen_Li1"],
         ),
         Sample(
-            AuthorAffiliation(
-                author="Isabel Valera", affiliations=["Saarland University"], email=None
-            ),
+            Author.from_raw(name="Isabel Valera", affiliations=["Saarland University"], email=None),
             profile_ids=["~Isabel_Valera1"],
         ),
         Sample(
-            AuthorAffiliation(
-                author="Philipp Hennig", affiliations=["University of Tübingen"], email=None
+            Author.from_raw(
+                name="Philipp Hennig", affiliations=["University of Tübingen"], email=None
             ),
             profile_ids=["~Philipp_Hennig1"],
         ),
         Sample(
-            AuthorAffiliation(
-                author="Matthias Bethge", affiliations=["University of Tübingen"], email=None
+            Author.from_raw(
+                name="Matthias Bethge", affiliations=["University of Tübingen"], email=None
             ),
             profile_ids=["~Matthias_Bethge1"],
         ),
         # --- Authors confirmed to have no OpenReview profile ---
         Sample(
-            AuthorAffiliation(author="Aaaaaaaa Bbbbbbbbb", affiliations=["University"], email=None),
+            Author.from_raw(name="Aaaaaaaa Bbbbbbbbb", affiliations=["University"], email=None),
             profile_ids=[],
         ),
         Sample(
-            AuthorAffiliation(
-                author="Linus Torvalds", affiliations=["Linux Foundation"], email=None
+            Author.from_raw(name="Linus Torvalds", affiliations=["Linux Foundation"], email=None),
+            profile_ids=[],
+        ),
+        Sample(
+            Author.from_raw(name="Satya Nadella", affiliations=["Microsoft"], email=None),
+            profile_ids=[],
+        ),
+        Sample(
+            Author.from_raw(name="Jensen Huang", affiliations=["NVIDIA"], email=None),
+            profile_ids=[],
+        ),
+        Sample(
+            Author.from_raw(
+                name="Marc Andreessen", affiliations=["Andreessen Horowitz"], email=None
             ),
             profile_ids=[],
         ),
         Sample(
-            AuthorAffiliation(author="Satya Nadella", affiliations=["Microsoft"], email=None),
+            Author.from_raw(name="Patrick Collison", affiliations=["Stripe"], email=None),
             profile_ids=[],
         ),
         Sample(
-            AuthorAffiliation(author="Jensen Huang", affiliations=["NVIDIA"], email=None),
+            Author.from_raw(name="Sam Altman", affiliations=["OpenAI"], email=None),
             profile_ids=[],
         ),
         Sample(
-            AuthorAffiliation(
-                author="Marc Andreessen", affiliations=["Andreessen Horowitz"], email=None
-            ),
+            Author.from_raw(name="Elon Musk", affiliations=["Tesla"], email=None),
             profile_ids=[],
         ),
         Sample(
-            AuthorAffiliation(author="Patrick Collison", affiliations=["Stripe"], email=None),
+            Author.from_raw(name="Reed Hastings", affiliations=["Netflix"], email=None),
             profile_ids=[],
         ),
         Sample(
-            AuthorAffiliation(author="Sam Altman", affiliations=["OpenAI"], email=None),
-            profile_ids=[],
-        ),
-        Sample(
-            AuthorAffiliation(author="Elon Musk", affiliations=["Tesla"], email=None),
-            profile_ids=[],
-        ),
-        Sample(
-            AuthorAffiliation(author="Reed Hastings", affiliations=["Netflix"], email=None),
-            profile_ids=[],
-        ),
-        Sample(
-            AuthorAffiliation(author="Brian Chesky", affiliations=["Airbnb"], email=None),
+            Author.from_raw(name="Brian Chesky", affiliations=["Airbnb"], email=None),
             profile_ids=[],
         ),
     ]
