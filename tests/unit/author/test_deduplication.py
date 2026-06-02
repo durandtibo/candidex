@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from candidex.author import deduplicate_authors
-from candidex.schemas import Author
+from candidex.author import Author, deduplicate_authors
 
 # --- Helpers ---
 

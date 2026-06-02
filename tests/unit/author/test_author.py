@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 from dataclasses import FrozenInstanceError
 
 import pytest
 
-from candidex.schemas import Author
+from candidex.author import Author
 
 ############################
 #     Tests for Author     #

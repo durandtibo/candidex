@@ -47,9 +47,13 @@ class Author:
             Returns an empty string if affiliations is None or empty.
 
         Example:
+            ```pycon
+            >>> from candidex.author import Author
             >>> author = Author.from_raw("Jane Smith", ["MIT", "Stanford"], None)
             >>> author.format_affiliations()
             'MIT; Stanford'
+
+            ```
         """
         if not self.affiliations:
             return ""
@@ -82,8 +86,12 @@ class Author:
             ValueError: If `name` is empty or whitespace-only.
 
         Example:
+            ```pycon
+            >>> from candidex.author import Author
             >>> Author.from_raw("Paul George", ["MIT CSAIL"], "jane@mit.edu")
             Author(name='Universite', affiliations=('MIT CSAIL',), email='jane@mit.edu')
+
+            ```
         """
         name = normalize_unicode(name.strip())
         if not name:
