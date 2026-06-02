@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from candidex.utils.string import is_substring_match
+from candidex.utils.string import is_substring_match, remove_spaces
 
 ########################################
 #     Tests for is_substring_match     #
@@ -25,3 +25,23 @@ from candidex.utils.string import is_substring_match
 )
 def test_is_substring_match(a: str, b: str, expected: bool) -> None:
     assert is_substring_match(a, b) == expected
+
+
+###################################
+#     Tests for remove_spaces     #
+###################################
+
+
+@pytest.mark.parametrize(
+    ("s", "expected"),
+    [
+        pytest.param("Thibaut Durand", "ThibautDurand", id="single_spaces"),
+        pytest.param("  MIT  CSAIL  ", "MITCSAIL", id="multiple_spaces"),
+        pytest.param("\tMIT\nCSAIL", "MITCSAIL", id="tabs_and_newlines"),
+        pytest.param("NoSpaces", "NoSpaces", id="no_spaces"),
+        pytest.param("", "", id="empty_string"),
+        pytest.param("   ", "", id="only_spaces"),
+    ],
+)
+def test_remove_spaces(s: str, expected: str) -> None:
+    assert remove_spaces(s) == expected
