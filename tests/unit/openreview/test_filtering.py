@@ -4,7 +4,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from candidex.openreview import filter_profiles_by_affiliation
+from candidex.openreview import filter_profiles_by_affiliation, filter_profiles_by_email
 
 
 def make_profile(
@@ -48,8 +48,6 @@ def empty_profile() -> Mock:
 #     Tests for filter_profiles_by_affiliation     #
 ####################################################
 
-# --- Empty inputs ---
-
 
 def test_filter_profiles_by_affiliation_returns_empty_for_empty_profiles() -> None:
     assert filter_profiles_by_affiliation([], affiliation="MIT") == []
@@ -61,7 +59,10 @@ def test_filter_profiles_by_affiliation_returns_empty_when_no_match(
     assert filter_profiles_by_affiliation([stanford_profile], affiliation="MIT") == []
 
 
-# --- Affiliation matching ---
+def test_filter_profiles_by_affiliation_handles_empty_history(
+    empty_profile: Mock,
+) -> None:
+    assert filter_profiles_by_affiliation([empty_profile], affiliation="MIT") == []
 
 
 @pytest.mark.parametrize(
@@ -79,7 +80,7 @@ def test_filter_profiles_by_affiliation_matches_affiliation(
     assert filter_profiles_by_affiliation([mit_profile], affiliation=affiliation) == [mit_profile]
 
 
-def test_filter_profiles_by_affiliation_filters_correctly_from_multiple_profiles(
+def test_filter_profiles_by_affiliation_filters_from_multiple_profiles(
     mit_profile: Mock,
     stanford_profile: Mock,
 ) -> None:
@@ -87,72 +88,60 @@ def test_filter_profiles_by_affiliation_filters_correctly_from_multiple_profiles
     assert result == [mit_profile]
 
 
-# --- Email matching via confirmed profile emails ---
+##############################################
+#     Tests for filter_profiles_by_email     #
+##############################################
+
+
+def test_filter_profiles_by_email_returns_empty_for_empty_profiles() -> None:
+    assert filter_profiles_by_email([], email="jane@mit.edu") == []
+
+
+def test_filter_profiles_by_email_returns_empty_when_no_match(
+    stanford_profile: Mock,
+) -> None:
+    assert filter_profiles_by_email([stanford_profile], email="jane@mit.edu") == []
+
+
+def test_filter_profiles_by_email_handles_empty_history_and_emails(
+    empty_profile: Mock,
+) -> None:
+    assert filter_profiles_by_email([empty_profile], email="jane@mit.edu") == []
 
 
 @pytest.mark.parametrize(
     "email",
     [
-        pytest.param("jane@csail.mit.edu", id="matches_confirmed_email_exact"),
+        pytest.param("jane@csail.mit.edu", id="matches_confirmed_email"),
         pytest.param("other@mit.edu", id="matches_confirmed_email_domain"),
     ],
 )
-def test_filter_profiles_by_affiliation_matches_via_profile_email(
+def test_filter_profiles_by_email_matches_via_profile_email(
     email: str,
     mit_profile: Mock,
 ) -> None:
-    assert filter_profiles_by_affiliation([mit_profile], affiliation="MIT", email=email) == [
-        mit_profile
-    ]
-
-
-# --- Email matching via institution domain ---
+    assert filter_profiles_by_email([mit_profile], email=email) == [mit_profile]
 
 
 @pytest.mark.parametrize(
     "email",
     [
-        pytest.param("other@mit.edu", id="matches_institution_domain_exact"),
-        pytest.param("other@csail.mit.edu", id="matches_institution_domain_subdomain"),
+        pytest.param("other@mit.edu", id="matches_institution_domain"),
+        pytest.param("other@csail.mit.edu", id="matches_institution_subdomain"),
     ],
 )
-def test_filter_profiles_by_affiliation_matches_via_institution_domain(
-    email: str,
-) -> None:
-    profile = make_profile(
-        institutions=[("MIT CSAIL", "mit.edu")],
-        emails=[],
-    )
-    assert filter_profiles_by_affiliation([profile], affiliation="MIT", email=email) == [profile]
+def test_filter_profiles_by_email_matches_via_institution_domain(email: str) -> None:
+    profile = make_profile(institutions=[("MIT CSAIL", "mit.edu")], emails=[])
+    assert filter_profiles_by_email([profile], email=email) == [profile]
 
 
-# --- Email exclusion ---
+def test_filter_profiles_by_email_excludes_wrong_domain(mit_profile: Mock) -> None:
+    assert filter_profiles_by_email([mit_profile], email="jane@google.com") == []
 
 
-def test_filter_profiles_by_affiliation_excludes_when_email_does_not_match(
+def test_filter_profiles_by_email_filters_from_multiple_profiles(
     mit_profile: Mock,
+    stanford_profile: Mock,
 ) -> None:
-    result = filter_profiles_by_affiliation(
-        [mit_profile], affiliation="MIT", email="jane@google.com"
-    )
-    assert result == []
-
-
-# --- No email check ---
-
-
-def test_filter_profiles_by_affiliation_skips_email_check_when_none(
-    mit_profile: Mock,
-) -> None:
-    assert filter_profiles_by_affiliation([mit_profile], affiliation="MIT", email=None) == [
-        mit_profile
-    ]
-
-
-# --- Empty profile history ---
-
-
-def test_filter_profiles_by_affiliation_handles_empty_history(
-    empty_profile: Mock,
-) -> None:
-    assert filter_profiles_by_affiliation([empty_profile], affiliation="MIT") == []
+    result = filter_profiles_by_email([mit_profile, stanford_profile], email="jane@mit.edu")
+    assert result == [mit_profile]
