@@ -26,7 +26,7 @@ class Sample:
     profile_ids: list[str]
 
     def __post_init__(self) -> None:
-        self.profile_ids = [s.strip() for s in self.profile_ids]
+        self.profile_ids = sorted([s.strip() for s in self.profile_ids])
 
     @property
     def has_profile(self) -> bool:
@@ -445,6 +445,14 @@ def make_dataset() -> list[Sample]:
             AuthorAffiliation(author="Pieter Abbeel", affiliations=["UC Berkeley"], email=None),
             profile_ids=["~Pieter_Abbeel2"],
         ),
+        Sample(
+            AuthorAffiliation(author="Pieter Abbeel", affiliations=["amazon"], email=None),
+            profile_ids=["~Pieter_Abbeel2"],
+        ),
+        Sample(
+            AuthorAffiliation(author="Pieter Abbeel", affiliations=["covariant"], email=None),
+            profile_ids=["~Pieter_Abbeel2"],
+        ),
         # --- Authors from Asian universities with verified OpenReview profiles ---
         Sample(
             AuthorAffiliation(author="Jun Zhu", affiliations=["Tsinghua University"], email=None),
@@ -454,7 +462,7 @@ def make_dataset() -> list[Sample]:
             AuthorAffiliation(
                 author="Shanghang Zhang", affiliations=["Peking University"], email=None
             ),
-            profile_ids=["~Shanghang_Zhang4"],
+            profile_ids=["~Shanghang_Zhang1", "~Shanghang_Zhang2", "~Shanghang_Zhang4"],
         ),
         Sample(
             AuthorAffiliation(
@@ -478,7 +486,7 @@ def make_dataset() -> list[Sample]:
             AuthorAffiliation(
                 author="Issei Sato", affiliations=["University of Tokyo"], email=None
             ),
-            profile_ids=["~Issei_Sato2"],
+            profile_ids=["~Issei_Sato1", "~Issei_Sato2"],
         ),
         Sample(
             AuthorAffiliation(author="Juho Lee", affiliations=["KAIST"], email=None),
@@ -491,12 +499,6 @@ def make_dataset() -> list[Sample]:
                 email=None,
             ),
             profile_ids=["~Ajit_Rajwade1"],
-        ),
-        Sample(
-            AuthorAffiliation(
-                author="Shanghang Zhang", affiliations=["Carnegie Mellon University"], email=None
-            ),
-            profile_ids=["~Shanghang_Zhang4"],
         ),
         Sample(
             AuthorAffiliation(author="Juho Lee", affiliations=["POSTECH"], email=None),
@@ -523,7 +525,7 @@ def make_dataset() -> list[Sample]:
             AuthorAffiliation(
                 author="Yee Whye Teh", affiliations=["University of Oxford"], email=None
             ),
-            profile_ids=["~Yee_Whye_Teh2"],
+            profile_ids=["~Yee_Whye_Teh1", "~Yee_Whye_Teh2"],
         ),
         Sample(
             AuthorAffiliation(
