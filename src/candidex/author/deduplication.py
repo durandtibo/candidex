@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from candidex.schemas import Author
+    from candidex.author.author import Author
 
 logger: logging.Logger = logging.getLogger(__name__)
 
