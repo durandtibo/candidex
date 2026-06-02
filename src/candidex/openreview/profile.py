@@ -7,7 +7,7 @@ __all__ = ["find_author_profile_ids"]
 import logging
 from typing import TYPE_CHECKING
 
-from candidex.openreview.client import create_openreview_client
+from candidex.openreview.client import create_client
 from candidex.openreview.filtering import (
     filter_profiles_by_affiliation,
     filter_profiles_by_email,
@@ -40,7 +40,7 @@ def find_author_profile_ids(
                      If provided, only profiles whose confirmed emails or
                      institution domains match the email domain are returned.
         client:      An authenticated `OpenReviewClient` instance. If not
-                     provided, one is created via `create_openreview_client()`
+                     provided, one is created via `create_client()`
                      using the `OPENREVIEW_USERNAME` and `OPENREVIEW_PASSWORD`
                      environment variables.
 
@@ -59,12 +59,12 @@ def find_author_profile_ids(
         ...     affiliation="MIT CSAIL",
         ...     email="jane@mit.edu",
         ... )  # doctest: +SKIP
-        >>> print(ids)
+        >>> print(ids)  # doctest: +SKIP
         ['~Jane_Smith1']
 
         ```
     """
-    client = client or create_openreview_client()
+    client = client or create_client()
     if client is None:
         logger.warning("No OpenReview client available, cannot find profile for %s.", name)
         return None

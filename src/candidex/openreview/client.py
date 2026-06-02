@@ -2,7 +2,7 @@ r"""Contain code to create an authenticated OpenReview client."""
 
 from __future__ import annotations
 
-__all__ = ["create_openreview_client"]
+__all__ = ["create_client"]
 
 import logging
 import os
@@ -14,7 +14,7 @@ logger: logging.Logger = logging.getLogger(__name__)
 OPENREVIEW_BASE_URL = "https://api2.openreview.net"
 
 
-def create_openreview_client(
+def create_client(
     username: str | None = None,
     password: str | None = None,
 ) -> OpenReviewClient | None:
@@ -36,12 +36,10 @@ def create_openreview_client(
 
     Example:
         ```pycon
-        >>> from candidex.openreview import create_openreview_client
+        >>> from candidex.openreview import create_client
         >>> # uses env vars.
-        >>> client = create_openreview_client()  # doctest: +SKIP
-        >>> client = create_openreview_client(
-        ...     username="user@example.com", password="secret"
-        ... )  # doctest: +SKIP
+        >>> client = create_client()  # doctest: +SKIP
+        >>> client = create_client(username="user@example.com", password="secret")  # doctest: +SKIP
 
         ```
     """

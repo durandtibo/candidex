@@ -3,7 +3,7 @@ r"""Contain openreview functionalities."""
 from __future__ import annotations
 
 __all__ = [
-    "create_openreview_client",
+    "create_client",
     "do_affiliations_match",
     "does_email_match_domain",
     "filter_profiles_by_affiliation",
@@ -12,7 +12,7 @@ __all__ = [
     "search_profiles_by_name",
 ]
 
-from candidex.openreview.client import create_openreview_client
+from candidex.openreview.client import create_client
 from candidex.openreview.filtering import (
     filter_profiles_by_affiliation,
     filter_profiles_by_email,

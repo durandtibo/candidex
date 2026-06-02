@@ -5,13 +5,13 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from candidex.openreview import create_openreview_client
+from candidex.openreview import create_client
 
 MODULE = "candidex.openreview.client"
 
 
 ##############################################
-#     Tests for create_openreview_client     #
+#     Tests for create_client     #
 ##############################################
 
 # --- Missing credentials ---
@@ -40,13 +40,13 @@ MODULE = "candidex.openreview.client"
         ),
     ],
 )
-def test_create_openreview_client_returns_none_when_credentials_missing(
+def test_create_client_returns_none_when_credentials_missing(
     env_vars: dict,
     username: str | None,
     password: str | None,
 ) -> None:
     with patch.dict(os.environ, env_vars, clear=True):
-        client = create_openreview_client(username=username, password=password)
+        client = create_client(username=username, password=password)
     assert client is None
 
 
@@ -86,7 +86,7 @@ def test_create_openreview_client_returns_none_when_credentials_missing(
         ),
     ],
 )
-def test_create_openreview_client_credential_priority(
+def test_create_client_credential_priority(
     arg_username: str | None,
     arg_password: str | None,
     expected_username: str,
@@ -101,7 +101,7 @@ def test_create_openreview_client_credential_priority(
         ),
         patch(f"{MODULE}.OpenReviewClient", return_value=mock_client) as mock_ctor,
     ):
-        create_openreview_client(username=arg_username, password=arg_password)
+        create_client(username=arg_username, password=arg_password)
         mock_ctor.assert_called_once_with(
             baseurl="https://api2.openreview.net",
             username=expected_username,
@@ -112,7 +112,7 @@ def test_create_openreview_client_credential_priority(
 # --- Successful authentication ---
 
 
-def test_create_openreview_client_returns_client_on_success() -> None:
+def test_create_client_returns_client_on_success() -> None:
     mock_client = Mock()
     with (
         patch.dict(
@@ -122,7 +122,7 @@ def test_create_openreview_client_returns_client_on_success() -> None:
         ),
         patch(f"{MODULE}.OpenReviewClient", return_value=mock_client),
     ):
-        client = create_openreview_client()
+        client = create_client()
     assert client is mock_client
 
 
@@ -137,7 +137,7 @@ def test_create_openreview_client_returns_client_on_success() -> None:
         pytest.param(ValueError("Invalid credentials"), id="value_error"),
     ],
 )
-def test_create_openreview_client_returns_none_on_authentication_failure(
+def test_create_client_returns_none_on_authentication_failure(
     exception: Exception,
 ) -> None:
     with (
@@ -148,5 +148,5 @@ def test_create_openreview_client_returns_none_on_authentication_failure(
         ),
         patch(f"{MODULE}.OpenReviewClient", side_effect=exception),
     ):
-        client = create_openreview_client()
+        client = create_client()
     assert client is None
