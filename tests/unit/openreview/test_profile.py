@@ -30,14 +30,14 @@ def make_profile(profile_id: str) -> Mock:
 
 
 def test_find_author_profile_ids_returns_none_when_no_client() -> None:
-    with patch(f"{MODULE}.create_openreview_client", return_value=None):
+    with patch(f"{MODULE}.create_client", return_value=None):
         result = find_author_profile_ids(name="Jane Smith", affiliation="MIT CSAIL")
     assert result is None
 
 
 def test_find_author_profile_ids_uses_provided_client(mock_client: Mock) -> None:
     with (
-        patch(f"{MODULE}.create_openreview_client") as mock_create,
+        patch(f"{MODULE}.create_client") as mock_create,
         patch(f"{MODULE}.search_profiles_by_name", return_value=[]),
     ):
         result = find_author_profile_ids(
@@ -49,7 +49,7 @@ def test_find_author_profile_ids_uses_provided_client(mock_client: Mock) -> None
 
 def test_find_author_profile_ids_creates_client_when_none_provided(mock_client: Mock) -> None:
     with (
-        patch(f"{MODULE}.create_openreview_client", return_value=mock_client) as mock_create,
+        patch(f"{MODULE}.create_client", return_value=mock_client) as mock_create,
         patch(f"{MODULE}.search_profiles_by_name", return_value=[]),
     ):
         result = find_author_profile_ids(name="Jane Smith", affiliation="MIT CSAIL")

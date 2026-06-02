@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 
 from openreview import OpenReviewException
 
-from candidex.openreview.client import create_openreview_client
+from candidex.openreview.client import create_client
 
 if TYPE_CHECKING:
     from openreview import Profile
@@ -33,7 +33,7 @@ def search_profiles_by_name(
     Args:
         name:   The name to search for. Whitespace is stripped before querying.
         client: An authenticated `OpenReviewClient` instance. If not provided,
-                one is created via `create_openreview_client()` using the
+                one is created via `create_client()` using the
                 `OPENREVIEW_USERNAME` and `OPENREVIEW_PASSWORD` environment
                 variables.
 
@@ -48,7 +48,7 @@ def search_profiles_by_name(
         >>> for profile in profiles:  # doctest: +SKIP
         ...     print(profile.id)
     """
-    client = client or create_openreview_client()
+    client = client or create_client()
     if client is None:
         logger.warning("No OpenReview client available, cannot search for profiles.")
         return None

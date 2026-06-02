@@ -31,7 +31,7 @@ def mock_profiles() -> list[Mock]:
 
 
 def test_search_profiles_by_name_returns_none_when_no_client() -> None:
-    with patch(f"{MODULE}.create_openreview_client", return_value=None):
+    with patch(f"{MODULE}.create_client", return_value=None):
         result = search_profiles_by_name("Thibaut Durand")
     assert result is None
 
@@ -44,7 +44,7 @@ def test_search_profiles_by_name_uses_provided_client(
     mock_profiles: list[Mock],
 ) -> None:
     mock_client.search_profiles.return_value = mock_profiles
-    with patch(f"{MODULE}.create_openreview_client") as mock_create:
+    with patch(f"{MODULE}.create_client") as mock_create:
         search_profiles_by_name("Thibaut Durand", client=mock_client)
         mock_create.assert_not_called()
 
@@ -54,7 +54,7 @@ def test_search_profiles_by_name_creates_client_when_none_provided(
     mock_profiles: list[Mock],
 ) -> None:
     mock_client.search_profiles.return_value = mock_profiles
-    with patch(f"{MODULE}.create_openreview_client", return_value=mock_client) as mock_create:
+    with patch(f"{MODULE}.create_client", return_value=mock_client) as mock_create:
         search_profiles_by_name("Thibaut Durand")
         mock_create.assert_called_once()
 
