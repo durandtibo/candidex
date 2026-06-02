@@ -4,10 +4,13 @@ from __future__ import annotations
 
 __all__ = ["deduplicate_authors"]
 
+import logging
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from candidex.schemas import AuthorAffiliation
+
+logger: logging.Logger = logging.getLogger(__name__)
 
 
 def deduplicate_authors(authors: list[AuthorAffiliation]) -> list[AuthorAffiliation]:
@@ -49,4 +52,11 @@ def deduplicate_authors(authors: list[AuthorAffiliation]) -> list[AuthorAffiliat
         if key not in seen:
             seen.add(key)
             unique.append(author)
+
+    logger.info(
+        "Deduplicated authors: %d before, %d after, %d removed.",
+        len(authors),
+        len(unique),
+        len(authors) - len(unique),
+    )
     return unique
