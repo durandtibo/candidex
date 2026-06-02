@@ -3,10 +3,10 @@ from __future__ import annotations
 from unittest.mock import Mock, patch
 
 import pytest
-from openreview import Profile
+from openreview import OpenReviewException, Profile
 
 from candidex.openreview import find_author_profile_ids, get_unique_profiles
-from candidex.openreview.profile import FilterMode
+from candidex.openreview.profile import FilterMode, fetch_profile_by_id
 
 MODULE = "candidex.openreview.profile"
 
@@ -362,3 +362,76 @@ def test_find_author_profile_ids_default_mode_is_any(mock_client: Mock) -> None:
             client=mock_client,
         )
     assert result == ["~Jane_Smith1", "~Jane_Smith2"]
+
+
+#########################################
+#     Tests for fetch_profile_by_id     #
+#########################################
+
+# --- Client unavailable ---
+
+
+def test_fetch_profile_by_id_returns_none_when_no_client() -> None:
+    with patch(f"{MODULE}.create_client", return_value=None):
+        result = fetch_profile_by_id("~Thibaut_Durand1")
+    assert result is None
+
+
+def test_fetch_profile_by_id_uses_provided_client(mock_client: Mock) -> None:
+    mock_client.get_profile.return_value = make_profile("~Thibaut_Durand1")
+    with patch(f"{MODULE}.create_client") as mock_create:
+        fetch_profile_by_id("~Thibaut_Durand1", client=mock_client)
+        mock_create.assert_not_called()
+
+
+def test_fetch_profile_by_id_creates_client_when_none_provided(mock_client: Mock) -> None:
+    mock_client.get_profile.return_value = make_profile("~Thibaut_Durand1")
+    with patch(f"{MODULE}.create_client", return_value=mock_client) as mock_create:
+        fetch_profile_by_id("~Thibaut_Durand1")
+        mock_create.assert_called_once()
+
+
+# --- Successful fetch ---
+
+
+def test_fetch_profile_by_id_returns_profile_on_success(mock_client: Mock) -> None:
+    mock_profile = make_profile("~Thibaut_Durand1")
+    mock_client.get_profile.return_value = mock_profile
+    result = fetch_profile_by_id("~Thibaut_Durand1", client=mock_client)
+    assert result is mock_profile
+
+
+def test_fetch_profile_by_id_calls_client_with_correct_id(mock_client: Mock) -> None:
+    mock_client.get_profile.return_value = make_profile("~Thibaut_Durand1")
+    fetch_profile_by_id("~Thibaut_Durand1", client=mock_client)
+    mock_client.get_profile.assert_called_once_with("~Thibaut_Durand1")
+
+
+# --- Profile not found ---
+
+
+def test_fetch_profile_by_id_returns_none_when_profile_not_found(
+    mock_client: Mock,
+) -> None:
+    mock_client.get_profile.side_effect = OpenReviewException("Not found")
+    result = fetch_profile_by_id("~Unknown_Person1", client=mock_client)
+    assert result is None
+
+
+# --- Various ID formats ---
+
+
+@pytest.mark.parametrize(
+    "profile_id",
+    [
+        pytest.param("~Thibaut_Durand1", id="tilde_prefix"),
+        pytest.param("%7EThibaut_Durand1", id="encoded_tilde_prefix"),
+        pytest.param("~Jane_Smith1", id="different_author"),
+    ],
+)
+def test_fetch_profile_by_id_accepts_various_id_formats(profile_id: str, mock_client: Mock) -> None:
+    mock_profile = make_profile("~Thibaut_Durand1")
+    mock_client.get_profile.return_value = mock_profile
+    result = fetch_profile_by_id(profile_id, client=mock_client)
+    assert result is mock_profile
+    mock_client.get_profile.assert_called_once_with(profile_id)
