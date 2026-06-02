@@ -6,9 +6,11 @@ __all__ = [
     "create_openreview_client",
     "do_affiliations_match",
     "does_email_match_domain",
+    "filter_profiles_by_affiliation",
     "search_openreview_profiles",
 ]
 
 from candidex.openreview.client import create_openreview_client
+from candidex.openreview.filtering import filter_profiles_by_affiliation
 from candidex.openreview.matching import do_affiliations_match, does_email_match_domain
 from candidex.openreview.search import search_openreview_profiles
