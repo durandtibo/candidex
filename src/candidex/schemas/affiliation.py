@@ -2,7 +2,7 @@ r"""Contain schemas for author affiliations."""
 
 from __future__ import annotations
 
-__all__ = ["AuthorAffiliation"]
+__all__ = ["AuthorAffiliation", "PaperAffiliations"]
 
 import logging
 
@@ -76,6 +76,8 @@ class AuthorAffiliation(BaseModel):
             Returns an empty string if affiliations is empty.
 
         Example:
+            ```pycon
+            >>> from candidex.schemas import AuthorAffiliation
             >>> author = AuthorAffiliation(
             ...     author="Jane Smith",
             ...     affiliations=["MIT CSAIL", "Stanford University"],
@@ -84,5 +86,31 @@ class AuthorAffiliation(BaseModel):
             'MIT CSAIL; Stanford University'
             >>> author.format_affiliations(separator=" | ")
             'MIT CSAIL | Stanford University'
+
+            ```
         """
         return separator.join(self.affiliations)
+
+
+class PaperAffiliations(BaseModel):
+    """Contains the full list of authors and their affiliations for a
+    single paper.
+
+    Extracted from the first page of an academic paper where author names and
+    their corresponding institutional affiliations are listed. Each author is
+    represented as an `AuthorAffiliation` entry. Preserve the order of authors
+    exactly as they appear on the paper, as author order carries meaning in
+    academic publishing (e.g. first author, last/senior author).
+
+    Attributes:
+        authors: Ordered list of all authors and their affiliations. Must
+                 include every author listed on the paper without omission.
+                 Each entry maps one author to their affiliations.
+    """
+
+    authors: list[AuthorAffiliation] = Field(
+        description=(
+            "Ordered list of all authors and their affiliations, preserving the order "
+            "in which they appear on the paper. Must include every author without omission."
+        )
+    )
