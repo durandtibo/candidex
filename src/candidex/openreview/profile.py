@@ -2,11 +2,13 @@ r"""Contain utilities for finding OpenReview profiles."""
 
 from __future__ import annotations
 
-__all__ = ["FilterMode", "find_author_profile_ids", "get_unique_profiles"]
+__all__ = ["FilterMode", "fetch_profile_by_id", "find_author_profile_ids", "get_unique_profiles"]
 
 import logging
 from enum import Enum
 from typing import TYPE_CHECKING
+
+from openreview import OpenReviewException
 
 from candidex.openreview.client import create_client
 from candidex.openreview.filtering import (
@@ -162,3 +164,51 @@ def find_author_profile_ids(
         profile_ids,
     )
     return profile_ids
+
+
+def fetch_profile_by_id(
+    profile_id: str,
+    client: OpenReviewClient | None = None,
+) -> Profile | None:
+    """Fetch an OpenReview profile by its profile ID.
+
+    Queries the OpenReview API for the profile with the given ID. If no
+    client is provided, one is created automatically using credentials
+    from the environment.
+
+    Args:
+        profile_id: The OpenReview profile ID to fetch
+                    (e.g. '~Thibaut_Durand1').
+        client:     An authenticated `OpenReviewClient` instance. If not
+                    provided, one is created via `create_client()` using
+                    the `OPENREVIEW_USERNAME` and `OPENREVIEW_PASSWORD`
+                    environment variables.
+
+    Returns:
+        The `Profile` object for the given ID, or None if the profile
+        does not exist, the request fails, or the client cannot be created.
+
+    Example:
+        ```pycon
+        >>> from candidex.openreview import fetch_profile_by_id
+        >>> profile = fetch_profile_by_id("~Thibaut_Durand1")  # doctest: +SKIP
+        >>> if profile:  # doctest: +SKIP
+        ...     print(profile.id)
+        ...
+
+        ```
+    """
+    client = client or create_client()
+    if client is None:
+        logger.warning("No OpenReview client available, cannot fetch profile for %s.", profile_id)
+        return None
+
+    logger.debug("Fetching OpenReview profile for ID '%s'.", profile_id)
+    try:
+        profile = client.get_profile(profile_id)
+    except OpenReviewException:
+        logger.warning("OpenReview profile not found: '%s'.", profile_id)
+        return None
+    else:
+        logger.debug("Successfully fetched profile '%s'.", profile_id)
+        return profile
