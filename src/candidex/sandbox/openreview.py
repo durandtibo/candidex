@@ -13,7 +13,7 @@ import httpx
 from ddgs import DDGS
 from ddgs.exceptions import DDGSException
 
-from candidex.sandbox.affiliation import AuthorAffiliation
+from candidex.schemas import AuthorAffiliation
 
 logger: logging.Logger = logging.getLogger(__name__)
 
