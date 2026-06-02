@@ -1,5 +1,3 @@
-r"""Tests for candidex.affiliation.flatten."""
-
 from __future__ import annotations
 
 import pytest

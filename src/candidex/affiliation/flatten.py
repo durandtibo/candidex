@@ -31,7 +31,7 @@ def flatten_authors(papers: Sequence[PaperAffiliations]) -> list[AuthorAffiliati
 
     Example:
         ```pycon
-        >>> from candidex.affiliation.flatten import flatten_authors
+        >>> from candidex.affiliation import flatten_authors
         >>> from candidex.schemas import AuthorAffiliation, PaperAffiliations
         >>> paper_a = PaperAffiliations(
         ...     authors=[
