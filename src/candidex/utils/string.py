@@ -2,7 +2,7 @@ r"""Contain utilities for strings."""
 
 from __future__ import annotations
 
-__all__ = ["is_substring_match"]
+__all__ = ["is_substring_match", "remove_spaces"]
 
 
 def is_substring_match(a: str, b: str) -> bool:
@@ -21,11 +21,40 @@ def is_substring_match(a: str, b: str) -> bool:
             False otherwise.
 
     Example:
+        ```pycon
+        >>> from candidex.utils.string import is_substring_match
         >>> is_substring_match("MIT", "MIT CSAIL, Cambridge, MA, USA")
         True
         >>> is_substring_match("Stanford", "MIT CSAIL")
         False
+
+        ```
     """
     a_lower = a.lower()
     b_lower = b.lower()
     return a_lower in b_lower or b_lower in a_lower
+
+
+def remove_spaces(s: str) -> str:
+    """Return the string with all whitespace characters removed.
+
+    Removes all whitespace characters including spaces, tabs, and newlines.
+    Useful for normalising names or identifiers before comparison.
+
+    Args:
+        s: The string to process.
+
+    Returns:
+        The string with all whitespace characters removed.
+
+    Example:
+        ```pycon
+        >>> from candidex.utils.string import remove_spaces
+        >>> remove_spaces("Thibaut Durand")
+        'ThibautDurand'
+        >>> remove_spaces("  MIT  CSAIL  ")
+        'MITCSAIL'
+
+        ```
+    """
+    return "".join(s.split())
