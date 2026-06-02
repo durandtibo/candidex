@@ -12,10 +12,17 @@ from candidex.openreview import do_affiliations_match, does_email_match_domain
 @pytest.mark.parametrize(
     ("a", "b", "expected"),
     [
+        # --- Substring matching ---
         pytest.param("MIT", "MIT CSAIL, Cambridge, MA, USA", True, id="partial_match"),
         pytest.param("MIT CSAIL, Cambridge, MA, USA", "MIT", True, id="partial_match_reversed"),
-        pytest.param("mit", "MIT CSAIL", True, id="case_insensitive"),
+        pytest.param("MIT", "MIT", True, id="identical"),
+        pytest.param("Stanford University", "MIT CSAIL", False, id="no_match"),
+        pytest.param("Google", "DeepMind", False, id="no_match_companies"),
+        pytest.param("", "MIT", True, id="empty_string_matches_anything"),
+        # --- Case insensitive ---
+        pytest.param("mit", "MIT CSAIL", True, id="case_insensitive_lower"),
         pytest.param("MIT CSAIL", "mit csail", True, id="case_insensitive_both"),
+        # --- Spacing differences ---
         pytest.param(
             "EastChinaNormalUniversity",
             "East China Normal University",
@@ -34,11 +41,40 @@ from candidex.openreview import do_affiliations_match, does_email_match_domain
             True,
             id="spacing_difference_long",
         ),
-        pytest.param("Stanford University", "MIT CSAIL", False, id="no_match"),
-        pytest.param("Google", "DeepMind", False, id="no_match_companies"),
-        pytest.param("MIT", "MIT", True, id="identical"),
-        pytest.param("", "MIT", True, id="empty_string_matches_anything"),
-        pytest.param(" MIT", "MIT ", True, id="strip_spaces"),
+        # --- Unicode normalization ---
+        pytest.param(
+            "Université de Montréal",
+            "Universite de Montreal",
+            True,
+            id="unicode_french_accents",
+        ),
+        pytest.param(
+            "Universite de Montreal",
+            "Université de Montréal",
+            True,
+            id="unicode_french_accents_reversed",
+        ),
+        pytest.param(
+            "Technische Universität München",
+            "Technische Universitat Munchen",
+            True,
+            id="unicode_german_umlaut",
+        ),
+        pytest.param(
+            "École Polytechnique Fédérale de Lausanne",
+            "Ecole Polytechnique Federale de Lausanne",
+            True,
+            id="unicode_epfl_accents",
+        ),
+        pytest.param(
+            "Università di Bologna",
+            "Universita di Bologna",
+            True,
+            id="unicode_italian_accents",
+        ),
+        # --- Whitespace stripping ---
+        pytest.param("  MIT  ", "MIT CSAIL", True, id="leading_trailing_spaces"),
+        pytest.param("MIT", "  MIT CSAIL  ", True, id="leading_trailing_spaces_b"),
     ],
 )
 def test_do_affiliations_match(a: str, b: str, expected: bool) -> None:

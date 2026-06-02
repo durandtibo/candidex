@@ -4,7 +4,7 @@ from __future__ import annotations
 
 __all__ = ["do_affiliations_match", "does_email_match_domain"]
 
-from candidex.utils.string import is_substring_match, remove_spaces
+from candidex.utils.string import is_substring_match, normalize_unicode, remove_spaces
 
 
 def do_affiliations_match(a: str, b: str) -> bool:
@@ -39,8 +39,8 @@ def do_affiliations_match(a: str, b: str) -> bool:
 
         ```
     """
-    a = a.strip().lower()
-    b = b.strip().lower()
+    a = normalize_unicode(a.strip().lower())
+    b = normalize_unicode(b.strip().lower())
     return is_substring_match(a, b) or is_substring_match(remove_spaces(a), remove_spaces(b))
 
 
