@@ -2,7 +2,7 @@ r"""Contain utilities for finding OpenReview profiles."""
 
 from __future__ import annotations
 
-__all__ = ["find_openreview_profile"]
+__all__ = ["find_author_profile_ids"]
 
 import logging
 from typing import TYPE_CHECKING
@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 logger: logging.Logger = logging.getLogger(__name__)
 
 
-def find_openreview_profile(
+def find_author_profile_ids(
     name: str,
     affiliation: str,
     email: str | None = None,
@@ -53,8 +53,8 @@ def find_openreview_profile(
 
     Example:
         ```pycon
-        >>> from candidex.openreview import find_openreview_profile
-        >>> ids = find_openreview_profile(
+        >>> from candidex.openreview import find_author_profile_ids
+        >>> ids = find_author_profile_ids(
         ...     name="Jane Smith",
         ...     affiliation="MIT CSAIL",
         ...     email="jane@mit.edu",
