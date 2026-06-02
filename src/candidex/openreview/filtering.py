@@ -34,8 +34,8 @@ def filter_profiles_by_affiliation(
 
     Returns:
         A filtered list of `openreview.Profile` objects whose career history
-        contains at least one institution matching the target affiliation.
-        Returns an empty list if no profiles pass the filter.
+            contains at least one institution matching the target affiliation.
+            Returns an empty list if no profiles pass the filter.
 
     Example:
         ```pycon
@@ -82,8 +82,8 @@ def filter_profiles_by_email(profiles: Sequence[Profile], email: str) -> list[Pr
 
     Returns:
         A filtered list of `openreview.Profile` objects whose email domain
-        matches at least one confirmed email or institution domain.
-        Returns an empty list if no profiles pass the filter.
+            matches at least one confirmed email or institution domain.
+            Returns an empty list if no profiles pass the filter.
 
     Example:
         ```pycon
