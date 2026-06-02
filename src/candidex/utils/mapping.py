@@ -27,9 +27,9 @@ def remove_keys(data: dict[Any, Any], keys: Sequence[Any]) -> dict[Any, Any]:
         ```pycon
         >>> from candidex.utils.mapping import remove_keys
         >>> remove_keys({"a": 1, "b": 2, "c": 3}, ["a", "c"])
-        {"b": 2}
+        {'b': 2}
         >>> remove_keys({"a": 1}, ["x"])  # missing keys are ignored
-        {"a": 1}
+        {'a': 1}
 
         ```
     """

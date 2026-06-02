@@ -35,8 +35,15 @@ def create_openreview_client(
         are missing or authentication fails.
 
     Example:
-        >>> client = create_openreview_client()  # uses env vars
-        >>> client = create_openreview_client(username="user@example.com", password="secret")
+        ```pycon
+        >>> from candidex.openreview import create_openreview_client
+        >>> # uses env vars.
+        >>> client = create_openreview_client()  # doctest: +SKIP
+        >>> client = create_openreview_client(
+        ...     username="user@example.com", password="secret"
+        ... )  # doctest: +SKIP
+
+        ```
     """
     username = username or os.getenv("OPENREVIEW_USERNAME")
     password = password or os.getenv("OPENREVIEW_PASSWORD")

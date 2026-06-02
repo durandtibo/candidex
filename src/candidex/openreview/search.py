@@ -43,8 +43,9 @@ def search_openreview_profiles(
             be created, or the API call fails.
 
     Example:
-        >>> profiles = search_openreview_profiles("Thibaut Durand")
-        >>> for profile in profiles:
+        >>> from candidex.openreview import search_openreview_profiles
+        >>> profiles = search_openreview_profiles("Thibaut Durand") # doctest: +SKIP
+        >>> for profile in profiles:  # doctest: +SKIP
         ...     print(profile.id)
     """
     client = client or create_openreview_client()

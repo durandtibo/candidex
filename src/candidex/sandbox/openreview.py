@@ -5,12 +5,15 @@ from __future__ import annotations
 __all__ = ["fetch_openreview_profile"]
 
 import logging
+import time
 import urllib
 from typing import Any
 
 import httpx
+from ddgs import DDGS
+from ddgs.exceptions import DDGSException
 
-from candidex.utils.mapping import remove_keys
+from candidex.sandbox.affiliation import AuthorAffiliation
 
 logger: logging.Logger = logging.getLogger(__name__)
 
@@ -128,11 +131,10 @@ def fetch_openreview_profile_content(url: str, timeout: int = 30) -> dict[str, A
     profile = fetch_openreview_profile(url=url, timeout=timeout)
     if not profile:
         return None
-    return remove_keys(
+    return (
         {"id": profile["id"]}
         | {"names": profile["content"]["names"]}
-        | {"history": profile["content"]["history"]},
-        ["preferredEmail", "emails", "emailsConfirmed", "relations", "expertise"],
+        | {"history": profile["content"]["history"]}
     )
 
 
@@ -158,15 +160,103 @@ def is_openreview_profile_url(url: str) -> bool:
     return url.startswith(OPENREVIEW_PROFILE_PREFIX)
 
 
+def find_openreview_profile_url(
+    author: AuthorAffiliation,
+    max_retries: int = 3,
+    backoff_factor: float = 2.0,
+) -> str | None:
+    """Search for an author's OpenReview profile URL using DuckDuckGo.
+
+    Searches DuckDuckGo for the author's OpenReview profile page using
+    their name and affiliation as search terms. Returns the first result
+    URL that is a valid OpenReview profile URL as determined by
+    `is_openreview_profile_url`.
+
+    Args:
+        author:         An `AuthorAffiliation` object containing the author's
+                        name and known affiliations.
+        max_retries:    Maximum number of retry attempts on connectivity
+                        errors. Defaults to 3.
+        backoff_factor: Multiplier for wait time between retries.
+                        Defaults to 2.0.
+
+    Returns:
+        The OpenReview profile URL (e.g.
+        'https://openreview.net/profile?id=~Thibaut_Durand1') if found,
+        or None if no matching profile could be located after all retries.
+
+    Example:
+        >>> author = AuthorAffiliation(
+        ...     author="Thibaut Durand",
+        ...     affiliations=["concordia university"],
+        ... )
+        >>> url = find_openreview_profile_url(author)
+        >>> if url:
+        ...     print(url)
+        'https://openreview.net/profile?id=~Thibaut_Durand1'
+    """
+    affiliation_str = ", ".join(author.affiliations) if author.affiliations else ""
+    query = f'openreview profile "{author.author}" "{affiliation_str}" site:openreview.net/profile'
+    # query = f'"{author.author}" "{affiliation_str}" site:openreview.net/profile'
+
+    logger.debug("Searching for OpenReview profile: %s (%s).", author.author, affiliation_str)
+
+    for attempt in range(max_retries):
+        try:
+            with DDGS() as ddgs:
+                results = ddgs.text(query, max_results=5)
+
+            if results:
+                for r in results:
+                    url = r["href"]
+                    if is_openreview_profile_url(url):
+                        logger.debug(
+                            "Found OpenReview profile for %s: %s.",
+                            author.author,
+                            url,
+                        )
+                        return url
+
+            logger.debug("No OpenReview profile found for %s.", author.author)
+            return None
+
+        except DDGSException as e:
+            wait = backoff_factor**attempt
+            if attempt < max_retries - 1:
+                logger.debug(
+                    "Search failed (attempt %d/%d): %s. Retrying in %.0fs...",
+                    attempt + 1,
+                    max_retries,
+                    e,
+                    wait,
+                )
+                time.sleep(wait)
+            else:
+                logger.warning(
+                    "OpenReview profile search failed after %d attempts for %s: %s.",
+                    max_retries,
+                    author.author,
+                    e,
+                )
+
+    return None
+
+
 if __name__ == "__main__":
     from rich.pretty import pprint
 
-    pprint(fetch_openreview_profile_content("https://openreview.net/profile?id=~Thibaut_Durand1"))
+    # pprint(fetch_openreview_profile_content("https://openreview.net/profile?id=~Thibaut_Durand1"))
+    # pprint(
+    #     fetch_openreview_profile_content(
+    #         "https://openreview.net/profile?id=~Sepidehsadat_Hosseini2"
+    #     )
+    # )
+    # pprint(
+    #     fetch_openreview_profile_content("https://openreview.net/profile?id=~Yasutaka_Furukawa1")
+    # )
+
     pprint(
-        fetch_openreview_profile_content(
-            "https://openreview.net/profile?id=~Sepidehsadat_Hosseini2"
+        find_openreview_profile_url(
+            AuthorAffiliation(author="Thibaut Durand", affiliations=["SFU"], email=None)
         )
-    )
-    pprint(
-        fetch_openreview_profile_content("https://openreview.net/profile?id=~Yasutaka_Furukawa1")
     )

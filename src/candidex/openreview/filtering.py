@@ -50,8 +50,8 @@ def filter_profiles_by_affiliation(
 
     Example:
         >>> from candidex.openreview import filter_profiles_by_affiliation, search_openreview_profiles
-        >>> profiles = search_openreview_profiles("Jane Smith")
-        >>> matched = filter_profiles_by_affiliation(
+        >>> profiles = search_openreview_profiles("Jane Smith") # doctest: +SKIP
+        >>> matched = filter_profiles_by_affiliation( # doctest: +SKIP
         ...     profiles,
         ...     affiliation="MIT CSAIL",
         ...     email="jane@csail.mit.edu",
