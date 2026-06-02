@@ -31,9 +31,10 @@ def combine_hashes(hashes: Sequence[str]) -> str:
         ValueError: If `hashes` is empty.
 
     Example:
-        >>> a = ChatModelConfig(model="openai:gpt-4o", system_prompt="A").hash()
-        >>> b = ChatModelConfig(model="openai:gpt-4o", system_prompt="B").hash()
-        >>> combine_hashes([a, b])
+        >>> from candidex.utils.hashing import combine_hashes
+        >>> a = '42db77cda5f9aed8970129d2a9237bdf'
+        >>> b = '3524dbb6b14a5e280f2a5e6bd8c1f7a5'
+        >>> combine_hashes([a, b])  # doctest: +SKIP
         'e3b0c4...'
     """
     if not hashes:

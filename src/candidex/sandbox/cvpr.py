@@ -230,8 +230,8 @@ def scrape_cvpr_papers(
         requests.exceptions.RequestException: On any network or HTTP error.
 
     Example:
-        >>> df = scrape_cvpr_papers("https://openaccess.thecvf.com/CVPR2024?day=all")
-        >>> df.filter(pl.col(AUTHORS).list.len() > 5)
+        >>> df = scrape_cvpr_papers("https://openaccess.thecvf.com/CVPR2024?day=all") # doctest: +SKIP
+        >>> df.filter(pl.col(AUTHORS).list.len() > 5) # doctest: +SKIP
     """
     html = fetch_page(url)
     entries = parse_paper_entries(html, limit=limit)
@@ -295,7 +295,7 @@ def find_and_save_papers(
         >>> df = find_and_save_papers(
         ...     url="https://openaccess.thecvf.com/CVPR2024?day=all",
         ...     filepath=Path("data/cvpr2024.parquet"),
-        ... )
+        ... )  # doctest: +SKIP
     """
     logger.info("Finding CVPR papers...")
     if not filepath.is_file():

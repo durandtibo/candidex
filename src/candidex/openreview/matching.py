@@ -67,12 +67,16 @@ def does_email_match_domain(email: str | None, domain: str | None) -> bool:
         or if the email does not contain an '@' symbol.
 
     Example:
+        ```pycon
+        >>> from candidex.openreview import does_email_match_domain
         >>> does_email_match_domain("jane.smith@csail.mit.edu", "mit.edu")
         True
         >>> does_email_match_domain("jane.smith@csail.mit.edu", "@mit.edu")
         True
         >>> does_email_match_domain("jane.smith@stanford.edu", "mit.edu")
         False
+
+        ```
     """
     if email is None or domain is None:
         return False
