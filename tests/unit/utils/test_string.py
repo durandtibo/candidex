@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from candidex.utils.string import is_substring_match, remove_spaces
+from candidex.utils.string import is_substring_match, normalize_unicode, remove_spaces
 
 ########################################
 #     Tests for is_substring_match     #
@@ -45,3 +45,40 @@ def test_is_substring_match(a: str, b: str, expected: bool) -> None:
 )
 def test_remove_spaces(s: str, expected: str) -> None:
     assert remove_spaces(s) == expected
+
+
+#######################################
+#     Tests for normalize_unicode     #
+#######################################
+
+
+@pytest.mark.parametrize(
+    ("s", "expected"),
+    [
+        pytest.param("Universite de Montreal", "Universite de Montreal", id="no_accents"),
+        pytest.param("Université de Montréal", "Universite de Montreal", id="french_accents"),
+        pytest.param(
+            "Eidgenössische Technische Hochschule",
+            "Eidgenossische Technische Hochschule",
+            id="german_umlaut",
+        ),
+        pytest.param(
+            "École Polytechnique Fédérale de Lausanne",
+            "Ecole Polytechnique Federale de Lausanne",
+            id="french_accents_mixed",
+        ),
+        pytest.param("Università di Bologna", "Universita di Bologna", id="italian_accents"),
+        pytest.param(
+            "Universidad Autónoma de Madrid", "Universidad Autonoma de Madrid", id="spanish_accents"
+        ),
+        pytest.param(
+            "Technische Universität München",
+            "Technische Universitat Munchen",
+            id="german_umlaut_mixed",
+        ),
+        pytest.param("", "", id="empty_string"),
+        pytest.param("MIT", "MIT", id="ascii_unchanged"),
+    ],
+)
+def test_normalize_unicode(s: str, expected: str) -> None:
+    assert normalize_unicode(s) == expected
