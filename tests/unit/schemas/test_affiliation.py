@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from candidex.schemas import AuthorAffiliation
+from candidex.schemas import AuthorAffiliation, PaperAffiliations
 
 #######################################
 #     Tests for AuthorAffiliation     #
@@ -106,3 +106,100 @@ def test_format_affiliations_author_affiliation_empty_affiliations() -> None:
 def test_format_affiliations_author_affiliation_single_affiliation() -> None:
     author = AuthorAffiliation(author="Jane Smith", affiliations=["MIT CSAIL"], email=None)
     assert author.format_affiliations() == "MIT CSAIL"
+
+
+#######################################
+#     Tests for PaperAffiliations     #
+#######################################
+
+
+# --- Fixtures ---
+
+
+@pytest.fixture
+def author_a() -> AuthorAffiliation:
+    return AuthorAffiliation(
+        author="Jane Smith",
+        affiliations=["MIT CSAIL"],
+        email="jane@mit.edu",
+    )
+
+
+@pytest.fixture
+def author_b() -> AuthorAffiliation:
+    return AuthorAffiliation(
+        author="John Doe",
+        affiliations=["Stanford University"],
+        email=None,
+    )
+
+
+# --- Construction ---
+
+
+def test_paper_affiliations_empty_authors() -> None:
+    paper = PaperAffiliations(authors=[])
+    assert paper.authors == []
+
+
+def test_paper_affiliations_single_author(author_a: AuthorAffiliation) -> None:
+    paper = PaperAffiliations(authors=[author_a])
+    assert len(paper.authors) == 1
+    assert paper.authors[0] == author_a
+
+
+def test_paper_affiliations_multiple_authors(
+    author_a: AuthorAffiliation, author_b: AuthorAffiliation
+) -> None:
+    paper = PaperAffiliations(authors=[author_a, author_b])
+    assert len(paper.authors) == 2
+
+
+# --- Order preservation ---
+
+
+def test_paper_affiliations_preserves_author_order(
+    author_a: AuthorAffiliation, author_b: AuthorAffiliation
+) -> None:
+    paper = PaperAffiliations(authors=[author_a, author_b])
+    assert paper.authors[0] == author_a
+    assert paper.authors[1] == author_b
+
+
+def test_paper_affiliations_preserves_author_order_reversed(
+    author_a: AuthorAffiliation, author_b: AuthorAffiliation
+) -> None:
+    paper = PaperAffiliations(authors=[author_b, author_a])
+    assert paper.authors[0] == author_b
+    assert paper.authors[1] == author_a
+
+
+# --- Author fields are accessible ---
+
+
+def test_paper_affiliations_author_fields_accessible(author_a: AuthorAffiliation) -> None:
+    paper = PaperAffiliations(authors=[author_a])
+    assert paper.authors[0].author == "Jane Smith"
+    assert paper.authors[0].affiliations == ["MIT CSAIL"]
+    assert paper.authors[0].email == "jane@mit.edu"
+
+
+# --- Serialisation round-trip ---
+
+
+def test_paper_affiliations_serialises_to_dict(
+    author_a: AuthorAffiliation, author_b: AuthorAffiliation
+) -> None:
+    paper = PaperAffiliations(authors=[author_a, author_b])
+    data = paper.model_dump()
+    assert len(data["authors"]) == 2
+    assert data["authors"][0]["author"] == "Jane Smith"
+    assert data["authors"][1]["author"] == "John Doe"
+
+
+def test_paper_affiliations_round_trip(
+    author_a: AuthorAffiliation, author_b: AuthorAffiliation
+) -> None:
+    paper = PaperAffiliations(authors=[author_a, author_b])
+    restored = PaperAffiliations.model_validate(paper.model_dump())
+    assert restored == paper
