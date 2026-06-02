@@ -2,7 +2,7 @@ r"""Contain matching functions."""
 
 from __future__ import annotations
 
-__all__ = ["do_affiliations_match"]
+__all__ = ["do_affiliations_match", "does_email_match_domain"]
 
 from candidex.utils.string import is_substring_match, remove_spaces
 
@@ -42,3 +42,44 @@ def do_affiliations_match(a: str, b: str) -> bool:
     a = a.strip().lower()
     b = b.strip().lower()
     return is_substring_match(a, b) or is_substring_match(remove_spaces(a), remove_spaces(b))
+
+
+def does_email_match_domain(email: str | None, domain: str | None) -> bool:
+    """Return True if the email address belongs to the given domain.
+
+    Checks whether the email's domain part matches the provided domain,
+    using case-insensitive substring matching to handle subdomains and
+    partial domain specifications. For example, 'mit.edu' matches
+    'user@csail.mit.edu'.
+
+    The domain may optionally start with '@' (e.g. '@mit.edu' or 'mit.edu'
+    are treated equivalently).
+
+    Args:
+        email:  The email address to check (e.g. 'jane.smith@csail.mit.edu').
+                Returns False if None.
+        domain: The domain to match against (e.g. 'mit.edu' or '@mit.edu').
+                Returns False if None.
+
+    Returns:
+        True if the email domain contains or is contained by the given
+        domain, False otherwise. Returns False if either argument is None
+        or if the email does not contain an '@' symbol.
+
+    Example:
+        >>> does_email_match_domain("jane.smith@csail.mit.edu", "mit.edu")
+        True
+        >>> does_email_match_domain("jane.smith@csail.mit.edu", "@mit.edu")
+        True
+        >>> does_email_match_domain("jane.smith@stanford.edu", "mit.edu")
+        False
+    """
+    if email is None or domain is None:
+        return False
+    if "@" not in email:
+        return False
+
+    email_domain = email.split("@")[-1].lower()
+    domain = domain.lstrip("@").lower()
+
+    return is_substring_match(email_domain, domain)
