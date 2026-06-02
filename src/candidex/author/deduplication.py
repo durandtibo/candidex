@@ -1,4 +1,4 @@
-r"""Contain utilities for deduplicating affiliation data structures."""
+r"""Contain utilities for deduplicating authors."""
 
 from __future__ import annotations
 
