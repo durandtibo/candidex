@@ -10,11 +10,11 @@ from typing import TYPE_CHECKING, Any
 
 from iden.io import load_json, save_json
 from langchain_core.messages import HumanMessage, SystemMessage
-from pydantic import BaseModel, Field
 
 from candidex.columns import PAPER_STEM
 from candidex.sandbox.pdf import PDFReadError, extract_first_page_text
 from candidex.sandbox.progressbar import make_progressbar
+from candidex.schemas import PaperAffiliations
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -23,67 +23,6 @@ if TYPE_CHECKING:
     from langchain_core.language_models import BaseChatModel
 
 logger: logging.Logger = logging.getLogger(__name__)
-
-
-class AuthorAffiliation(BaseModel):
-    """Represents a single author and their institutional affiliations.
-
-    An author may be affiliated with multiple institutions simultaneously,
-    for example a university department and an associated research lab.
-    Affiliations are typically listed on the first page of an academic paper,
-    often linked to author names via superscript numbers or symbols.
-
-    Attributes:
-        author:       Full name of the author exactly as it appears on the paper
-                      (e.g. 'Jane Smith', 'J. Smith'). Do not normalise or infer
-                      missing name parts.
-        affiliations: List of institutional affiliations for this author. Each
-                      entry should be a complete affiliation string as it appears
-                      on the paper (e.g. 'MIT CSAIL, Cambridge, MA, USA').
-                      Use an empty list if no affiliation can be determined.
-        email:        Email address of the author if explicitly stated on the
-                      paper. None if not present or not determinable. Do not
-                      infer or construct email addresses from names or affiliations.
-    """
-
-    author: str = Field(description="Full name of the author exactly as it appears on the paper.")
-    affiliations: list[str] = Field(
-        description=(
-            "List of institutional affiliations for this author. Each entry is a complete "
-            "affiliation string as it appears on the paper. Empty list if none can be determined."
-        )
-    )
-    email: str | None = Field(
-        description=(
-            "Email address of the author if explicitly stated on the paper "
-            "(e.g. 'jane.smith@mit.edu'). Set to None if not present. "
-            "Do not infer or construct email addresses from names or affiliations."
-        )
-    )
-
-
-class PaperAffiliations(BaseModel):
-    """Contains the full list of authors and their affiliations for a
-    single paper.
-
-    Extracted from the first page of an academic paper where author names and
-    their corresponding institutional affiliations are listed. Each author is
-    represented as an `AuthorAffiliation` entry. Preserve the order of authors
-    exactly as they appear on the paper, as author order carries meaning in
-    academic publishing (e.g. first author, last/senior author).
-
-    Attributes:
-        authors: Ordered list of all authors and their affiliations. Must
-                 include every author listed on the paper without omission.
-                 Each entry maps one author to their affiliations.
-    """
-
-    authors: list[AuthorAffiliation] = Field(
-        description=(
-            "Ordered list of all authors and their affiliations, preserving the order "
-            "in which they appear on the paper. Must include every author without omission."
-        )
-    )
 
 
 AFFILIATION_SYSTEM_PROMPT = """
