@@ -12,7 +12,7 @@ from candidex.openreview.filtering import (
     filter_profiles_by_affiliation,
     filter_profiles_by_email,
 )
-from candidex.openreview.search import search_openreview_profiles
+from candidex.openreview.search import search_profiles_by_name
 
 if TYPE_CHECKING:
     from openreview.api import OpenReviewClient
@@ -69,7 +69,7 @@ def find_author_profile_ids(
         logger.warning("No OpenReview client available, cannot find profile for %s.", name)
         return None
 
-    profiles = search_openreview_profiles(name, client=client)
+    profiles = search_profiles_by_name(name, client=client)
     if profiles is None:
         logger.warning("Profile search failed for %s.", name)
         return None

@@ -2,7 +2,7 @@ r"""Contain search utilities for OpenReview."""
 
 from __future__ import annotations
 
-__all__ = ["search_openreview_profiles"]
+__all__ = ["search_profiles_by_name"]
 
 import logging
 from typing import TYPE_CHECKING
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 logger: logging.Logger = logging.getLogger(__name__)
 
 
-def search_openreview_profiles(
+def search_profiles_by_name(
     name: str,
     client: OpenReviewClient | None = None,
 ) -> list[Profile] | None:
@@ -43,8 +43,8 @@ def search_openreview_profiles(
             be created, or the API call fails.
 
     Example:
-        >>> from candidex.openreview import search_openreview_profiles
-        >>> profiles = search_openreview_profiles("Thibaut Durand") # doctest: +SKIP
+        >>> from candidex.openreview import search_profiles_by_name
+        >>> profiles = search_profiles_by_name("Thibaut Durand") # doctest: +SKIP
         >>> for profile in profiles:  # doctest: +SKIP
         ...     print(profile.id)
     """

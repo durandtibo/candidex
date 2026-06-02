@@ -38,7 +38,7 @@ def test_find_author_profile_ids_returns_none_when_no_client() -> None:
 def test_find_author_profile_ids_uses_provided_client(mock_client: Mock) -> None:
     with (
         patch(f"{MODULE}.create_openreview_client") as mock_create,
-        patch(f"{MODULE}.search_openreview_profiles", return_value=[]),
+        patch(f"{MODULE}.search_profiles_by_name", return_value=[]),
     ):
         result = find_author_profile_ids(
             name="Jane Smith", affiliation="MIT CSAIL", client=mock_client
@@ -50,7 +50,7 @@ def test_find_author_profile_ids_uses_provided_client(mock_client: Mock) -> None
 def test_find_author_profile_ids_creates_client_when_none_provided(mock_client: Mock) -> None:
     with (
         patch(f"{MODULE}.create_openreview_client", return_value=mock_client) as mock_create,
-        patch(f"{MODULE}.search_openreview_profiles", return_value=[]),
+        patch(f"{MODULE}.search_profiles_by_name", return_value=[]),
     ):
         result = find_author_profile_ids(name="Jane Smith", affiliation="MIT CSAIL")
         assert result == []
@@ -61,7 +61,7 @@ def test_find_author_profile_ids_creates_client_when_none_provided(mock_client: 
 
 
 def test_find_author_profile_ids_returns_none_when_search_fails(mock_client: Mock) -> None:
-    with patch(f"{MODULE}.search_openreview_profiles", return_value=None):
+    with patch(f"{MODULE}.search_profiles_by_name", return_value=None):
         result = find_author_profile_ids(
             name="Jane Smith", affiliation="MIT CSAIL", client=mock_client
         )
@@ -72,7 +72,7 @@ def test_find_author_profile_ids_returns_none_when_search_fails(mock_client: Moc
 
 
 def test_find_author_profile_ids_returns_empty_list_when_no_profiles(mock_client: Mock) -> None:
-    with patch(f"{MODULE}.search_openreview_profiles", return_value=[]):
+    with patch(f"{MODULE}.search_profiles_by_name", return_value=[]):
         result = find_author_profile_ids(
             name="Jane Smith", affiliation="MIT CSAIL", client=mock_client
         )
@@ -87,7 +87,7 @@ def test_find_author_profile_ids_returns_empty_list_when_no_affiliation_match(
 ) -> None:
     profiles = [make_profile("~Jane_Smith1")]
     with (
-        patch(f"{MODULE}.search_openreview_profiles", return_value=profiles),
+        patch(f"{MODULE}.search_profiles_by_name", return_value=profiles),
         patch(f"{MODULE}.filter_profiles_by_affiliation", return_value=[]),
     ):
         result = find_author_profile_ids(
@@ -101,7 +101,7 @@ def test_find_author_profile_ids_returns_sorted_ids_when_affiliation_matches(
 ) -> None:
     profiles = [make_profile("~Jane_Smith1"), make_profile("~Jane_Smith2")]
     with (
-        patch(f"{MODULE}.search_openreview_profiles", return_value=profiles),
+        patch(f"{MODULE}.search_profiles_by_name", return_value=profiles),
         patch(f"{MODULE}.filter_profiles_by_affiliation", return_value=profiles),
     ):
         result = find_author_profile_ids(
@@ -113,7 +113,7 @@ def test_find_author_profile_ids_returns_sorted_ids_when_affiliation_matches(
 def test_find_author_profile_ids_returns_ids_sorted_alphabetically(mock_client: Mock) -> None:
     profiles = [make_profile("~Jane_Smith2"), make_profile("~Jane_Smith1")]
     with (
-        patch(f"{MODULE}.search_openreview_profiles", return_value=profiles),
+        patch(f"{MODULE}.search_profiles_by_name", return_value=profiles),
         patch(f"{MODULE}.filter_profiles_by_affiliation", return_value=profiles),
     ):
         result = find_author_profile_ids(
@@ -128,7 +128,7 @@ def test_find_author_profile_ids_returns_ids_sorted_alphabetically(mock_client: 
 def test_find_author_profile_ids_skips_email_filter_when_none(mock_client: Mock) -> None:
     profiles = [make_profile("~Jane_Smith1")]
     with (
-        patch(f"{MODULE}.search_openreview_profiles", return_value=profiles),
+        patch(f"{MODULE}.search_profiles_by_name", return_value=profiles),
         patch(f"{MODULE}.filter_profiles_by_affiliation", return_value=profiles),
         patch(f"{MODULE}.filter_profiles_by_email") as mock_email_filter,
     ):
@@ -141,7 +141,7 @@ def test_find_author_profile_ids_skips_email_filter_when_none(mock_client: Mock)
 def test_find_author_profile_ids_applies_email_filter_when_provided(mock_client: Mock) -> None:
     profiles = [make_profile("~Jane_Smith1")]
     with (
-        patch(f"{MODULE}.search_openreview_profiles", return_value=profiles),
+        patch(f"{MODULE}.search_profiles_by_name", return_value=profiles),
         patch(f"{MODULE}.filter_profiles_by_affiliation", return_value=profiles),
         patch(f"{MODULE}.filter_profiles_by_email", return_value=profiles) as mock_email_filter,
     ):
@@ -156,7 +156,7 @@ def test_find_author_profile_ids_returns_empty_list_when_email_filter_excludes_a
 ) -> None:
     profiles = [make_profile("~Jane_Smith1")]
     with (
-        patch(f"{MODULE}.search_openreview_profiles", return_value=profiles),
+        patch(f"{MODULE}.search_profiles_by_name", return_value=profiles),
         patch(f"{MODULE}.filter_profiles_by_affiliation", return_value=profiles),
         patch(f"{MODULE}.filter_profiles_by_email", return_value=[]),
     ):
