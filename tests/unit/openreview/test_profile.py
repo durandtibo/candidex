@@ -5,7 +5,7 @@ from unittest.mock import Mock, patch
 import pytest
 from openreview import Profile
 
-from candidex.openreview.profile import find_author_profile_ids
+from candidex.openreview import find_author_profile_ids, get_unique_profiles
 
 MODULE = "candidex.openreview.profile"
 
@@ -19,6 +19,77 @@ def mock_client() -> Mock:
 
 def make_profile(profile_id: str) -> Mock:
     return Mock(id=profile_id, spec=Profile)
+
+
+#########################################
+#     Tests for get_unique_profiles     #
+#########################################
+
+
+@pytest.mark.parametrize(
+    ("profiles_list", "expected_ids"),
+    [
+        pytest.param([], [], id="empty_input"),
+        pytest.param([[]], [], id="single_empty_list"),
+        pytest.param([[], []], [], id="multiple_empty_lists"),
+        pytest.param(
+            [[make_profile("~Jane_Smith1")]],
+            ["~Jane_Smith1"],
+            id="single_profile",
+        ),
+        pytest.param(
+            [[make_profile("~Jane_Smith1"), make_profile("~John_Doe1")]],
+            ["~Jane_Smith1", "~John_Doe1"],
+            id="multiple_profiles_single_list",
+        ),
+        pytest.param(
+            [
+                [make_profile("~Jane_Smith1")],
+                [make_profile("~John_Doe1")],
+            ],
+            ["~Jane_Smith1", "~John_Doe1"],
+            id="unique_profiles_across_lists",
+        ),
+        pytest.param(
+            [
+                [make_profile("~Jane_Smith1")],
+                [make_profile("~Jane_Smith1")],
+            ],
+            ["~Jane_Smith1"],
+            id="duplicate_across_lists",
+        ),
+        pytest.param(
+            [
+                [make_profile("~Jane_Smith1"), make_profile("~Jane_Smith1")],
+            ],
+            ["~Jane_Smith1"],
+            id="duplicate_within_same_list",
+        ),
+        pytest.param(
+            [
+                [make_profile("~Jane_Smith1"), make_profile("~John_Doe1")],
+                [make_profile("~Jane_Smith1"), make_profile("~Alice_Brown1")],
+            ],
+            ["~Jane_Smith1", "~John_Doe1", "~Alice_Brown1"],
+            id="partial_overlap_across_lists",
+        ),
+    ],
+)
+def test_get_unique_profiles(profiles_list: list[list[Mock]], expected_ids: list[str]) -> None:
+    result = get_unique_profiles(profiles_list)
+    assert [p.id for p in result] == expected_ids
+
+
+def test_get_unique_profiles_preserves_first_occurrence() -> None:
+    """When duplicates exist, the first occurrence should be kept."""
+    profile_a = make_profile("~Jane_Smith1")
+    profile_a.name = "first"
+    profile_b = make_profile("~Jane_Smith1")
+    profile_b.name = "second"
+
+    result = get_unique_profiles([[profile_a], [profile_b]])
+    assert len(result) == 1
+    assert result[0].name == "first"
 
 
 #############################################
