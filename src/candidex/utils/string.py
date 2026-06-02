@@ -4,6 +4,8 @@ from __future__ import annotations
 
 __all__ = ["is_substring_match", "remove_spaces"]
 
+import unicodedata
+
 
 def is_substring_match(a: str, b: str) -> bool:
     """Return True if either string is a substring of the other.
@@ -58,3 +60,12 @@ def remove_spaces(s: str) -> str:
         ```
     """
     return "".join(s.split())
+
+
+def normalize_unicode(s: str) -> str:
+    """Normalize unicode characters to their ASCII equivalents.
+
+    Converts accented characters to their base form (e.g. 'é' -> 'e',
+    'ü' -> 'u').
+    """
+    return unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode("ascii")
