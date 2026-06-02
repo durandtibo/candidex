@@ -39,6 +39,6 @@ def do_affiliations_match(a: str, b: str) -> bool:
 
         ```
     """
-    a = a.lower()
-    b = b.lower()
+    a = a.strip().lower()
+    b = b.strip().lower()
     return is_substring_match(a, b) or is_substring_match(remove_spaces(a), remove_spaces(b))

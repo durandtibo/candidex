@@ -38,6 +38,7 @@ from candidex.openreview import do_affiliations_match
         pytest.param("Google", "DeepMind", False, id="no_match_companies"),
         pytest.param("MIT", "MIT", True, id="identical"),
         pytest.param("", "MIT", True, id="empty_string_matches_anything"),
+        pytest.param(" MIT", "MIT ", True, id="strip_spaces"),
     ],
 )
 def test_do_affiliations_match(a: str, b: str, expected: bool) -> None:
