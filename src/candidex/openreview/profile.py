@@ -5,7 +5,7 @@ from __future__ import annotations
 __all__ = ["FilterMode", "find_author_profile_ids", "get_unique_profiles"]
 
 import logging
-from enum import StrEnum
+from enum import Enum
 from typing import TYPE_CHECKING
 
 from candidex.openreview.client import create_client
@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 logger: logging.Logger = logging.getLogger(__name__)
 
 
-class FilterMode(StrEnum):
+class FilterMode(str, Enum):
     """Filtering mode for combining affiliation and email filters.
 
     Attributes:
