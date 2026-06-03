@@ -9,6 +9,7 @@ __all__ = [
     "find_author_profile_ids",
     "get_unique_profiles",
     "load_or_fetch_profile_ids",
+    "log_profile_ids_stats",
 ]
 
 import logging
@@ -330,10 +331,14 @@ def extract_profile_ids(
         are included alongside freshly queried ones.
 
     Example:
+        ```pycon
+        >>> from candidex.author import Author
         >>> authors = [Author.from_raw("Jane Smith", ["MIT"])]
         >>> results = extract_profile_ids(authors, Path("data/profile_ids"))  # doctest: +SKIP
-        >>> results[authors[0]] # doctest: +SKIP
+        >>> results[authors[0]]  # doctest: +SKIP
         ['~Jane_Smith1']
+
+        ```
     """
     logger.info(
         "Extracting OpenReview profile IDs for %d authors with %d threads...",
@@ -367,3 +372,49 @@ def extract_profile_ids(
         len(authors),
     )
     return results
+
+
+def log_profile_ids_stats(profile_ids_by_author: dict[Author, list[str] | None]) -> None:
+    """Log a summary of profile ID lookup results.
+
+    Breaks down the results into four categories and logs them at INFO level:
+    - Single match: exactly one profile ID found.
+    - Multiple matches: more than one profile ID found.
+    - No match: lookup succeeded but no profiles were found.
+    - Failed: lookup failed entirely (None).
+
+    Args:
+        profile_ids_by_author: A dictionary mapping each `Author` to their list of profile
+                 ID strings, or None if the lookup failed, as returned by
+                 `extract_profile_ids`.
+
+    Example:
+        ```pycon
+        >>> from candidex.author import Author
+        >>> from candidex.openreview import log_profile_ids_stats
+        >>> results = {
+        ...     Author.from_raw("Jane Smith", ["MIT"]): ["~Jane_Smith1"],
+        ...     Author.from_raw("John Doe", ["Stanford"]): [],
+        ...     Author.from_raw("Alice Brown", ["CMU"]): None,
+        ... }
+        >>> log_profile_ids_stats(results)
+
+        ```
+    """
+    total = len(profile_ids_by_author)
+    profile_ids_list = profile_ids_by_author.values()
+
+    single = sum(1 for ids in profile_ids_list if ids is not None and len(ids) == 1)
+    multiple = sum(1 for ids in profile_ids_list if ids is not None and len(ids) > 1)
+    empty = sum(1 for ids in profile_ids_list if ids is not None and len(ids) == 0)
+    failed = sum(1 for ids in profile_ids_list if ids is None)
+
+    logger.info(
+        "Profile ID lookup complete for %d authors — "
+        "%d single match, %d multiple matches, %d no match, %d failed.",
+        total,
+        single,
+        multiple,
+        empty,
+        failed,
+    )
