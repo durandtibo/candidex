@@ -8,6 +8,8 @@ import logging
 
 from pydantic import BaseModel, Field, field_validator
 
+from candidex.author.author import Author
+
 logger: logging.Logger = logging.getLogger(__name__)
 
 
@@ -81,6 +83,7 @@ class AuthorAffiliation(BaseModel):
             >>> author = AuthorAffiliation(
             ...     author="Jane Smith",
             ...     affiliations=["MIT CSAIL", "Stanford University"],
+            ...     email="jane@mit.edu",
             ... )
             >>> author.format_affiliations()
             'MIT CSAIL; Stanford University'
@@ -90,6 +93,27 @@ class AuthorAffiliation(BaseModel):
             ```
         """
         return separator.join(self.affiliations)
+
+    def to_author(self) -> Author:
+        r"""Return the author's affiliations as a `Author` object.
+
+        Returns:
+            The author's affiliations as a `Author` object.
+
+        Example:
+            ```pycon
+            >>> from candidex.schemas import AuthorAffiliation
+            >>> author = AuthorAffiliation(
+            ...     author="Jane Smith",
+            ...     affiliations=["MIT CSAIL", "Stanford University"],
+            ...     email="jane@mit.edu",
+            ... )
+            >>> author.to_author()
+            Author(name='Jane Smith', affiliations=('MIT CSAIL', 'Stanford University'), email='jane@mit.edu')
+
+            ```
+        """
+        return Author.from_raw(name=self.author, affiliations=self.affiliations, email=self.email)
 
 
 class PaperAffiliations(BaseModel):
