@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 
+from candidex.author import Author
 from candidex.schemas import AuthorAffiliation, PaperAffiliations
 
 #######################################
@@ -14,7 +15,7 @@ def author() -> AuthorAffiliation:
     return AuthorAffiliation(
         author="Jane Smith",
         affiliations=["MIT CSAIL", "Stanford University"],
-        email=None,
+        email="jane@mit.edu",
     )
 
 
@@ -106,6 +107,71 @@ def test_format_affiliations_author_affiliation_empty_affiliations() -> None:
 def test_format_affiliations_author_affiliation_single_affiliation() -> None:
     author = AuthorAffiliation(author="Jane Smith", affiliations=["MIT CSAIL"], email=None)
     assert author.format_affiliations() == "MIT CSAIL"
+
+
+# --- to_author ---
+
+
+def test_author_affiliation_to_author_returns_author_instance(
+    author: AuthorAffiliation,
+) -> None:
+    assert isinstance(author.to_author(), Author)
+
+
+def test_author_affiliation_to_author_name(author: AuthorAffiliation) -> None:
+    assert author.to_author().name == "Jane Smith"
+
+
+def test_author_affiliation_to_author_affiliations(author: AuthorAffiliation) -> None:
+    assert author.to_author().affiliations == ("MIT CSAIL", "Stanford University")
+
+
+def test_author_affiliation_to_author_email(author: AuthorAffiliation) -> None:
+    assert author.to_author().email == "jane@mit.edu"
+
+
+def test_author_affiliation_to_author_none_email() -> None:
+    affiliation = AuthorAffiliation(author="Jane Smith", affiliations=["MIT"], email=None)
+    assert affiliation.to_author().email is None
+
+
+def test_author_affiliation_to_author_empty_affiliations() -> None:
+    affiliation = AuthorAffiliation(author="Jane Smith", affiliations=[], email=None)
+    assert affiliation.to_author().affiliations == ()
+
+
+def test_author_affiliation_to_author_normalizes_unicode() -> None:
+    affiliation = AuthorAffiliation(
+        author="Université de Montréal",
+        affiliations=["École Polytechnique"],
+        email=None,
+    )
+    author = affiliation.to_author()
+    assert author.name == "Universite de Montreal"
+    assert author.affiliations == ("Ecole Polytechnique",)
+
+
+def test_author_affiliation_to_author_strips_whitespace() -> None:
+    affiliation = AuthorAffiliation(
+        author="  Jane Smith  ",
+        affiliations=["  MIT  "],
+        email="  jane@mit.edu  ",
+    )
+    author = affiliation.to_author()
+    assert author.name == "Jane Smith"
+    assert author.affiliations == ("MIT",)
+    assert author.email == "jane@mit.edu"
+
+
+def test_author_affiliation_to_author_consistent_with_from_raw(
+    author: AuthorAffiliation,
+) -> None:
+    expected = Author.from_raw(
+        name=author.author,
+        affiliations=author.affiliations,
+        email=author.email,
+    )
+    assert author.to_author() == expected
 
 
 #######################################
