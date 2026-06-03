@@ -1,3 +1,5 @@
+r"""Contain collection utilities."""
+
 from __future__ import annotations
 
 __all__ = ["flatten"]
