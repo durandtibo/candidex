@@ -18,6 +18,7 @@ __all__ = [
     "load_or_fetch_profile_by_id",
     "load_or_fetch_profile_ids",
     "log_profile_ids_stats",
+    "log_profiles_by_author_stats",
     "parse_names_and_history_profile",
     "search_profiles_by_name",
 ]
@@ -36,6 +37,7 @@ from candidex.openreview.profile import (
     get_unique_profiles,
     load_or_fetch_profile_by_author,
     load_or_fetch_profile_by_id,
+    log_profiles_by_author_stats,
 )
 from candidex.openreview.profile_id import (
     extract_profile_ids_by_author,

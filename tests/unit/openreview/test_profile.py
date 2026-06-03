@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from unittest.mock import Mock, patch
 
 import pytest
@@ -16,6 +16,7 @@ from candidex.openreview import (
     get_unique_profiles,
     load_or_fetch_profile_by_author,
     load_or_fetch_profile_by_id,
+    log_profiles_by_author_stats,
 )
 
 if TYPE_CHECKING:
@@ -45,6 +46,10 @@ def mock_profile() -> Profile:
 
 def make_profile(profile_id: str) -> Profile:
     return Mock(id=profile_id, spec=Profile)
+
+
+def make_profiles(n: int) -> list[Any]:
+    return [object() for _ in range(n)]
 
 
 def make_author(name: str) -> Author:
@@ -841,3 +846,213 @@ def test_extract_profiles_by_id_empty_input(
 ) -> None:
     result = extract_profiles_by_id([], tmp_path, client=mock_client)
     assert result == {}
+
+
+##################################################
+#     Tests for log_profiles_by_author_stats     #
+##################################################
+
+
+def test_log_profiles_by_author_stats_empty_dict() -> None:
+    with patch(f"{MODULE}.logger") as mock_logger:
+        log_profiles_by_author_stats({})
+        mock_logger.info.assert_called_once_with("No authors to report profile stats for.")
+
+
+def test_log_profiles_by_author_stats_single_missing() -> None:
+    profiles_by_author = {make_author("Jane"): None}
+    with patch(f"{MODULE}.logger") as mock_logger:
+        log_profiles_by_author_stats(profiles_by_author)
+        mock_logger.info.assert_called_once_with(
+            "Profile stats for %d authors:\n"
+            "  - Missing (None):        %d (%.1f%%)\n"
+            "  - Empty list:            %d (%.1f%%)\n"
+            "  - Single profile:        %d (%.1f%%)\n"
+            "  - Two profiles:          %d (%.1f%%)\n"
+            "  - Three or more:         %d (%.1f%%)\n"
+            "  - Average per author:    %.2f (excluding None)",
+            1,
+            1,
+            100.0,
+            0,
+            0.0,
+            0,
+            0.0,
+            0,
+            0.0,
+            0,
+            0.0,
+            0.0,
+        )
+
+
+def test_log_profiles_by_author_stats_single_empty() -> None:
+    profiles_by_author = {make_author("Jane"): []}
+    with patch(f"{MODULE}.logger") as mock_logger:
+        log_profiles_by_author_stats(profiles_by_author)
+        mock_logger.info.assert_called_once_with(
+            "Profile stats for %d authors:\n"
+            "  - Missing (None):        %d (%.1f%%)\n"
+            "  - Empty list:            %d (%.1f%%)\n"
+            "  - Single profile:        %d (%.1f%%)\n"
+            "  - Two profiles:          %d (%.1f%%)\n"
+            "  - Three or more:         %d (%.1f%%)\n"
+            "  - Average per author:    %.2f (excluding None)",
+            1,
+            0,
+            0.0,
+            1,
+            100.0,
+            0,
+            0.0,
+            0,
+            0.0,
+            0,
+            0.0,
+            0.0,
+        )
+
+
+def test_log_profiles_by_author_stats_single_profile() -> None:
+    profiles_by_author = {make_author("Jane"): make_profiles(1)}
+    with patch(f"{MODULE}.logger") as mock_logger:
+        log_profiles_by_author_stats(profiles_by_author)
+        mock_logger.info.assert_called_once_with(
+            "Profile stats for %d authors:\n"
+            "  - Missing (None):        %d (%.1f%%)\n"
+            "  - Empty list:            %d (%.1f%%)\n"
+            "  - Single profile:        %d (%.1f%%)\n"
+            "  - Two profiles:          %d (%.1f%%)\n"
+            "  - Three or more:         %d (%.1f%%)\n"
+            "  - Average per author:    %.2f (excluding None)",
+            1,
+            0,
+            0.0,
+            0,
+            0.0,
+            1,
+            100.0,
+            0,
+            0.0,
+            0,
+            0.0,
+            1.0,
+        )
+
+
+def test_log_profiles_by_author_stats_two_profiles() -> None:
+    profiles_by_author = {make_author("Jane"): make_profiles(2)}
+    with patch(f"{MODULE}.logger") as mock_logger:
+        log_profiles_by_author_stats(profiles_by_author)
+        mock_logger.info.assert_called_once_with(
+            "Profile stats for %d authors:\n"
+            "  - Missing (None):        %d (%.1f%%)\n"
+            "  - Empty list:            %d (%.1f%%)\n"
+            "  - Single profile:        %d (%.1f%%)\n"
+            "  - Two profiles:          %d (%.1f%%)\n"
+            "  - Three or more:         %d (%.1f%%)\n"
+            "  - Average per author:    %.2f (excluding None)",
+            1,
+            0,
+            0.0,
+            0,
+            0.0,
+            0,
+            0.0,
+            1,
+            100.0,
+            0,
+            0.0,
+            2.0,
+        )
+
+
+def test_log_profiles_by_author_stats_three_or_more_profiles() -> None:
+    profiles_by_author = {make_author("Jane"): make_profiles(3)}
+    with patch(f"{MODULE}.logger") as mock_logger:
+        log_profiles_by_author_stats(profiles_by_author)
+        mock_logger.info.assert_called_once_with(
+            "Profile stats for %d authors:\n"
+            "  - Missing (None):        %d (%.1f%%)\n"
+            "  - Empty list:            %d (%.1f%%)\n"
+            "  - Single profile:        %d (%.1f%%)\n"
+            "  - Two profiles:          %d (%.1f%%)\n"
+            "  - Three or more:         %d (%.1f%%)\n"
+            "  - Average per author:    %.2f (excluding None)",
+            1,
+            0,
+            0.0,
+            0,
+            0.0,
+            0,
+            0.0,
+            0,
+            0.0,
+            1,
+            100.0,
+            3.0,
+        )
+
+
+def test_log_profiles_by_author_stats_average_excludes_none() -> None:
+    profiles_by_author = {
+        make_author("Jane"): make_profiles(2),
+        make_author("John"): None,
+        make_author("Alice"): make_profiles(4),
+    }
+    with patch(f"{MODULE}.logger") as mock_logger:
+        log_profiles_by_author_stats(profiles_by_author)
+        mock_logger.info.assert_called_once_with(
+            "Profile stats for %d authors:\n"
+            "  - Missing (None):        %d (%.1f%%)\n"
+            "  - Empty list:            %d (%.1f%%)\n"
+            "  - Single profile:        %d (%.1f%%)\n"
+            "  - Two profiles:          %d (%.1f%%)\n"
+            "  - Three or more:         %d (%.1f%%)\n"
+            "  - Average per author:    %.2f (excluding None)",
+            3,
+            1,
+            pytest.approx(33.333333333333336),
+            0,
+            0.0,
+            0,
+            0.0,
+            1,
+            pytest.approx(33.333333333333336),
+            1,
+            pytest.approx(33.333333333333336),
+            3.0,
+        )
+
+
+def test_log_profiles_by_author_stats_mixed() -> None:
+    profiles_by_author = {
+        make_author("Jane"): None,
+        make_author("John"): [],
+        make_author("Alice"): make_profiles(1),
+        make_author("Bob"): make_profiles(2),
+        make_author("Charlie"): make_profiles(3),
+    }
+    with patch(f"{MODULE}.logger") as mock_logger:
+        log_profiles_by_author_stats(profiles_by_author)
+        mock_logger.info.assert_called_once_with(
+            "Profile stats for %d authors:\n"
+            "  - Missing (None):        %d (%.1f%%)\n"
+            "  - Empty list:            %d (%.1f%%)\n"
+            "  - Single profile:        %d (%.1f%%)\n"
+            "  - Two profiles:          %d (%.1f%%)\n"
+            "  - Three or more:         %d (%.1f%%)\n"
+            "  - Average per author:    %.2f (excluding None)",
+            5,
+            1,
+            20.0,
+            1,
+            20.0,
+            1,
+            20.0,
+            1,
+            20.0,
+            1,
+            20.0,
+            1.5,
+        )
