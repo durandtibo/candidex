@@ -3,7 +3,11 @@ from __future__ import annotations
 import polars as pl
 from polars.testing import assert_frame_equal
 
-from candidex.author import Author, add_profile_ids_to_dataframe, authors_to_dataframe
+from candidex.author import (
+    Author,
+    add_openreview_profile_ids_to_dataframe,
+    authors_to_dataframe,
+)
 from candidex.columns import (
     AUTHOR_AFFILIATION,
     AUTHOR_EMAIL,
@@ -25,15 +29,15 @@ def make_frame(authors: list[Author]) -> pl.DataFrame:
     return authors_to_dataframe(authors, include_id=True)
 
 
-##################################################
-#     Tests for add_profile_ids_to_dataframe     #
-##################################################
+#############################################################
+#     Tests for add_openreview_profile_ids_to_dataframe     #
+#############################################################
 
 
-def test_add_profile_ids_to_dataframe_single_profile_id() -> None:
+def test_add_openreview_profile_ids_to_dataframe_single_profile_id() -> None:
     author = make_author("Jane Smith", ["MIT"], "jane@mit.edu")
     assert_frame_equal(
-        add_profile_ids_to_dataframe(make_frame([author]), {author: ["~Jane_Smith1"]}),
+        add_openreview_profile_ids_to_dataframe(make_frame([author]), {author: ["~Jane_Smith1"]}),
         pl.DataFrame(
             {
                 AUTHOR_NAME: ["Jane Smith"],
@@ -53,10 +57,10 @@ def test_add_profile_ids_to_dataframe_single_profile_id() -> None:
     )
 
 
-def test_add_profile_ids_to_dataframe_multiple_profile_ids() -> None:
+def test_add_openreview_profile_ids_to_dataframe_multiple_profile_ids() -> None:
     author = make_author("Jane Smith", ["MIT"], "jane@mit.edu")
     assert_frame_equal(
-        add_profile_ids_to_dataframe(
+        add_openreview_profile_ids_to_dataframe(
             make_frame([author]), {author: ["~Jane_Smith1", "~Jane_Smith2"]}
         ),
         pl.DataFrame(
@@ -78,10 +82,10 @@ def test_add_profile_ids_to_dataframe_multiple_profile_ids() -> None:
     )
 
 
-def test_add_profile_ids_to_dataframe_empty_profile_ids() -> None:
+def test_add_openreview_profile_ids_to_dataframe_empty_profile_ids() -> None:
     author = make_author("Jane Smith", ["MIT"], "jane@mit.edu")
     assert_frame_equal(
-        add_profile_ids_to_dataframe(make_frame([author]), {author: []}),
+        add_openreview_profile_ids_to_dataframe(make_frame([author]), {author: []}),
         pl.DataFrame(
             {
                 AUTHOR_NAME: ["Jane Smith"],
@@ -101,10 +105,10 @@ def test_add_profile_ids_to_dataframe_empty_profile_ids() -> None:
     )
 
 
-def test_add_profile_ids_to_dataframe_none_profile_ids_is_null() -> None:
+def test_add_openreview_profile_ids_to_dataframe_none_profile_ids_is_null() -> None:
     author = make_author("Jane Smith", ["MIT"], "jane@mit.edu")
     assert_frame_equal(
-        add_profile_ids_to_dataframe(make_frame([author]), {author: None}),
+        add_openreview_profile_ids_to_dataframe(make_frame([author]), {author: None}),
         pl.DataFrame(
             {
                 AUTHOR_NAME: ["Jane Smith"],
@@ -124,11 +128,11 @@ def test_add_profile_ids_to_dataframe_none_profile_ids_is_null() -> None:
     )
 
 
-def test_add_profile_ids_to_dataframe_multiple_authors() -> None:
+def test_add_openreview_profile_ids_to_dataframe_multiple_authors() -> None:
     author_a = make_author("Jane Smith", ["MIT"], "jane@mit.edu")
     author_b = make_author("John Doe", ["Stanford"], None)
     assert_frame_equal(
-        add_profile_ids_to_dataframe(
+        add_openreview_profile_ids_to_dataframe(
             make_frame([author_a, author_b]),
             {author_a: ["~Jane_Smith1"], author_b: ["~John_Doe1"]},
         ),
@@ -151,12 +155,12 @@ def test_add_profile_ids_to_dataframe_multiple_authors() -> None:
     )
 
 
-def test_add_profile_ids_to_dataframe_preserves_row_order() -> None:
+def test_add_openreview_profile_ids_to_dataframe_preserves_row_order() -> None:
     author_a = make_author("Charlie", ["CMU"])
     author_b = make_author("Alice", ["Stanford"])
     author_c = make_author("Bob", ["MIT"])
     assert_frame_equal(
-        add_profile_ids_to_dataframe(
+        add_openreview_profile_ids_to_dataframe(
             make_frame([author_a, author_b, author_c]),
             {author_a: ["~Charlie1"], author_b: ["~Alice1"], author_c: ["~Bob1"]},
         ),
@@ -179,11 +183,11 @@ def test_add_profile_ids_to_dataframe_preserves_row_order() -> None:
     )
 
 
-def test_add_profile_ids_to_dataframe_author_not_in_mapping_is_null() -> None:
+def test_add_openreview_profile_ids_to_dataframe_author_not_in_mapping_is_null() -> None:
     author_a = make_author("Jane Smith", ["MIT"], "jane@mit.edu")
     author_b = make_author("John Doe", ["Stanford"], None)
     assert_frame_equal(
-        add_profile_ids_to_dataframe(
+        add_openreview_profile_ids_to_dataframe(
             make_frame([author_a, author_b]),
             {author_a: ["~Jane_Smith1"]},
         ),
@@ -206,10 +210,10 @@ def test_add_profile_ids_to_dataframe_author_not_in_mapping_is_null() -> None:
     )
 
 
-def test_add_profile_ids_to_dataframe_empty_mapping() -> None:
+def test_add_openreview_profile_ids_to_dataframe_empty_mapping() -> None:
     author = make_author("Jane Smith", ["MIT"], "jane@mit.edu")
     assert_frame_equal(
-        add_profile_ids_to_dataframe(make_frame([author]), {}),
+        add_openreview_profile_ids_to_dataframe(make_frame([author]), {}),
         pl.DataFrame(
             {
                 AUTHOR_NAME: ["Jane Smith"],

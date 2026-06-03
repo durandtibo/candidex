@@ -2,7 +2,7 @@ r"""Contain DataFrame utilities."""
 
 from __future__ import annotations
 
-__all__ = ["add_profile_ids_to_dataframe"]
+__all__ = ["add_openreview_profile_ids_to_dataframe"]
 
 
 from typing import TYPE_CHECKING
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from candidex.author import Author
 
 
-def add_profile_ids_to_dataframe(
+def add_openreview_profile_ids_to_dataframe(
     frame: pl.DataFrame,
     profile_ids_by_author: dict[Author, list[str] | None],
 ) -> pl.DataFrame:
@@ -41,18 +41,22 @@ def add_profile_ids_to_dataframe(
 
     Returns:
         The input DataFrame with an additional `AUTHOR_OPENREVIEW_PROFILE_ID`
-        column of type `List[String]`, containing the OpenReview profile IDs
-        for each author. Null if the lookup failed, empty list if no profiles
-        were found.
+            column of type `List[String]`, containing the OpenReview profile IDs
+            for each author. Null if the lookup failed, empty list if no profiles
+            were found.
 
     Example:
         ```pycon
-        >>> from candidex.author import Author, authors_to_dataframe, add_profile_ids_to_dataframe
+        >>> from candidex.author import (
+        ...     Author,
+        ...     authors_to_dataframe,
+        ...     add_openreview_profile_ids_to_dataframe,
+        ... )
         >>> from candidex.columns import AUTHOR_OPENREVIEW_PROFILE_ID
         >>> authors = [Author.from_raw("Jane Smith", ["MIT"], "jane@mit.edu")]
         >>> frame = authors_to_dataframe(authors, include_id=True)
         >>> profile_ids_by_author = {authors[0]: ["~Jane_Smith1"]}
-        >>> result = add_profile_ids_to_dataframe(frame, profile_ids_by_author)
+        >>> result = add_openreview_profile_ids_to_dataframe(frame, profile_ids_by_author)
         >>> result
         shape: (1, 5)
         ┌─────────────┬────────────────────┬──────────────┬────────────────────────┬───────────────────────┐
