@@ -130,6 +130,69 @@ def test_author_inequality_different_email() -> None:
     )
 
 
+# --- Hash ---
+
+
+def test_author_hash_returns_string() -> None:
+    assert isinstance(Author.from_raw("Jane Smith", ["MIT"], "jane@mit.edu").hash(), str)
+
+
+def test_author_hash_is_128_char_lowercase_hex() -> None:
+    digest = Author.from_raw("Jane Smith", ["MIT"], "jane@mit.edu").hash()
+    assert len(digest) == 128
+    assert all(c in "0123456789abcdef" for c in digest)
+
+
+def test_author_hash_same_author_same_hash() -> None:
+    author = Author.from_raw("Jane Smith", ["MIT"], "jane@mit.edu")
+    assert author.hash() == author.hash()
+
+
+def test_author_hash_equal_authors_same_hash() -> None:
+    a = Author.from_raw("Jane Smith", ["MIT"], "jane@mit.edu")
+    b = Author.from_raw("Jane Smith", ["MIT"], "jane@mit.edu")
+    assert a.hash() == b.hash()
+
+
+@pytest.mark.parametrize(
+    ("a", "b"),
+    [
+        pytest.param(
+            Author.from_raw("Jane Smith", ["MIT"], "jane@mit.edu"),
+            Author.from_raw("John Doe", ["MIT"], "jane@mit.edu"),
+            id="different_name",
+        ),
+        pytest.param(
+            Author.from_raw("Jane Smith", ["MIT"], "jane@mit.edu"),
+            Author.from_raw("Jane Smith", ["Stanford"], "jane@mit.edu"),
+            id="different_affiliation",
+        ),
+        pytest.param(
+            Author.from_raw("Jane Smith", ["MIT"], "jane@mit.edu"),
+            Author.from_raw("Jane Smith", ["MIT"], "jane@stanford.edu"),
+            id="different_email",
+        ),
+        pytest.param(
+            Author.from_raw("Jane Smith", ["MIT"], "jane@mit.edu"),
+            Author.from_raw("Jane Smith", ["MIT"], None),
+            id="email_none_vs_value",
+        ),
+        pytest.param(
+            Author.from_raw("Jane Smith", ["MIT"]),
+            Author.from_raw("Jane Smith", None),
+            id="affiliations_none_vs_value",
+        ),
+        pytest.param(
+            Author.from_raw("Jane Smith", ["MIT", "Stanford"]),
+            Author.from_raw("Jane Smith", ["Stanford", "MIT"]),
+            id="affiliation_order_matters",
+        ),
+    ],
+)
+def test_author_hash_different_authors_different_hash(a: Author, b: Author) -> None:
+    assert a.hash() != b.hash()
+
+
 # --- Immutability ---
 
 
