@@ -4,6 +4,7 @@ import polars as pl
 from polars.testing import assert_frame_equal
 
 from candidex.author import Author, authors_to_dataframe
+from candidex.columns import AUTHOR_AFFILIATION, AUTHOR_EMAIL, AUTHOR_ID, AUTHOR_NAME
 
 # --- Helpers ---
 
@@ -21,60 +22,92 @@ def make_author(
 ##########################################
 
 
+# --- Without ID ---
+
+
 def test_authors_to_dataframe_empty_sequence() -> None:
-    expected = pl.DataFrame(
-        schema={
-            "name": pl.String,
-            "affiliations": pl.List(pl.String),
-            "email": pl.String,
-        }
+    assert_frame_equal(
+        authors_to_dataframe([]),
+        pl.DataFrame(
+            schema={
+                AUTHOR_NAME: pl.String,
+                AUTHOR_AFFILIATION: pl.List(pl.String),
+                AUTHOR_EMAIL: pl.String,
+            }
+        ),
     )
-    assert_frame_equal(authors_to_dataframe([]), expected)
 
 
 def test_authors_to_dataframe_single_author_with_all_fields() -> None:
-    authors = [make_author("Jane Smith", ["MIT"], "jane@mit.edu")]
-    expected = pl.DataFrame(
-        {"name": ["Jane Smith"], "affiliations": [["MIT"]], "email": ["jane@mit.edu"]},
-        schema={"name": pl.String, "affiliations": pl.List(pl.String), "email": pl.String},
+    assert_frame_equal(
+        authors_to_dataframe([make_author("Jane Smith", ["MIT"], "jane@mit.edu")]),
+        pl.DataFrame(
+            {
+                AUTHOR_NAME: ["Jane Smith"],
+                AUTHOR_AFFILIATION: [["MIT"]],
+                AUTHOR_EMAIL: ["jane@mit.edu"],
+            },
+            schema={
+                AUTHOR_NAME: pl.String,
+                AUTHOR_AFFILIATION: pl.List(pl.String),
+                AUTHOR_EMAIL: pl.String,
+            },
+        ),
     )
-    assert_frame_equal(authors_to_dataframe(authors), expected)
 
 
 def test_authors_to_dataframe_none_email() -> None:
-    authors = [make_author("Jane Smith", ["MIT"], None)]
-    expected = pl.DataFrame(
-        {"name": ["Jane Smith"], "affiliations": [["MIT"]], "email": [None]},
-        schema={"name": pl.String, "affiliations": pl.List(pl.String), "email": pl.String},
+    assert_frame_equal(
+        authors_to_dataframe([make_author("Jane Smith", ["MIT"], None)]),
+        pl.DataFrame(
+            {
+                AUTHOR_NAME: ["Jane Smith"],
+                AUTHOR_AFFILIATION: [["MIT"]],
+                AUTHOR_EMAIL: [None],
+            },
+            schema={
+                AUTHOR_NAME: pl.String,
+                AUTHOR_AFFILIATION: pl.List(pl.String),
+                AUTHOR_EMAIL: pl.String,
+            },
+        ),
     )
-    assert_frame_equal(authors_to_dataframe(authors), expected)
 
 
 def test_authors_to_dataframe_none_affiliations() -> None:
-    authors = [make_author("Jane Smith", None)]
-    expected = pl.DataFrame(
-        {"name": ["Jane Smith"], "affiliations": [None], "email": [None]},
-        schema={"name": pl.String, "affiliations": pl.List(pl.String), "email": pl.String},
+    assert_frame_equal(
+        authors_to_dataframe([make_author("Jane Smith", None)]),
+        pl.DataFrame(
+            {
+                AUTHOR_NAME: ["Jane Smith"],
+                AUTHOR_AFFILIATION: [None],
+                AUTHOR_EMAIL: [None],
+            },
+            schema={
+                AUTHOR_NAME: pl.String,
+                AUTHOR_AFFILIATION: pl.List(pl.String),
+                AUTHOR_EMAIL: pl.String,
+            },
+        ),
     )
-    assert_frame_equal(authors_to_dataframe(authors), expected)
 
 
 def test_authors_to_dataframe_empty_affiliations() -> None:
-    authors = [make_author("Jane Smith", [])]
-    expected = pl.DataFrame(
-        {"name": ["Jane Smith"], "affiliations": [[]], "email": [None]},
-        schema={"name": pl.String, "affiliations": pl.List(pl.String), "email": pl.String},
+    assert_frame_equal(
+        authors_to_dataframe([make_author("Jane Smith", [])]),
+        pl.DataFrame(
+            {
+                AUTHOR_NAME: ["Jane Smith"],
+                AUTHOR_AFFILIATION: [[]],
+                AUTHOR_EMAIL: [None],
+            },
+            schema={
+                AUTHOR_NAME: pl.String,
+                AUTHOR_AFFILIATION: pl.List(pl.String),
+                AUTHOR_EMAIL: pl.String,
+            },
+        ),
     )
-    assert_frame_equal(authors_to_dataframe(authors), expected)
-
-
-def test_authors_to_dataframe_multiple_affiliations() -> None:
-    authors = [make_author("Jane Smith", ["MIT", "Stanford", "CMU"])]
-    expected = pl.DataFrame(
-        {"name": ["Jane Smith"], "affiliations": [["MIT", "Stanford", "CMU"]], "email": [None]},
-        schema={"name": pl.String, "affiliations": pl.List(pl.String), "email": pl.String},
-    )
-    assert_frame_equal(authors_to_dataframe(authors), expected)
 
 
 def test_authors_to_dataframe_multiple_authors() -> None:
@@ -83,15 +116,21 @@ def test_authors_to_dataframe_multiple_authors() -> None:
         make_author("John Doe", None, None),
         make_author("Alice Brown", [], "alice@cmu.edu"),
     ]
-    expected = pl.DataFrame(
-        {
-            "name": ["Jane Smith", "John Doe", "Alice Brown"],
-            "affiliations": [["MIT", "Stanford"], None, []],
-            "email": ["jane@mit.edu", None, "alice@cmu.edu"],
-        },
-        schema={"name": pl.String, "affiliations": pl.List(pl.String), "email": pl.String},
+    assert_frame_equal(
+        authors_to_dataframe(authors),
+        pl.DataFrame(
+            {
+                AUTHOR_NAME: ["Jane Smith", "John Doe", "Alice Brown"],
+                AUTHOR_AFFILIATION: [["MIT", "Stanford"], None, []],
+                AUTHOR_EMAIL: ["jane@mit.edu", None, "alice@cmu.edu"],
+            },
+            schema={
+                AUTHOR_NAME: pl.String,
+                AUTHOR_AFFILIATION: pl.List(pl.String),
+                AUTHOR_EMAIL: pl.String,
+            },
+        ),
     )
-    assert_frame_equal(authors_to_dataframe(authors), expected)
 
 
 def test_authors_to_dataframe_preserves_order() -> None:
@@ -100,12 +139,47 @@ def test_authors_to_dataframe_preserves_order() -> None:
         make_author("Alice", ["Stanford"]),
         make_author("Bob", ["MIT"]),
     ]
-    expected = pl.DataFrame(
-        {
-            "name": ["Charlie", "Alice", "Bob"],
-            "affiliations": [["CMU"], ["Stanford"], ["MIT"]],
-            "email": [None, None, None],
-        },
-        schema={"name": pl.String, "affiliations": pl.List(pl.String), "email": pl.String},
+    assert_frame_equal(
+        authors_to_dataframe(authors),
+        pl.DataFrame(
+            {
+                AUTHOR_NAME: ["Charlie", "Alice", "Bob"],
+                AUTHOR_AFFILIATION: [["CMU"], ["Stanford"], ["MIT"]],
+                AUTHOR_EMAIL: [None, None, None],
+            },
+            schema={
+                AUTHOR_NAME: pl.String,
+                AUTHOR_AFFILIATION: pl.List(pl.String),
+                AUTHOR_EMAIL: pl.String,
+            },
+        ),
     )
-    assert_frame_equal(authors_to_dataframe(authors), expected)
+
+
+# --- With ID ---
+
+
+def test_authors_to_dataframe_exclude_id_by_default() -> None:
+    assert AUTHOR_ID not in authors_to_dataframe([make_author("Jane Smith", ["MIT"])]).columns
+
+
+def test_authors_to_dataframe_include_id_full_output() -> None:
+    author_a = make_author("Jane Smith", ["MIT"], "jane@mit.edu")
+    author_b = make_author("John Doe", ["Stanford"], None)
+    assert_frame_equal(
+        authors_to_dataframe([author_a, author_b], include_id=True),
+        pl.DataFrame(
+            {
+                AUTHOR_NAME: ["Jane Smith", "John Doe"],
+                AUTHOR_AFFILIATION: [["MIT"], ["Stanford"]],
+                AUTHOR_EMAIL: ["jane@mit.edu", None],
+                AUTHOR_ID: [author_a.hash(), author_b.hash()],
+            },
+            schema={
+                AUTHOR_NAME: pl.String,
+                AUTHOR_AFFILIATION: pl.List(pl.String),
+                AUTHOR_EMAIL: pl.String,
+                AUTHOR_ID: pl.String,
+            },
+        ),
+    )
