@@ -14,7 +14,7 @@ from candidex.openreview import (
     extract_profiles_by_id,
     fetch_profile_by_id,
     get_unique_profiles,
-    load_or_fetch_profile,
+    load_or_fetch_profile_by_author,
     load_or_fetch_profile_by_id,
 )
 
@@ -199,15 +199,15 @@ def test_fetch_profile_by_id_accepts_various_id_formats(
     mock_client.get_profile.assert_called_once_with(profile_id)
 
 
-#############################################
-#      Tests for load_or_fetch_profile      #
-#############################################
+#######################################################
+#      Tests for load_or_fetch_profile_by_author      #
+#######################################################
 
 
 # --- Cache hit ---
 
 
-def test_load_or_fetch_profile_returns_cached_result(
+def test_load_or_fetch_profile_by_author_returns_cached_result(
     author: Author,
     tmp_path: Path,
     mock_client: OpenReviewClient,
@@ -219,7 +219,7 @@ def test_load_or_fetch_profile_returns_cached_result(
         patch(f"{MODULE}.load_json", return_value={"id": "~Jane_Smith1"}),
         patch(f"{MODULE}.Profile.from_json", return_value=mock_profile),
     ):
-        result_author, result_id, result_profile = load_or_fetch_profile(
+        result_author, result_id, result_profile = load_or_fetch_profile_by_author(
             author, "~Jane_Smith1", tmp_path, client=mock_client
         )
 
@@ -228,7 +228,7 @@ def test_load_or_fetch_profile_returns_cached_result(
     assert result_profile is mock_profile
 
 
-def test_load_or_fetch_profile_does_not_call_api_when_cached(
+def test_load_or_fetch_profile_by_author_does_not_call_api_when_cached(
     author: Author,
     tmp_path: Path,
     mock_client: OpenReviewClient,
@@ -241,16 +241,18 @@ def test_load_or_fetch_profile_does_not_call_api_when_cached(
         patch(f"{MODULE}.Profile.from_json", return_value=mock_profile),
         patch(f"{MODULE}.fetch_profile_by_id") as mock_fetch,
     ):
-        load_or_fetch_profile(author, "~Jane_Smith1", tmp_path, client=mock_client)
+        load_or_fetch_profile_by_author(author, "~Jane_Smith1", tmp_path, client=mock_client)
         mock_fetch.assert_not_called()
 
 
 # --- Cache miss: client unavailable ---
 
 
-def test_load_or_fetch_profile_returns_none_when_no_client(author: Author, tmp_path: Path) -> None:
+def test_load_or_fetch_profile_by_author_returns_none_when_no_client(
+    author: Author, tmp_path: Path
+) -> None:
     with patch(f"{MODULE}.create_client", return_value=None):
-        result_author, result_id, result_profile = load_or_fetch_profile(
+        result_author, result_id, result_profile = load_or_fetch_profile_by_author(
             author, "~Jane_Smith1", tmp_path
         )
     assert result_author == author
@@ -258,7 +260,7 @@ def test_load_or_fetch_profile_returns_none_when_no_client(author: Author, tmp_p
     assert result_profile is None
 
 
-def test_load_or_fetch_profile_uses_provided_client(
+def test_load_or_fetch_profile_by_author_uses_provided_client(
     author: Author,
     tmp_path: Path,
     mock_client: OpenReviewClient,
@@ -270,11 +272,11 @@ def test_load_or_fetch_profile_uses_provided_client(
         patch(f"{MODULE}.fetch_profile_by_id", return_value=mock_profile),
         patch(f"{MODULE}.save_json"),
     ):
-        load_or_fetch_profile(author, "~Jane_Smith1", tmp_path, client=mock_client)
+        load_or_fetch_profile_by_author(author, "~Jane_Smith1", tmp_path, client=mock_client)
         mock_create.assert_not_called()
 
 
-def test_load_or_fetch_profile_creates_client_when_none_provided(
+def test_load_or_fetch_profile_by_author_creates_client_when_none_provided(
     author: Author,
     tmp_path: Path,
     mock_client: OpenReviewClient,
@@ -286,14 +288,14 @@ def test_load_or_fetch_profile_creates_client_when_none_provided(
         patch(f"{MODULE}.fetch_profile_by_id", return_value=mock_profile),
         patch(f"{MODULE}.save_json"),
     ):
-        load_or_fetch_profile(author, "~Jane_Smith1", tmp_path)
+        load_or_fetch_profile_by_author(author, "~Jane_Smith1", tmp_path)
         mock_create.assert_called_once()
 
 
 # --- Cache miss: successful fetch ---
 
 
-def test_load_or_fetch_profile_returns_fetched_profile(
+def test_load_or_fetch_profile_by_author_returns_fetched_profile(
     author: Author,
     tmp_path: Path,
     mock_client: OpenReviewClient,
@@ -304,7 +306,7 @@ def test_load_or_fetch_profile_returns_fetched_profile(
         patch(f"{MODULE}.fetch_profile_by_id", return_value=mock_profile),
         patch(f"{MODULE}.save_json"),
     ):
-        result_author, result_id, result_profile = load_or_fetch_profile(
+        result_author, result_id, result_profile = load_or_fetch_profile_by_author(
             author, "~Jane_Smith1", tmp_path, client=mock_client
         )
     assert result_author == author
@@ -312,7 +314,7 @@ def test_load_or_fetch_profile_returns_fetched_profile(
     assert result_profile is mock_profile
 
 
-def test_load_or_fetch_profile_saves_profile_to_disk(
+def test_load_or_fetch_profile_by_author_saves_profile_to_disk(
     author: Author,
     tmp_path: Path,
     mock_client: OpenReviewClient,
@@ -324,11 +326,11 @@ def test_load_or_fetch_profile_saves_profile_to_disk(
         patch(f"{MODULE}.fetch_profile_by_id", return_value=mock_profile),
         patch(f"{MODULE}.save_json") as mock_save,
     ):
-        load_or_fetch_profile(author, "~Jane_Smith1", tmp_path, client=mock_client)
+        load_or_fetch_profile_by_author(author, "~Jane_Smith1", tmp_path, client=mock_client)
         mock_save.assert_called_once_with(mock_profile.to_json(), expected_path)
 
 
-def test_load_or_fetch_profile_calls_fetch_with_correct_id(
+def test_load_or_fetch_profile_by_author_calls_fetch_with_correct_id(
     author: Author,
     tmp_path: Path,
     mock_client: OpenReviewClient,
@@ -339,27 +341,27 @@ def test_load_or_fetch_profile_calls_fetch_with_correct_id(
         patch(f"{MODULE}.fetch_profile_by_id", return_value=mock_profile) as mock_fetch,
         patch(f"{MODULE}.save_json"),
     ):
-        load_or_fetch_profile(author, "~Jane_Smith1", tmp_path, client=mock_client)
+        load_or_fetch_profile_by_author(author, "~Jane_Smith1", tmp_path, client=mock_client)
         mock_fetch.assert_called_once_with("~Jane_Smith1", client=mock_client)
 
 
 # --- Cache miss: failed fetch ---
 
 
-def test_load_or_fetch_profile_returns_none_when_fetch_fails(
+def test_load_or_fetch_profile_by_author_returns_none_when_fetch_fails(
     author: Author,
     tmp_path: Path,
     mock_client: OpenReviewClient,
 ) -> None:
 
     with patch(f"{MODULE}.fetch_profile_by_id", return_value=None):
-        _, _, result_profile = load_or_fetch_profile(
+        _, _, result_profile = load_or_fetch_profile_by_author(
             author, "~Jane_Smith1", tmp_path, client=mock_client
         )
     assert result_profile is None
 
 
-def test_load_or_fetch_profile_does_not_save_when_fetch_fails(
+def test_load_or_fetch_profile_by_author_does_not_save_when_fetch_fails(
     author: Author,
     tmp_path: Path,
     mock_client: OpenReviewClient,
@@ -369,7 +371,7 @@ def test_load_or_fetch_profile_does_not_save_when_fetch_fails(
         patch(f"{MODULE}.fetch_profile_by_id", return_value=None),
         patch(f"{MODULE}.save_json") as mock_save,
     ):
-        load_or_fetch_profile(author, "~Jane_Smith1", tmp_path, client=mock_client)
+        load_or_fetch_profile_by_author(author, "~Jane_Smith1", tmp_path, client=mock_client)
         mock_save.assert_not_called()
 
 
@@ -399,7 +401,8 @@ def test_extract_profiles_by_author_uses_provided_client(
     with (
         patch(f"{MODULE}.create_client") as mock_create,
         patch(
-            f"{MODULE}.load_or_fetch_profile", return_value=(author, "~Jane_Smith1", mock_profile)
+            f"{MODULE}.load_or_fetch_profile_by_author",
+            return_value=(author, "~Jane_Smith1", mock_profile),
         ),
     ):
         extract_profiles_by_author({author: ["~Jane_Smith1"]}, tmp_path, client=mock_client)
@@ -415,7 +418,8 @@ def test_extract_profiles_by_author_creates_client_when_none_provided(
     with (
         patch(f"{MODULE}.create_client", return_value=mock_client) as mock_create,
         patch(
-            f"{MODULE}.load_or_fetch_profile", return_value=(author, "~Jane_Smith1", mock_profile)
+            f"{MODULE}.load_or_fetch_profile_by_author",
+            return_value=(author, "~Jane_Smith1", mock_profile),
         ),
     ):
         extract_profiles_by_author({author: ["~Jane_Smith1"]}, tmp_path)
@@ -434,7 +438,8 @@ def test_extract_profiles_by_author_creates_directory_if_not_exists(
     path = tmp_path / "profiles"
     assert not path.exists()
     with patch(
-        f"{MODULE}.load_or_fetch_profile", return_value=(author, "~Jane_Smith1", mock_profile)
+        f"{MODULE}.load_or_fetch_profile_by_author",
+        return_value=(author, "~Jane_Smith1", mock_profile),
     ):
         extract_profiles_by_author({author: ["~Jane_Smith1"]}, path, client=mock_client)
     assert path.exists()
@@ -448,7 +453,7 @@ def test_extract_profiles_by_author_skips_none_profile_ids(
     mock_client: OpenReviewClient,
     author: Author,
 ) -> None:
-    with patch(f"{MODULE}.load_or_fetch_profile") as mock_fetch:
+    with patch(f"{MODULE}.load_or_fetch_profile_by_author") as mock_fetch:
         result = extract_profiles_by_author({author: None}, tmp_path, client=mock_client)
         mock_fetch.assert_not_called()
     assert result[author] == []
@@ -459,7 +464,7 @@ def test_extract_profiles_by_author_skips_empty_profile_ids(
     mock_client: OpenReviewClient,
     author: Author,
 ) -> None:
-    with patch(f"{MODULE}.load_or_fetch_profile") as mock_fetch:
+    with patch(f"{MODULE}.load_or_fetch_profile_by_author") as mock_fetch:
         result = extract_profiles_by_author({author: []}, tmp_path, client=mock_client)
         mock_fetch.assert_not_called()
     assert result[author] == []
@@ -475,7 +480,8 @@ def test_extract_profiles_by_author_returns_profiles(
     mock_profile: Mock,
 ) -> None:
     with patch(
-        f"{MODULE}.load_or_fetch_profile", return_value=(author, "~Jane_Smith1", mock_profile)
+        f"{MODULE}.load_or_fetch_profile_by_author",
+        return_value=(author, "~Jane_Smith1", mock_profile),
     ):
         result = extract_profiles_by_author(
             {author: ["~Jane_Smith1"]}, tmp_path, client=mock_client
@@ -499,7 +505,7 @@ def test_extract_profiles_by_author_returns_multiple_profiles_per_author(
     ) -> tuple[Author, str, Profile | None]:
         return (author, profile_id, profile_1 if profile_id == "~Jane_Smith1" else profile_2)
 
-    with patch(f"{MODULE}.load_or_fetch_profile", side_effect=side_effect):
+    with patch(f"{MODULE}.load_or_fetch_profile_by_author", side_effect=side_effect):
         result = extract_profiles_by_author(
             {author: ["~Jane_Smith1", "~Jane_Smith2"]}, tmp_path, client=mock_client
         )
@@ -511,7 +517,9 @@ def test_extract_profiles_by_author_excludes_failed_fetches(
     mock_client: OpenReviewClient,
     author: Author,
 ) -> None:
-    with patch(f"{MODULE}.load_or_fetch_profile", return_value=(author, "~Jane_Smith1", None)):
+    with patch(
+        f"{MODULE}.load_or_fetch_profile_by_author", return_value=(author, "~Jane_Smith1", None)
+    ):
         result = extract_profiles_by_author(
             {author: ["~Jane_Smith1"]}, tmp_path, client=mock_client
         )
@@ -535,7 +543,7 @@ def test_extract_profiles_by_author_handles_multiple_authors(
     ) -> tuple[Author, str, Profile | None]:
         return (author, profile_id, profile_a if author == author_a else profile_b)
 
-    with patch(f"{MODULE}.load_or_fetch_profile", side_effect=side_effect):
+    with patch(f"{MODULE}.load_or_fetch_profile_by_author", side_effect=side_effect):
         result = extract_profiles_by_author(
             {author_a: ["~Jane_Smith1"], author_b: ["~John_Doe1"]},
             tmp_path,
