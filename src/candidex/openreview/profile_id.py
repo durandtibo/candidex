@@ -79,18 +79,18 @@ def find_author_profile_ids(
         affiliation filtering is applied.
 
     Args:
-            name:        Full name of the author to search for.
-            affiliation: Institutional affiliation to filter by (e.g. 'MIT CSAIL').
-            email:       Optional email address used as an additional filter.
-            mode:        Filtering mode controlling how affiliation and email
-                         filters are combined. Defaults to `FilterMode.ANY`.
-            client:      An authenticated `OpenReviewClient` instance. If not
-                         provided, one is created via `create_client()` using
-                         the `OPENREVIEW_USERNAME` and `OPENREVIEW_PASSWORD`
-                         environment variables.
+        name:        Full name of the author to search for.
+        affiliation: Institutional affiliation to filter by (e.g. 'MIT CSAIL').
+        email:       Optional email address used as an additional filter.
+        mode:        Filtering mode controlling how affiliation and email
+                     filters are combined. Defaults to `FilterMode.ANY`.
+        client:      An authenticated `OpenReviewClient` instance. If not
+                     provided, one is created via `create_client()` using
+                     the `OPENREVIEW_USERNAME` and `OPENREVIEW_PASSWORD`
+                     environment variables.
 
     Returns:
-            A sorted list of OpenReview profile ID strings (e.g. ['~Jane_Smith1'])
+        A sorted list of OpenReview profile ID strings (e.g. ['~Jane_Smith1'])
             for profiles matching the filters. Returns an empty list if no
             profiles match. Returns None if the client cannot be created or
             the search fails, distinguishing infrastructure failures from
@@ -171,8 +171,8 @@ def load_or_fetch_profile_ids(
 
     Returns:
         A tuple of (author, profile_ids) where profile_ids is a list of
-        profile ID strings, an empty list if none were found, or None if
-        the client cannot be created or the lookup failed.
+            profile ID strings, an empty list if none were found, or None if
+            the client cannot be created or the lookup failed.
 
     Example:
         >>> from candidex.author import Author
@@ -241,8 +241,8 @@ def extract_profile_ids_by_author(
 
     Returns:
         A dictionary mapping each `Author` to their list of profile ID
-        strings, or None if the lookup failed. Authors loaded from cache
-        are included alongside freshly queried ones.
+            strings, or None if the lookup failed. Authors loaded from cache
+            are included alongside freshly queried ones.
 
     Example:
         ```pycon
@@ -301,8 +301,8 @@ def log_profile_ids_stats(profile_ids_by_author: dict[Author, list[str] | None])
 
     Args:
         profile_ids_by_author: A dictionary mapping each `Author` to their list of profile
-                 ID strings, or None if the lookup failed, as returned by
-                 `extract_profile_ids`.
+             ID strings, or None if the lookup failed, as returned by
+             `extract_profile_ids`.
 
     Example:
         ```pycon
