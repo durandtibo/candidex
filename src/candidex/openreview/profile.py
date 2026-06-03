@@ -7,7 +7,7 @@ __all__ = [
     "extract_profiles_by_id",
     "fetch_profile_by_id",
     "get_unique_profiles",
-    "load_or_fetch_profile",
+    "load_or_fetch_profile_by_author",
     "load_or_fetch_profile_by_id",
 ]
 
@@ -115,7 +115,7 @@ def fetch_profile_by_id(
         return profile
 
 
-def load_or_fetch_profile(
+def load_or_fetch_profile_by_author(
     author: Author,
     profile_id: str,
     profiles_dir: Path,
@@ -144,9 +144,9 @@ def load_or_fetch_profile(
 
     Example:
         ```pycon
-        >>> from candidex.openreview import load_or_fetch_profile
+        >>> from candidex.openreview import load_or_fetch_profile_by_author
         >>> author = Author.from_raw("Jane Smith", ["MIT"])
-        >>> result = load_or_fetch_profile(
+        >>> result = load_or_fetch_profile_by_author(
         ...     author, "~Jane_Smith1", Path("data/profiles")
         ... )  # doctest: +SKIP
         >>> result[2].id  # doctest: +SKIP
@@ -247,7 +247,9 @@ def extract_profiles_by_author(
         task = progress.add_task("Fetching OpenReview profiles", total=total_ids)
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = {
-                executor.submit(load_or_fetch_profile, author, profile_id, profiles_dir, client): (
+                executor.submit(
+                    load_or_fetch_profile_by_author, author, profile_id, profiles_dir, client
+                ): (
                     author,
                     profile_id,
                 )
