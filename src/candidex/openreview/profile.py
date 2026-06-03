@@ -3,8 +3,8 @@ r"""Contain utilities for finding OpenReview profiles."""
 from __future__ import annotations
 
 __all__ = [
-    "extract_profiles",
     "extract_profiles_by_author",
+    "extract_profiles_by_id",
     "fetch_profile_by_id",
     "get_unique_profiles",
     "load_or_fetch_profile",
@@ -327,7 +327,7 @@ def load_or_fetch_profile_by_id(
     return profile_id, profile
 
 
-def extract_profiles(
+def extract_profiles_by_id(
     profile_ids: list[str],
     profiles_dir: Path,
     client: OpenReviewClient | None = None,
@@ -362,7 +362,7 @@ def extract_profiles(
 
     Example:
         ```pycon
-        >>> profiles = extract_profiles(
+        >>> profiles = extract_profiles_by_id(
         ...     ["~Jane_Smith1", "~John_Doe1"],
         ...     Path("data/profiles"),
         ... )  # doctest: +SKIP
