@@ -10,8 +10,8 @@ from openreview.api import OpenReviewClient
 
 from candidex.author import Author
 from candidex.openreview import (
-    extract_profiles,
     extract_profiles_by_author,
+    extract_profiles_by_id,
     fetch_profile_by_id,
     get_unique_profiles,
     load_or_fetch_profile,
@@ -708,22 +708,22 @@ def test_load_or_fetch_profile_by_id_does_not_save_when_fetch_fails(
 
 
 #############################################
-#         Tests for extract_profiles        #
+#         Tests for extract_profiles_by_id        #
 #############################################
 
 
 # --- Client unavailable ---
 
 
-def test_extract_profiles_returns_none_values_when_no_client(
+def test_extract_profiles_by_id_returns_none_values_when_no_client(
     tmp_path: Path,
 ) -> None:
     with patch(f"{MODULE}.create_client", return_value=None):
-        result = extract_profiles(["~Jane_Smith1"], tmp_path)
+        result = extract_profiles_by_id(["~Jane_Smith1"], tmp_path)
     assert result == {"~Jane_Smith1": None}
 
 
-def test_extract_profiles_uses_provided_client(
+def test_extract_profiles_by_id_uses_provided_client(
     tmp_path: Path,
     mock_client: Mock,
     mock_profile: Mock,
@@ -732,11 +732,11 @@ def test_extract_profiles_uses_provided_client(
         patch(f"{MODULE}.create_client") as mock_create,
         patch(f"{MODULE}.load_or_fetch_profile_by_id", return_value=("~Jane_Smith1", mock_profile)),
     ):
-        extract_profiles(["~Jane_Smith1"], tmp_path, client=mock_client)
+        extract_profiles_by_id(["~Jane_Smith1"], tmp_path, client=mock_client)
         mock_create.assert_not_called()
 
 
-def test_extract_profiles_creates_client_when_none_provided(
+def test_extract_profiles_by_id_creates_client_when_none_provided(
     tmp_path: Path,
     mock_client: Mock,
     mock_profile: Mock,
@@ -745,14 +745,14 @@ def test_extract_profiles_creates_client_when_none_provided(
         patch(f"{MODULE}.create_client", return_value=mock_client) as mock_create,
         patch(f"{MODULE}.load_or_fetch_profile_by_id", return_value=("~Jane_Smith1", mock_profile)),
     ):
-        extract_profiles(["~Jane_Smith1"], tmp_path)
+        extract_profiles_by_id(["~Jane_Smith1"], tmp_path)
         mock_create.assert_called_once()
 
 
 # --- Directory creation ---
 
 
-def test_extract_profiles_creates_directory_if_not_exists(
+def test_extract_profiles_by_id_creates_directory_if_not_exists(
     tmp_path: Path,
     mock_client: Mock,
     mock_profile: Mock,
@@ -762,14 +762,14 @@ def test_extract_profiles_creates_directory_if_not_exists(
     with patch(
         f"{MODULE}.load_or_fetch_profile_by_id", return_value=("~Jane_Smith1", mock_profile)
     ):
-        extract_profiles(["~Jane_Smith1"], path, client=mock_client)
+        extract_profiles_by_id(["~Jane_Smith1"], path, client=mock_client)
     assert path.exists()
 
 
 # --- Deduplication ---
 
 
-def test_extract_profiles_deduplicates_profile_ids(
+def test_extract_profiles_by_id_deduplicates_profile_ids(
     tmp_path: Path,
     mock_client: Mock,
     mock_profile: Mock,
@@ -777,14 +777,14 @@ def test_extract_profiles_deduplicates_profile_ids(
     with patch(
         f"{MODULE}.load_or_fetch_profile_by_id", return_value=("~Jane_Smith1", mock_profile)
     ) as mock_fetch:
-        extract_profiles(["~Jane_Smith1", "~Jane_Smith1"], tmp_path, client=mock_client)
+        extract_profiles_by_id(["~Jane_Smith1", "~Jane_Smith1"], tmp_path, client=mock_client)
         assert mock_fetch.call_count == 1
 
 
 # --- Results ---
 
 
-def test_extract_profiles_returns_profiles(
+def test_extract_profiles_by_id_returns_profiles(
     tmp_path: Path,
     mock_client: Mock,
     mock_profile: Mock,
@@ -792,20 +792,20 @@ def test_extract_profiles_returns_profiles(
     with patch(
         f"{MODULE}.load_or_fetch_profile_by_id", return_value=("~Jane_Smith1", mock_profile)
     ):
-        result = extract_profiles(["~Jane_Smith1"], tmp_path, client=mock_client)
+        result = extract_profiles_by_id(["~Jane_Smith1"], tmp_path, client=mock_client)
     assert result["~Jane_Smith1"] is mock_profile
 
 
-def test_extract_profiles_returns_none_for_failed_fetch(
+def test_extract_profiles_by_id_returns_none_for_failed_fetch(
     tmp_path: Path,
     mock_client: Mock,
 ) -> None:
     with patch(f"{MODULE}.load_or_fetch_profile_by_id", return_value=("~Jane_Smith1", None)):
-        result = extract_profiles(["~Jane_Smith1"], tmp_path, client=mock_client)
+        result = extract_profiles_by_id(["~Jane_Smith1"], tmp_path, client=mock_client)
     assert result["~Jane_Smith1"] is None
 
 
-def test_extract_profiles_handles_multiple_ids(
+def test_extract_profiles_by_id_handles_multiple_ids(
     tmp_path: Path,
     mock_client: Mock,
 ) -> None:
@@ -820,14 +820,16 @@ def test_extract_profiles_handles_multiple_ids(
         return (profile_id, profile_a if profile_id == "~Jane_Smith1" else profile_b)
 
     with patch(f"{MODULE}.load_or_fetch_profile_by_id", side_effect=side_effect):
-        result = extract_profiles(["~Jane_Smith1", "~John_Doe1"], tmp_path, client=mock_client)
+        result = extract_profiles_by_id(
+            ["~Jane_Smith1", "~John_Doe1"], tmp_path, client=mock_client
+        )
     assert result["~Jane_Smith1"] is profile_a
     assert result["~John_Doe1"] is profile_b
 
 
-def test_extract_profiles_empty_input(
+def test_extract_profiles_by_id_empty_input(
     tmp_path: Path,
     mock_client: Mock,
 ) -> None:
-    result = extract_profiles([], tmp_path, client=mock_client)
+    result = extract_profiles_by_id([], tmp_path, client=mock_client)
     assert result == {}
