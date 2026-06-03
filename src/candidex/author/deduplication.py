@@ -38,8 +38,7 @@ def deduplicate_authors(authors: Sequence[Author]) -> list[Author]:
 
     Example:
         ```pycon
-        >>> from candidex.author import deduplicate_authors
-        >>> from candidex.schemas import Author
+        >>> from candidex.author import Author, deduplicate_authors
         >>> authors = [
         ...     Author.from_raw("Jane Smith", ["MIT"]),
         ...     Author.from_raw("Jane Smith", ["MIT"]),

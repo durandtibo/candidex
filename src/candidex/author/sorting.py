@@ -33,8 +33,7 @@ def sort_authors(authors: Sequence[Author], *, reverse: bool = False) -> list[Au
 
     Example:
         ```pycon
-        >>> from candidex.author import sort_authors
-        >>> from candidex.schemas import Author
+        >>> from candidex.author import Author, sort_authors
         >>> authors = [
         ...     Author.from_raw("John Doe", ["Stanford"]),
         ...     Author.from_raw("Jane Smith", ["MIT"]),
