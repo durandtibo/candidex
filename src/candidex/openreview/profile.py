@@ -3,10 +3,12 @@ r"""Contain utilities for finding OpenReview profiles."""
 from __future__ import annotations
 
 __all__ = [
+    "extract_profiles",
     "extract_profiles_by_author",
     "fetch_profile_by_id",
     "get_unique_profiles",
     "load_or_fetch_profile",
+    "load_or_fetch_profile_by_id",
 ]
 
 import logging
@@ -266,3 +268,142 @@ def extract_profiles_by_author(
         len(profile_ids_by_author),
     )
     return profiles_by_author
+
+
+def load_or_fetch_profile_by_id(
+    profile_id: str,
+    profiles_dir: Path,
+    client: OpenReviewClient | None = None,
+) -> tuple[str, Profile | None]:
+    """Load a cached OpenReview profile or fetch it from the API by ID.
+
+    Checks if a cache file exists for the profile ID. If so, loads and
+    returns the cached result without querying the API. Otherwise fetches
+    the profile from OpenReview and saves it to disk for future calls.
+
+    Args:
+        profile_id:   The OpenReview profile ID to fetch
+                      (e.g. '~Jane_Smith1').
+        profiles_dir: Directory where profile JSON files are stored.
+                      Must already exist.
+        client:       An authenticated `OpenReviewClient` instance. If not
+                      provided, one is created via `create_client()` using
+                      the `OPENREVIEW_USERNAME` and `OPENREVIEW_PASSWORD`
+                      environment variables.
+
+    Returns:
+        A tuple of (profile_id, profile) where profile is the `Profile`
+            object, or None if the client cannot be created or the fetch failed.
+
+    Example:
+        ```pycon
+        >>> result = load_or_fetch_profile_by_id(
+        ...     "~Jane_Smith1", Path("data/profiles")
+        ... )  # doctest: +SKIP
+        >>> result[1].id  # doctest: +SKIP
+        '~Jane_Smith1'
+
+        ```
+    """
+    path = profiles_dir / f"{profile_id}.json"
+
+    if path.is_file():
+        logger.debug("Loading cached profile for %s.", profile_id)
+        return profile_id, Profile.from_json(load_json(path))
+
+    resolved_client = client or create_client()
+    if resolved_client is None:
+        logger.warning("No OpenReview client available, cannot fetch profile %s.", profile_id)
+        return profile_id, None
+
+    profile = fetch_profile_by_id(profile_id, client=resolved_client)
+
+    if profile is not None:
+        save_json(profile.to_json(), path)
+        logger.debug("Saved profile for %s.", profile_id)
+    else:
+        logger.warning("Profile fetch failed for %s.", profile_id)
+
+    return profile_id, profile
+
+
+def extract_profiles(
+    profile_ids: list[str],
+    profiles_dir: Path,
+    client: OpenReviewClient | None = None,
+    max_workers: int = 4,
+) -> dict[str, Profile | None]:
+    """Fetch and save OpenReview profiles for a list of profile IDs.
+
+    For each profile ID, fetches the full OpenReview profile and caches
+    it to disk. Profiles whose cache file already exists are skipped
+    without querying the API, making the function safe to call repeatedly
+    and resilient to interruptions. Fetches are performed concurrently
+    using a thread pool to reduce total wall time.
+
+    Args:
+        profile_ids:  List of OpenReview profile ID strings to fetch
+                      (e.g. ['~Jane_Smith1', '~John_Doe1']).
+        profiles_dir: Directory where profile JSON files will be saved.
+                      Created automatically if it does not exist. Each
+                      file is named `{profile_id}.json`.
+        client:       An authenticated `OpenReviewClient` instance. If not
+                      provided, one is created via `create_client()` using
+                      the `OPENREVIEW_USERNAME` and `OPENREVIEW_PASSWORD`
+                      environment variables. The same client is reused
+                      across all threads.
+        max_workers:  Maximum number of concurrent threads. Defaults to 4.
+                      Reduce if hitting OpenReview API rate limits.
+
+    Returns:
+        A dictionary mapping each profile ID string to its `Profile` object,
+            or None if the fetch failed. Duplicate profile IDs are deduplicated
+            before fetching.
+
+    Example:
+        ```pycon
+        >>> profiles = extract_profiles(
+        ...     ["~Jane_Smith1", "~John_Doe1"],
+        ...     Path("data/profiles"),
+        ... )  # doctest: +SKIP
+        >>> profiles["~Jane_Smith1"].id  # doctest: +SKIP
+        '~Jane_Smith1'
+
+        ```
+    """
+    unique_ids = list(dict.fromkeys(profile_ids))
+    logger.info(
+        "Fetching %d OpenReview profiles with %d threads...",
+        len(unique_ids),
+        max_workers,
+    )
+
+    client = client or create_client()
+    if client is None:
+        logger.warning("No OpenReview client available, cannot fetch profiles.")
+        return dict.fromkeys(unique_ids)
+
+    profiles_dir.mkdir(parents=True, exist_ok=True)
+    profiles: dict[str, Profile | None] = {}
+
+    with make_progressbar() as progress:
+        task = progress.add_task("Fetching OpenReview profiles", total=len(unique_ids))
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {
+                executor.submit(
+                    load_or_fetch_profile_by_id, profile_id, profiles_dir, client
+                ): profile_id
+                for profile_id in unique_ids
+            }
+            for future in as_completed(futures):
+                profile_id, profile = future.result()
+                profiles[profile_id] = profile
+                progress.advance(task)
+
+    resolved = sum(1 for p in profiles.values() if p is not None)
+    logger.info(
+        "Profile fetch complete. %d/%d profiles fetched successfully.",
+        resolved,
+        len(unique_ids),
+    )
+    return profiles
