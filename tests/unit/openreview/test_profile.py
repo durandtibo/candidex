@@ -13,6 +13,7 @@ from candidex.openreview.profile import (
     extract_profile_ids,
     fetch_profile_by_id,
     load_or_fetch_profile_ids,
+    log_profile_ids_stats,
 )
 
 if TYPE_CHECKING:
@@ -35,8 +36,12 @@ def author() -> Author:
     return Author.from_raw("Jane Smith", ["MIT"], "jane@mit.edu")
 
 
-def make_profile(profile_id: str) -> Mock:
+def make_profile(profile_id: str) -> Profile:
     return Mock(id=profile_id, spec=Profile)
+
+
+def make_author(name: str) -> Author:
+    return Author.from_raw(name, ["MIT"])
 
 
 #########################################
@@ -701,4 +706,93 @@ def test_extract_profile_ids_logs_resolved_count(
             "Profile ID extraction complete. %d/%d authors resolved.",
             1,
             1,
+        )
+
+
+###########################################
+#     Tests for log_profile_ids_stats     #
+###########################################
+
+
+@pytest.mark.parametrize(
+    (
+        "profile_ids_by_author",
+        "expected_total",
+        "expected_single",
+        "expected_multiple",
+        "expected_empty",
+        "expected_failed",
+    ),
+    [
+        pytest.param({}, 0, 0, 0, 0, 0, id="empty"),
+        pytest.param(
+            {make_author("Jane Smith"): ["~Jane_Smith1"]},
+            1,
+            1,
+            0,
+            0,
+            0,
+            id="single_match",
+        ),
+        pytest.param(
+            {make_author("Jane Smith"): ["~Jane_Smith1", "~Jane_Smith2"]},
+            1,
+            0,
+            1,
+            0,
+            0,
+            id="multiple_matches",
+        ),
+        pytest.param(
+            {make_author("Jane Smith"): []},
+            1,
+            0,
+            0,
+            1,
+            0,
+            id="no_match",
+        ),
+        pytest.param(
+            {make_author("Jane Smith"): None},
+            1,
+            0,
+            0,
+            0,
+            1,
+            id="failed",
+        ),
+        pytest.param(
+            {
+                make_author("Jane Smith"): ["~Jane_Smith1"],
+                make_author("John Doe"): ["~John_Doe1", "~John_Doe2"],
+                make_author("Alice Brown"): [],
+                make_author("Bob Jones"): None,
+            },
+            4,
+            1,
+            1,
+            1,
+            1,
+            id="mixed",
+        ),
+    ],
+)
+def test_log_profile_ids_stats(
+    profile_ids_by_author: dict[Author, list[str] | None],
+    expected_total: int,
+    expected_single: int,
+    expected_multiple: int,
+    expected_empty: int,
+    expected_failed: int,
+) -> None:
+    with patch(f"{MODULE}.logger") as mock_logger:
+        log_profile_ids_stats(profile_ids_by_author)
+        mock_logger.info.assert_called_once_with(
+            "Profile ID lookup complete for %d authors — "
+            "%d single match, %d multiple matches, %d no match, %d failed.",
+            expected_total,
+            expected_single,
+            expected_multiple,
+            expected_empty,
+            expected_failed,
         )

@@ -13,6 +13,7 @@ __all__ = [
     "find_author_profile_ids",
     "get_unique_profiles",
     "load_or_fetch_profile_ids",
+    "log_profile_ids_stats",
     "search_profiles_by_name",
 ]
 
@@ -28,5 +29,6 @@ from candidex.openreview.profile import (
     find_author_profile_ids,
     get_unique_profiles,
     load_or_fetch_profile_ids,
+    log_profile_ids_stats,
 )
 from candidex.openreview.search import search_profiles_by_name
