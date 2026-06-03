@@ -4,6 +4,8 @@ from __future__ import annotations
 
 __all__ = ["Author"]
 
+import hashlib
+import json
 import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
@@ -59,6 +61,36 @@ class Author:
             return ""
         return separator.join(self.affiliations)
 
+    def hash(self) -> str:
+        """Return a stable SHA-256 hex digest of the author.
+
+        Serialises all fields to a canonical JSON string before hashing,
+        ensuring stability across Python sessions (unlike the built-in
+        `__hash__` which is randomised by default).
+
+        Returns:
+            A 64-character lowercase hexadecimal SHA-256 digest string.
+
+        Example:
+            ```pycon
+            >>> from candidex.author import Author
+            >>> author = Author.from_raw("Jane Smith", ["MIT"], "jane@mit.edu")
+            >>> author.hash()
+            '...'
+
+            ```
+        """
+        canonical = json.dumps(
+            {
+                "name": self.name,
+                "affiliations": list(self.affiliations) if self.affiliations is not None else None,
+                "email": self.email,
+            },
+            sort_keys=True,
+            ensure_ascii=True,
+        )
+        return hashlib.blake2b(canonical.encode()).hexdigest()
+
     @classmethod
     def from_raw(
         cls,
@@ -89,7 +121,7 @@ class Author:
             ```pycon
             >>> from candidex.author import Author
             >>> Author.from_raw("Paul George", ["MIT CSAIL"], "jane@mit.edu")
-            Author(name='Universite', affiliations=('MIT CSAIL',), email='jane@mit.edu')
+            Author(name='Paul George', affiliations=('MIT CSAIL',), email='jane@mit.edu')
 
             ```
         """
