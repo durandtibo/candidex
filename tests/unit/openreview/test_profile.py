@@ -385,7 +385,7 @@ def test_extract_profiles_by_author_returns_empty_lists_when_no_client(
 ) -> None:
     with patch(f"{MODULE}.create_client", return_value=None):
         result = extract_profiles_by_author({author: ["~Jane_Smith1"]}, tmp_path)
-    assert result == {author: []}
+    assert result == {author: None}
 
 
 def test_extract_profiles_by_author_uses_provided_client(
