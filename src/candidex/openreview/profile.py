@@ -9,6 +9,7 @@ __all__ = [
     "get_unique_profiles",
     "load_or_fetch_profile_by_author",
     "load_or_fetch_profile_by_id",
+    "log_profiles_by_author_stats",
 ]
 
 import logging
@@ -409,3 +410,69 @@ def extract_profiles_by_id(
         len(unique_ids),
     )
     return profiles
+
+
+def log_profiles_by_author_stats(
+    profiles_by_author: dict[Author, list[Profile] | None],
+) -> None:
+    """Log statistics about the distribution of OpenReview profiles per
+    author.
+
+    Summarises the profile lookup results at INFO level, breaking down authors
+    by how many profiles were found. Useful for assessing the quality of the
+    profile matching step before downstream processing.
+
+    Args:
+        profiles_by_author: A dictionary mapping each `Author` to their list
+                            of `Profile` objects, or None if the lookup failed.
+
+    Example:
+        >>> from candidex.openreview.profile import log_profiles_by_author_stats
+        >>> log_profiles_by_author_stats({})
+    """
+    total = len(profiles_by_author)
+    if total == 0:
+        logger.info("No authors to report profile stats for.")
+        return
+
+    missing = sum(1 for profiles in profiles_by_author.values() if profiles is None)
+    empty = sum(
+        1 for profiles in profiles_by_author.values() if profiles is not None and len(profiles) == 0
+    )
+    single = sum(
+        1 for profiles in profiles_by_author.values() if profiles is not None and len(profiles) == 1
+    )
+    two = sum(
+        1 for profiles in profiles_by_author.values() if profiles is not None and len(profiles) == 2
+    )
+    three_or_more = sum(
+        1 for profiles in profiles_by_author.values() if profiles is not None and len(profiles) >= 3
+    )
+
+    counts = [len(profiles) for profiles in profiles_by_author.values() if profiles is not None]
+    average = sum(counts) / len(counts) if counts else 0.0
+
+    def pct(n: int) -> float:
+        return n / total * 100
+
+    logger.info(
+        "Profile stats for %d authors:\n"
+        "  - Missing (None):        %d (%.1f%%)\n"
+        "  - Empty list:            %d (%.1f%%)\n"
+        "  - Single profile:        %d (%.1f%%)\n"
+        "  - Two profiles:          %d (%.1f%%)\n"
+        "  - Three or more:         %d (%.1f%%)\n"
+        "  - Average per author:    %.2f (excluding None)",
+        total,
+        missing,
+        pct(missing),
+        empty,
+        pct(empty),
+        single,
+        pct(single),
+        two,
+        pct(two),
+        three_or_more,
+        pct(three_or_more),
+        average,
+    )
