@@ -1,3 +1,4 @@
+# noqa: INP001
 r"""Evaluate the performance of `find_author_profile_ids`."""
 
 from __future__ import annotations
