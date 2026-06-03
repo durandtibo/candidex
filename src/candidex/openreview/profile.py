@@ -211,8 +211,8 @@ def extract_profiles_by_author(
 
     Returns:
         A dictionary mapping each `Author` to their list of fetched `Profile`
-        objects. Authors with no profile IDs or failed fetches are mapped to
-        an empty list.
+            objects. Authors with no profile IDs or failed fetches are mapped to
+            an empty list.
 
     Example:
         ```pycon

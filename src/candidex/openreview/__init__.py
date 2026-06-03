@@ -18,6 +18,7 @@ __all__ = [
     "load_or_fetch_profile_by_id",
     "load_or_fetch_profile_ids",
     "log_profile_ids_stats",
+    "parse_names_and_history_profile",
     "search_profiles_by_name",
 ]
 
@@ -27,6 +28,7 @@ from candidex.openreview.filtering import (
     filter_profiles_by_email,
 )
 from candidex.openreview.matching import do_affiliations_match, does_email_match_domain
+from candidex.openreview.parser import parse_names_and_history_profile
 from candidex.openreview.profile import (
     extract_profiles_by_author,
     extract_profiles_by_id,
