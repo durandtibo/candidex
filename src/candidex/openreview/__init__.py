@@ -6,11 +6,13 @@ __all__ = [
     "create_client",
     "do_affiliations_match",
     "does_email_match_domain",
+    "extract_profile_ids",
     "fetch_profile_by_id",
     "filter_profiles_by_affiliation",
     "filter_profiles_by_email",
     "find_author_profile_ids",
     "get_unique_profiles",
+    "load_or_fetch_profile_ids",
     "search_profiles_by_name",
 ]
 
@@ -21,8 +23,10 @@ from candidex.openreview.filtering import (
 )
 from candidex.openreview.matching import do_affiliations_match, does_email_match_domain
 from candidex.openreview.profile import (
+    extract_profile_ids,
     fetch_profile_by_id,
     find_author_profile_ids,
     get_unique_profiles,
+    load_or_fetch_profile_ids,
 )
 from candidex.openreview.search import search_profiles_by_name
