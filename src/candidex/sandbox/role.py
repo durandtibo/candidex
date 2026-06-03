@@ -17,8 +17,8 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from pydantic import BaseModel, Field
 
 from candidex.columns import PAPER_STEM
-from candidex.sandbox.progressbar import make_progressbar
 from candidex.schemas import AuthorAffiliation, PaperAffiliations
+from candidex.utils.progressbar import make_progressbar
 
 if TYPE_CHECKING:
     from pathlib import Path

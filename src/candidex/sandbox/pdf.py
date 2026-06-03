@@ -12,7 +12,7 @@ import pdfplumber
 import polars as pl
 
 from candidex.columns import PAPER_STEM
-from candidex.sandbox.progressbar import make_progressbar
+from candidex.utils.progressbar import make_progressbar
 
 if TYPE_CHECKING:
     from pathlib import Path

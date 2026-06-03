@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 import polars as pl
 import requests
 
-from candidex.sandbox.progressbar import make_progressbar
+from candidex.utils.progressbar import make_progressbar
 
 if TYPE_CHECKING:
     from pathlib import Path
