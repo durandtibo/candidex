@@ -179,7 +179,7 @@ def extract_profiles_by_author(
     profiles_dir: Path,
     client: OpenReviewClient | None = None,
     max_workers: int = 4,
-) -> dict[Author, list[Profile]]:
+) -> dict[Author, list[Profile] | None]:
     """Fetch and save OpenReview profiles for a dictionary of authors
     and profile IDs.
 
@@ -234,7 +234,7 @@ def extract_profiles_by_author(
     client = client or create_client()
     if client is None:
         logger.warning("No OpenReview client available, cannot fetch profiles.")
-        return {author: [] for author in profile_ids_by_author}
+        return dict.fromkeys(profile_ids_by_author)
 
     profiles_dir.mkdir(parents=True, exist_ok=True)
     profiles_by_author: dict[Author, list[Profile]] = {
