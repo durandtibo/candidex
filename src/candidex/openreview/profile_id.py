@@ -4,7 +4,7 @@ from __future__ import annotations
 
 __all__ = [
     "FilterMode",
-    "extract_profile_ids",
+    "extract_profile_ids_by_author",
     "find_author_profile_ids",
     "load_or_fetch_profile_ids",
     "log_profile_ids_stats",
@@ -209,7 +209,7 @@ def load_or_fetch_profile_ids(
     return author, profile_ids
 
 
-def extract_profile_ids(
+def extract_profile_ids_by_author(
     authors: Sequence[Author],
     profile_ids_dir: Path,
     client: OpenReviewClient | None = None,
@@ -248,7 +248,9 @@ def extract_profile_ids(
         ```pycon
         >>> from candidex.author import Author
         >>> authors = [Author.from_raw("Jane Smith", ["MIT"])]
-        >>> results = extract_profile_ids(authors, Path("data/profile_ids"))  # doctest: +SKIP
+        >>> results = extract_profile_ids_by_author(
+        ...     authors, Path("data/profile_ids")
+        ... )  # doctest: +SKIP
         >>> results[authors[0]]  # doctest: +SKIP
         ['~Jane_Smith1']
 
@@ -265,7 +267,7 @@ def extract_profile_ids(
         return {}
 
     profile_ids_dir.mkdir(parents=True, exist_ok=True)
-    results: dict[Author, list[str] | None] = {}
+    profile_ids_by_author: dict[Author, list[str] | None] = {}
 
     with make_progressbar() as progress:
         task = progress.add_task("Finding OpenReview profile IDs", total=len(authors))
@@ -276,16 +278,16 @@ def extract_profile_ids(
             }
             for future in as_completed(futures):
                 author, profile_ids = future.result()
-                results[author] = profile_ids
+                profile_ids_by_author[author] = profile_ids
                 progress.advance(task)
 
-    resolved = sum(1 for ids in results.values() if ids is not None and len(ids) > 0)
+    resolved = sum(1 for ids in profile_ids_by_author.values() if ids is not None and len(ids) > 0)
     logger.info(
         "Profile ID extraction complete. %d/%d authors resolved.",
         resolved,
         len(authors),
     )
-    return results
+    return profile_ids_by_author
 
 
 def log_profile_ids_stats(profile_ids_by_author: dict[Author, list[str] | None]) -> None:
@@ -306,12 +308,12 @@ def log_profile_ids_stats(profile_ids_by_author: dict[Author, list[str] | None])
         ```pycon
         >>> from candidex.author import Author
         >>> from candidex.openreview import log_profile_ids_stats
-        >>> results = {
+        >>> profile_ids_by_author = {
         ...     Author.from_raw("Jane Smith", ["MIT"]): ["~Jane_Smith1"],
         ...     Author.from_raw("John Doe", ["Stanford"]): [],
         ...     Author.from_raw("Alice Brown", ["CMU"]): None,
         ... }
-        >>> log_profile_ids_stats(results)
+        >>> log_profile_ids_stats(profile_ids_by_author)
 
         ```
     """
