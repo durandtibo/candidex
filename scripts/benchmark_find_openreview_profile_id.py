@@ -13,7 +13,7 @@ from rich.table import Table
 
 from candidex.author import Author
 from candidex.openreview import create_client, find_author_profile_ids
-from candidex.sandbox.progressbar import make_progressbar
+from candidex.utils.progressbar import make_progressbar
 
 if TYPE_CHECKING:
     from openreview.api import OpenReviewClient

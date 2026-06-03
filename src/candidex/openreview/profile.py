@@ -26,7 +26,7 @@ from candidex.openreview.filtering import (
     filter_profiles_by_email,
 )
 from candidex.openreview.search import search_profiles_by_name
-from candidex.sandbox.progressbar import make_progressbar
+from candidex.utils.progressbar import make_progressbar
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
