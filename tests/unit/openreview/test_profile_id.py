@@ -8,7 +8,7 @@ from openreview import Profile
 
 from candidex.author import Author
 from candidex.openreview import (
-    extract_profile_ids,
+    extract_profile_ids_by_author,
     find_author_profile_ids,
     load_or_fetch_profile_ids,
     log_profile_ids_stats,
@@ -454,60 +454,60 @@ def test_load_or_fetch_profile_ids_returns_none_when_lookup_fails(
 
 
 #############################################
-#      Tests for extract_profile_ids        #
+#      Tests for extract_profile_ids_by_author        #
 #############################################
 
 
 # --- Client unavailable ---
 
 
-def test_extract_profile_ids_returns_empty_dict_when_no_client(
+def test_extract_profile_ids_by_author_returns_empty_dict_when_no_client(
     tmp_path: Path,
 ) -> None:
     with patch(f"{MODULE}.create_client", return_value=None):
-        result = extract_profile_ids([], tmp_path)
+        result = extract_profile_ids_by_author([], tmp_path)
     assert result == {}
 
 
-def test_extract_profile_ids_creates_client_when_none_provided(
+def test_extract_profile_ids_by_author_creates_client_when_none_provided(
     tmp_path: Path, mock_client: Mock, author: Author
 ) -> None:
     with (
         patch(f"{MODULE}.create_client", return_value=mock_client) as mock_create,
         patch(f"{MODULE}.load_or_fetch_profile_ids", return_value=(author, [])),
     ):
-        extract_profile_ids([author], tmp_path)
+        extract_profile_ids_by_author([author], tmp_path)
         mock_create.assert_called_once()
 
 
-def test_extract_profile_ids_uses_provided_client(
+def test_extract_profile_ids_by_author_uses_provided_client(
     tmp_path: Path, mock_client: Mock, author: Author
 ) -> None:
     with (
         patch(f"{MODULE}.create_client") as mock_create,
         patch(f"{MODULE}.load_or_fetch_profile_ids", return_value=(author, [])),
     ):
-        extract_profile_ids([author], tmp_path, client=mock_client)
+        extract_profile_ids_by_author([author], tmp_path, client=mock_client)
         mock_create.assert_not_called()
 
 
 # --- Directory creation ---
 
 
-def test_extract_profile_ids_creates_directory_if_not_exists(
+def test_extract_profile_ids_by_author_creates_directory_if_not_exists(
     tmp_path: Path, mock_client: Mock
 ) -> None:
     path = tmp_path / "profile_ids"
     assert not path.exists()
     with patch(f"{MODULE}.load_or_fetch_profile_ids", return_value=(Mock(), [])):
-        extract_profile_ids([], path, client=mock_client)
+        extract_profile_ids_by_author([], path, client=mock_client)
     assert path.is_dir()
 
 
 # --- Results ---
 
 
-def test_extract_profile_ids_returns_results_for_all_authors(
+def test_extract_profile_ids_by_author_returns_results_for_all_authors(
     tmp_path: Path, mock_client: Mock
 ) -> None:
     author_a = Author.from_raw("Jane Smith", ["MIT"])
@@ -521,33 +521,33 @@ def test_extract_profile_ids_returns_results_for_all_authors(
         return (author, ["~Jane_Smith1"] if author == author_a else ["~John_Doe1"])
 
     with patch(f"{MODULE}.load_or_fetch_profile_ids", side_effect=side_effect):
-        result = extract_profile_ids([author_a, author_b], tmp_path, client=mock_client)
+        result = extract_profile_ids_by_author([author_a, author_b], tmp_path, client=mock_client)
 
     assert result == {author_a: ["~Jane_Smith1"], author_b: ["~John_Doe1"]}
 
 
-def test_extract_profile_ids_returns_empty_dict_for_empty_authors(
+def test_extract_profile_ids_by_author_returns_empty_dict_for_empty_authors(
     tmp_path: Path,
     mock_client: Mock,
 ) -> None:
-    result = extract_profile_ids([], tmp_path, client=mock_client)
+    result = extract_profile_ids_by_author([], tmp_path, client=mock_client)
     assert result == {}
 
 
-def test_extract_profile_ids_includes_failed_lookups_as_none(
+def test_extract_profile_ids_by_author_includes_failed_lookups_as_none(
     tmp_path: Path,
     mock_client: Mock,
     author: Author,
 ) -> None:
     with patch(f"{MODULE}.load_or_fetch_profile_ids", return_value=(author, None)):
-        result = extract_profile_ids([author], tmp_path, client=mock_client)
+        result = extract_profile_ids_by_author([author], tmp_path, client=mock_client)
     assert result[author] is None
 
 
 # --- Summary logging ---
 
 
-def test_extract_profile_ids_logs_resolved_count(
+def test_extract_profile_ids_by_author_logs_resolved_count(
     tmp_path: Path,
     mock_client: Mock,
     author: Author,
@@ -556,7 +556,7 @@ def test_extract_profile_ids_logs_resolved_count(
         patch(f"{MODULE}.load_or_fetch_profile_ids", return_value=(author, ["~Jane_Smith1"])),
         patch(f"{MODULE}.logger") as mock_logger,
     ):
-        extract_profile_ids([author], tmp_path, client=mock_client)
+        extract_profile_ids_by_author([author], tmp_path, client=mock_client)
         mock_logger.info.assert_called_with(
             "Profile ID extraction complete. %d/%d authors resolved.",
             1,
