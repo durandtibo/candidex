@@ -21,6 +21,7 @@ __all__ = [
     "log_profiles_by_author_stats",
     "parse_names_and_history_profile",
     "search_profiles_by_name",
+    "serialize_profiles",
 ]
 
 from candidex.openreview.client import create_client
@@ -46,3 +47,4 @@ from candidex.openreview.profile_id import (
     log_profile_ids_stats,
 )
 from candidex.openreview.search import search_profiles_by_name
+from candidex.openreview.serialization import serialize_profiles
