@@ -4,6 +4,7 @@ from __future__ import annotations
 
 __all__ = [
     "create_client",
+    "deserialize_profiles",
     "do_affiliations_match",
     "does_email_match_domain",
     "extract_profile_ids_by_author",
@@ -21,6 +22,7 @@ __all__ = [
     "log_profiles_by_author_stats",
     "parse_names_and_history_profile",
     "search_profiles_by_name",
+    "serialize_profiles",
 ]
 
 from candidex.openreview.client import create_client
@@ -46,3 +48,4 @@ from candidex.openreview.profile_id import (
     log_profile_ids_stats,
 )
 from candidex.openreview.search import search_profiles_by_name
+from candidex.openreview.serialization import deserialize_profiles, serialize_profiles
