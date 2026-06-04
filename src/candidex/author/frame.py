@@ -8,7 +8,6 @@ __all__ = [
     "add_openreview_profiles_to_dataframe",
 ]
 
-import json
 from typing import TYPE_CHECKING, Any
 
 import polars as pl
@@ -18,6 +17,7 @@ from candidex.columns import (
     AUTHOR_OPENREVIEW_PROFILE,
     AUTHOR_OPENREVIEW_PROFILE_ID,
 )
+from candidex.openreview import serialize_profiles
 
 if TYPE_CHECKING:
     from openreview import Profile
@@ -168,11 +168,7 @@ def add_openreview_profiles_to_dataframe(
         ```
     """
     serialized = {
-        author: (
-            [json.dumps(profile.to_json()) for profile in profiles]
-            if profiles is not None
-            else None
-        )
+        author: serialize_profiles(profiles) if profiles is not None else None
         for author, profiles in profiles_by_author.items()
     }
     return add_author_column(

@@ -19,6 +19,7 @@ from candidex.columns import (
     AUTHOR_OPENREVIEW_PROFILE,
     AUTHOR_OPENREVIEW_PROFILE_ID,
 )
+from candidex.openreview import serialize_profiles
 
 
 def make_author(
