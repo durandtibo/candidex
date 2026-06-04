@@ -35,6 +35,17 @@ def test_deserialize_profiles_returns_list_of_profiles() -> None:
     assert all(isinstance(p, Profile) for p in result)
 
 
+def test_deserialize_profiles_none_returns_none() -> None:
+    assert deserialize_profiles([None]) == [None]
+
+
+def test_deserialize_profiles_mixed_returns_none_for_none() -> None:
+    profile = make_profile("~Jane_Smith1", "Jane Smith", "PhD Student", "MIT")
+    result = deserialize_profiles(serialize_profiles([profile, None]))
+    assert isinstance(result[0], Profile)
+    assert result[1] is None
+
+
 def test_deserialize_profiles_single_profile_id() -> None:
     profile = make_profile("~Jane_Smith1", "Jane Smith", "PhD Student", "MIT")
     result = deserialize_profiles(serialize_profiles([profile]))
@@ -69,6 +80,16 @@ def test_deserialize_profiles_preserves_order() -> None:
     assert result[2].id == "~Alice_Brown1"
 
 
+def test_deserialize_profiles_preserves_order_with_none() -> None:
+    profile_a = make_profile("~Jane_Smith1", "Jane Smith", "PhD Student", "MIT")
+    profile_b = make_profile("~John_Doe1", "John Doe", "Professor", "Stanford")
+    result = deserialize_profiles(serialize_profiles([None, profile_a, None, profile_b]))
+    assert result[0] is None
+    assert result[1].id == "~Jane_Smith1"
+    assert result[2] is None
+    assert result[3].id == "~John_Doe1"
+
+
 def test_deserialize_profiles_round_trip() -> None:
     profile_a = make_profile("~Jane_Smith1", "Jane Smith", "PhD Student", "MIT")
     profile_b = make_profile("~John_Doe1", "John Doe", "Professor", "Stanford")
@@ -78,9 +99,18 @@ def test_deserialize_profiles_round_trip() -> None:
     ) == serialize_profiles(profiles)
 
 
-########################################
-#     Tests for serialize_profiles     #
-########################################
+def test_deserialize_profiles_round_trip_with_none() -> None:
+    profile_a = make_profile("~Jane_Smith1", "Jane Smith", "PhD Student", "MIT")
+    profile_b = make_profile("~John_Doe1", "John Doe", "Professor", "Stanford")
+    profiles = [profile_a, None, profile_b]
+    assert serialize_profiles(
+        deserialize_profiles(serialize_profiles(profiles))
+    ) == serialize_profiles(profiles)
+
+
+##########################################
+#     Tests for serialize_profiles       #
+##########################################
 
 
 def test_serialize_profiles_empty_list() -> None:
@@ -105,6 +135,17 @@ def test_serialize_profiles_multiple_profiles_length() -> None:
         make_profile("~John_Doe1", "John Doe", "Professor", "Stanford"),
     ]
     assert len(serialize_profiles(profiles)) == 2
+
+
+def test_serialize_profiles_none_returns_none() -> None:
+    assert serialize_profiles([None]) == [None]
+
+
+def test_serialize_profiles_mixed_returns_none_for_none() -> None:
+    profile = make_profile("~Jane_Smith1", "Jane Smith", "PhD Student", "MIT")
+    result = serialize_profiles([profile, None])
+    assert isinstance(result[0], str)
+    assert result[1] is None
 
 
 # --- Content ---
@@ -141,6 +182,16 @@ def test_serialize_profiles_preserves_order() -> None:
     assert json.loads(result[0])["id"] == "~Jane_Smith1"
     assert json.loads(result[1])["id"] == "~John_Doe1"
     assert json.loads(result[2])["id"] == "~Alice_Brown1"
+
+
+def test_serialize_profiles_preserves_order_with_none() -> None:
+    profile_a = make_profile("~Jane_Smith1", "Jane Smith", "PhD Student", "MIT")
+    profile_b = make_profile("~John_Doe1", "John Doe", "Professor", "Stanford")
+    result = serialize_profiles([None, profile_a, None, profile_b])
+    assert result[0] is None
+    assert json.loads(result[1])["id"] == "~Jane_Smith1"
+    assert result[2] is None
+    assert json.loads(result[3])["id"] == "~John_Doe1"
 
 
 # --- Round-trip ---
