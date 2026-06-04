@@ -4,12 +4,45 @@ from __future__ import annotations
 
 import json
 
-__all__ = ["serialize_profiles"]
+__all__ = ["deserialize_profiles", "serialize_profiles"]
 
-from typing import TYPE_CHECKING
+from openreview import Profile
 
-if TYPE_CHECKING:
-    from openreview import Profile
+
+def deserialize_profiles(serialized: list[str]) -> list[Profile]:
+    """Deserialize a list of JSON strings to a list of OpenReview
+    profiles.
+
+    Converts each JSON string back to a `Profile` object using `json.loads`
+    and `Profile.from_json`. This is the inverse of `serialize_profiles`.
+
+    Args:
+        serialized: A list of JSON strings, each representing a serialized
+                    `openreview.Profile` as returned by `serialize_profiles`.
+
+    Returns:
+        A list of `openreview.Profile` objects in the same order as the
+            input. Returns an empty list if the input is empty.
+
+    Example:
+        ```pycon
+        >>> import openreview
+        >>> profile = openreview.Profile(
+        ...     id="~Jane_Smith1",
+        ...     content={
+        ...         "names": [{"fullname": "Jane Smith"}],
+        ...         "history": [{"position": "PhD Student", "institution": {"name": "MIT"}}],
+        ...     },
+        ... )
+        >>> from candidex.openreview.serialization import serialize_profiles, deserialize_profiles
+        >>> serialized = serialize_profiles([profile])
+        >>> restored = deserialize_profiles(serialized)
+        >>> restored[0].id
+        '~Jane_Smith1'
+
+        ```
+    """
+    return [Profile.from_json(json.loads(s)) for s in serialized]
 
 
 def serialize_profiles(profiles: list[Profile]) -> list[str]:
@@ -27,7 +60,7 @@ def serialize_profiles(profiles: list[Profile]) -> list[str]:
 
     Returns:
         A list of JSON strings, one per profile, in the same order as
-        the input. Returns an empty list if the input is empty.
+            the input. Returns an empty list if the input is empty.
 
     Example:
         ```pycon

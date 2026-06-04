@@ -4,7 +4,7 @@ import json
 
 from openreview import Profile
 
-from candidex.openreview import serialize_profiles
+from candidex.openreview import deserialize_profiles, serialize_profiles
 
 # --- Helpers ---
 
@@ -17,6 +17,65 @@ def make_profile(profile_id: str, fullname: str, position: str, institution: str
             "history": [{"position": position, "institution": {"name": institution}}],
         },
     )
+
+
+##########################################
+#     Tests for deserialize_profiles     #
+##########################################
+
+
+def test_deserialize_profiles_empty_list() -> None:
+    assert deserialize_profiles([]) == []
+
+
+def test_deserialize_profiles_returns_list_of_profiles() -> None:
+    profile = make_profile("~Jane_Smith1", "Jane Smith", "PhD Student", "MIT")
+    result = deserialize_profiles(serialize_profiles([profile]))
+    assert isinstance(result, list)
+    assert all(isinstance(p, Profile) for p in result)
+
+
+def test_deserialize_profiles_single_profile_id() -> None:
+    profile = make_profile("~Jane_Smith1", "Jane Smith", "PhD Student", "MIT")
+    result = deserialize_profiles(serialize_profiles([profile]))
+    assert result[0].id == "~Jane_Smith1"
+
+
+def test_deserialize_profiles_single_profile_content() -> None:
+    profile = make_profile("~Jane_Smith1", "Jane Smith", "PhD Student", "MIT")
+    result = deserialize_profiles(serialize_profiles([profile]))
+    assert result[0].content == {
+        "names": [{"fullname": "Jane Smith"}],
+        "history": [{"position": "PhD Student", "institution": {"name": "MIT"}}],
+    }
+
+
+def test_deserialize_profiles_multiple_profiles() -> None:
+    profile_a = make_profile("~Jane_Smith1", "Jane Smith", "PhD Student", "MIT")
+    profile_b = make_profile("~John_Doe1", "John Doe", "Professor", "Stanford")
+    result = deserialize_profiles(serialize_profiles([profile_a, profile_b]))
+    assert len(result) == 2
+    assert result[0].id == "~Jane_Smith1"
+    assert result[1].id == "~John_Doe1"
+
+
+def test_deserialize_profiles_preserves_order() -> None:
+    profile_a = make_profile("~Jane_Smith1", "Jane Smith", "PhD Student", "MIT")
+    profile_b = make_profile("~John_Doe1", "John Doe", "Professor", "Stanford")
+    profile_c = make_profile("~Alice_Brown1", "Alice Brown", "Postdoc", "CMU")
+    result = deserialize_profiles(serialize_profiles([profile_a, profile_b, profile_c]))
+    assert result[0].id == "~Jane_Smith1"
+    assert result[1].id == "~John_Doe1"
+    assert result[2].id == "~Alice_Brown1"
+
+
+def test_deserialize_profiles_round_trip() -> None:
+    profile_a = make_profile("~Jane_Smith1", "Jane Smith", "PhD Student", "MIT")
+    profile_b = make_profile("~John_Doe1", "John Doe", "Professor", "Stanford")
+    profiles = [profile_a, profile_b]
+    assert serialize_profiles(
+        deserialize_profiles(serialize_profiles(profiles))
+    ) == serialize_profiles(profiles)
 
 
 ########################################
