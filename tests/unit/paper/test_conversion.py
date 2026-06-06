@@ -25,7 +25,7 @@ def make_paper(
 ) -> Paper:
     return Paper.from_raw(
         title=title,
-        authors=authors or [],
+        authors=authors,
         venue=venue,
         year=year,
         pdf_url=pdf_url,
@@ -83,6 +83,29 @@ def test_papers_to_dataframe_empty_authors() -> None:
             {
                 PAPER_TITLE: ["Attention Is All You Need"],
                 PAPER_AUTHORS: [[]],
+                PAPER_VENUE: ["NeurIPS"],
+                PAPER_YEAR: [2017],
+                PAPER_URL: ["https://arxiv.org/pdf/1706.03762"],
+            },
+            schema={
+                PAPER_TITLE: pl.String,
+                PAPER_AUTHORS: pl.List(pl.String),
+                PAPER_VENUE: pl.String,
+                PAPER_YEAR: pl.Int32,
+                PAPER_URL: pl.String,
+            },
+        ),
+    )
+
+
+def test_papers_to_dataframe_none_authors() -> None:
+    paper = make_paper(authors=None)
+    assert_frame_equal(
+        papers_to_dataframe([paper]),
+        pl.DataFrame(
+            {
+                PAPER_TITLE: ["Attention Is All You Need"],
+                PAPER_AUTHORS: [None],
                 PAPER_VENUE: ["NeurIPS"],
                 PAPER_YEAR: [2017],
                 PAPER_URL: ["https://arxiv.org/pdf/1706.03762"],
