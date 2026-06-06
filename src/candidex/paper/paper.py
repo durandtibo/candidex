@@ -29,17 +29,19 @@ class Paper:
     Attributes:
         title:   Title of the paper, unicode-normalized and stripped.
         authors: Tuple of author names, each unicode-normalized and stripped.
+                 None if authors are not available.
         venue:   Venue where the paper was published (e.g. 'CVPR', 'NeurIPS'),
-                 unicode-normalized and stripped.
-        year:    Year the paper was published.
+                 unicode-normalized and stripped. None if not available.
+        year:    Year the paper was published. None if not available.
         pdf_url: URL of the paper's PDF, stripped of whitespace.
+                 None if not available.
     """
 
     title: str
-    authors: tuple[str, ...]
-    venue: str
-    year: int
-    pdf_url: str
+    authors: tuple[str, ...] | None = None
+    venue: str | None = None
+    year: int | None = None
+    pdf_url: str | None = None
 
     def hash(self) -> str:
         """Return a stable BLAKE2b hex digest of the paper.
@@ -52,6 +54,7 @@ class Paper:
             A 128-character lowercase hexadecimal BLAKE2b digest string.
 
         Example:
+            ```pycon
             >>> from candidex.paper import Paper
             >>> paper = Paper.from_raw(
             ...     title="Attention Is All You Need",
@@ -62,11 +65,13 @@ class Paper:
             ... )
             >>> len(paper.hash())
             128
+
+            ```
         """
         canonical = json.dumps(
             {
                 "title": self.title,
-                "authors": list(self.authors),
+                "authors": list(self.authors) if self.authors is not None else None,
                 "venue": self.venue,
                 "year": self.year,
                 "pdf_url": self.pdf_url,
@@ -80,10 +85,10 @@ class Paper:
     def from_raw(
         cls,
         title: str,
-        authors: Sequence[str],
-        venue: str,
-        year: int,
-        pdf_url: str,
+        authors: Sequence[str] | None = None,
+        venue: str | None = None,
+        year: int | None = None,
+        pdf_url: str | None = None,
     ) -> Paper:
         """Construct a `Paper` with normalized unicode and stripped
         whitespace.
@@ -95,51 +100,42 @@ class Paper:
 
         Args:
             title:   Title of the paper.
-            authors: Sequence of author names. May be empty if authors are
-                     not known at construction time.
-            venue:   Venue where the paper was published (e.g. 'CVPR').
-            year:    Year the paper was published.
-            pdf_url: URL of the paper's PDF.
+            authors: Sequence of author names, or None if not available.
+            venue:   Venue where the paper was published (e.g. 'CVPR'),
+                     or None if not available.
+            year:    Year the paper was published, or None if not available.
+            pdf_url: URL of the paper's PDF, or None if not available.
 
         Returns:
             A new `Paper` instance with normalized fields.
 
         Raises:
             ValueError: If `title` is empty or whitespace-only.
-            ValueError: If `venue` is empty or whitespace-only.
-            ValueError: If `pdf_url` is empty or whitespace-only.
 
         Example:
+            ```pycon
             >>> from candidex.paper import Paper
-            >>> paper = Paper.from_raw(
-            ...     title="Attention Is All You Need",
-            ...     authors=["Ashish Vaswani", "Noam Shazeer"],
-            ...     venue="NeurIPS",
-            ...     year=2017,
-            ...     pdf_url="https://arxiv.org/pdf/1706.03762",
-            ... )
-            >>> paper.authors
-            ('Ashish Vaswani', 'Noam Shazeer')
+            >>> paper = Paper.from_raw(title="Attention Is All You Need")
+            >>> paper.title
+            'Attention Is All You Need'
+            >>> paper.authors is None
+            True
+
+            ```
         """
         title = normalize_unicode(title.strip())
         if not title:
             msg = "Paper title cannot be empty."
             raise ValueError(msg)
 
-        venue = normalize_unicode(venue.strip())
-        if not venue:
-            msg = "Paper venue cannot be empty."
-            raise ValueError(msg)
-
-        pdf_url = pdf_url.strip()
-        if not pdf_url:
-            msg = "Paper PDF URL cannot be empty."
-            raise ValueError(msg)
-
         return cls(
             title=title,
-            authors=tuple(normalize_unicode(a.strip()) for a in authors),
-            venue=venue,
+            authors=(
+                tuple(normalize_unicode(a.strip()) for a in authors)
+                if authors is not None
+                else None
+            ),
+            venue=normalize_unicode(venue.strip()) if venue is not None else None,
             year=year,
-            pdf_url=pdf_url,
+            pdf_url=pdf_url.strip() if pdf_url is not None else None,
         )

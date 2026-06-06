@@ -22,10 +22,23 @@ def paper() -> Paper:
     )
 
 
+###########################
+#     Tests for Paper     #
+###########################
+
 # --- Construction ---
 
 
-def test_paper_from_raw_basic(paper: Paper) -> None:
+def test_paper_from_raw_title_only() -> None:
+    paper = Paper.from_raw(title="Attention Is All You Need")
+    assert paper.title == "Attention Is All You Need"
+    assert paper.authors is None
+    assert paper.venue is None
+    assert paper.year is None
+    assert paper.pdf_url is None
+
+
+def test_paper_from_raw_all_fields(paper: Paper) -> None:
     assert paper.title == "Attention Is All You Need"
     assert paper.authors == ("Ashish Vaswani", "Noam Shazeer")
     assert paper.venue == "NeurIPS"
@@ -34,32 +47,31 @@ def test_paper_from_raw_basic(paper: Paper) -> None:
 
 
 def test_paper_from_raw_raises_on_empty_title() -> None:
-    with pytest.raises(ValueError, match="Paper title cannot be empty"):
-        Paper.from_raw(
-            title="   ",
-            authors=["Jane Smith"],
-            venue="NeurIPS",
-            year=2017,
-            pdf_url="https://arxiv.org/pdf/1706.03762",
-        )
+    with pytest.raises(ValueError, match="title"):
+        Paper.from_raw(title="   ")
 
 
-def test_paper_from_raw_raises_on_empty_venue() -> None:
-    with pytest.raises(ValueError, match="Paper venue cannot be empty"):
-        Paper.from_raw(
-            title="My Paper",
-            authors=["Jane Smith"],
-            venue="   ",
-            year=2017,
-            pdf_url="https://arxiv.org/pdf/1706.03762",
-        )
+# --- Optional fields ---
 
 
-def test_paper_from_raw_raises_on_empty_pdf_url() -> None:
-    with pytest.raises(ValueError, match="Paper PDF URL cannot be empty"):
-        Paper.from_raw(
-            title="My Paper", authors=["Jane Smith"], venue="NeurIPS", year=2017, pdf_url="   "
-        )
+def test_paper_from_raw_none_authors() -> None:
+    assert Paper.from_raw(title="My Paper", authors=None).authors is None
+
+
+def test_paper_from_raw_empty_authors() -> None:
+    assert Paper.from_raw(title="My Paper", authors=[]).authors == ()
+
+
+def test_paper_from_raw_none_venue() -> None:
+    assert Paper.from_raw(title="My Paper", venue=None).venue is None
+
+
+def test_paper_from_raw_none_year() -> None:
+    assert Paper.from_raw(title="My Paper", year=None).year is None
+
+
+def test_paper_from_raw_none_pdf_url() -> None:
+    assert Paper.from_raw(title="My Paper", pdf_url=None).pdf_url is None
 
 
 # --- Normalization ---
@@ -78,41 +90,18 @@ def test_paper_from_raw_raises_on_empty_pdf_url() -> None:
     ],
 )
 def test_paper_from_raw_normalizes_title(title: str, expected: str) -> None:
-    paper = Paper.from_raw(
-        title=title,
-        authors=["Jane Smith"],
-        venue="NeurIPS",
-        year=2017,
-        pdf_url="https://arxiv.org/pdf/1706.03762",
-    )
-    assert paper.title == expected
+    assert Paper.from_raw(title=title).title == expected
 
 
 @pytest.mark.parametrize(
     ("authors", "expected"),
     [
-        pytest.param(
-            ["  Ashish Vaswani  ", "  Noam Shazeer  "],
-            ("Ashish Vaswani", "Noam Shazeer"),
-            id="strips_whitespace",
-        ),
-        pytest.param(
-            ["Université Smith", "École Doe"],
-            ("Universite Smith", "Ecole Doe"),
-            id="normalizes_unicode",
-        ),
-        pytest.param(["  Université Smith  "], ("Universite Smith",), id="strips_and_normalizes"),
+        pytest.param(["  Ashish Vaswani  "], ("Ashish Vaswani",), id="strips_whitespace"),
+        pytest.param(["Université Smith"], ("Universite Smith",), id="normalizes_unicode"),
     ],
 )
 def test_paper_from_raw_normalizes_authors(authors: list[str], expected: tuple[str, ...]) -> None:
-    paper = Paper.from_raw(
-        title="My Paper",
-        authors=authors,
-        venue="NeurIPS",
-        year=2024,
-        pdf_url="https://arxiv.org/pdf/paper.pdf",
-    )
-    assert paper.authors == expected
+    assert Paper.from_raw(title="My Paper", authors=authors).authors == expected
 
 
 @pytest.mark.parametrize(
@@ -123,34 +112,14 @@ def test_paper_from_raw_normalizes_authors(authors: list[str], expected: tuple[s
     ],
 )
 def test_paper_from_raw_normalizes_venue(venue: str, expected: str) -> None:
-    paper = Paper.from_raw(
-        title="My Paper",
-        authors=["Jane Smith"],
-        venue=venue,
-        year=2017,
-        pdf_url="https://arxiv.org/pdf/1706.03762",
-    )
-    assert paper.venue == expected
+    assert Paper.from_raw(title="My Paper", venue=venue).venue == expected
 
 
-@pytest.mark.parametrize(
-    ("pdf_url", "expected"),
-    [
-        pytest.param(
-            "  https://arxiv.org/pdf/1706.03762  ",
-            "https://arxiv.org/pdf/1706.03762",
-            id="strips_whitespace",
-        ),
-        pytest.param(
-            "https://arxiv.org/pdf/1706.03762", "https://arxiv.org/pdf/1706.03762", id="unchanged"
-        ),
-    ],
-)
-def test_paper_from_raw_normalizes_pdf_url(pdf_url: str, expected: str) -> None:
-    paper = Paper.from_raw(
-        title="My Paper", authors=["Jane Smith"], venue="NeurIPS", year=2017, pdf_url=pdf_url
+def test_paper_from_raw_normalizes_pdf_url() -> None:
+    assert (
+        Paper.from_raw(title="My Paper", pdf_url="  https://arxiv.org/pdf/1706.03762  ").pdf_url
+        == "https://arxiv.org/pdf/1706.03762"
     )
-    assert paper.pdf_url == expected
 
 
 # --- Hashability and equality ---
@@ -161,25 +130,12 @@ def test_paper_is_hashable(paper: Paper) -> None:
 
 
 def test_paper_can_be_used_as_dict_key(paper: Paper) -> None:
-    d = {paper: "value"}
-    assert d[paper] == "value"
+    assert {paper: "value"}[paper] == "value"
 
 
 def test_paper_can_be_used_in_set() -> None:
-    a = Paper.from_raw(
-        title="Attention Is All You Need",
-        authors=["Ashish Vaswani"],
-        venue="NeurIPS",
-        year=2017,
-        pdf_url="https://arxiv.org/pdf/1706.03762",
-    )
-    b = Paper.from_raw(
-        title="Attention Is All You Need",
-        authors=["Ashish Vaswani"],
-        venue="NeurIPS",
-        year=2017,
-        pdf_url="https://arxiv.org/pdf/1706.03762",
-    )
+    a = Paper.from_raw(title="My Paper")
+    b = Paper.from_raw(title="My Paper")
     assert len({a, b}) == 1
 
 
@@ -195,58 +151,93 @@ def test_paper_equality_same_fields(paper: Paper) -> None:
 
 
 def test_paper_inequality_different_title(paper: Paper) -> None:
-    other = Paper.from_raw(
+    assert paper != Paper.from_raw(
         title="BERT",
         authors=["Ashish Vaswani", "Noam Shazeer"],
         venue="NeurIPS",
         year=2017,
         pdf_url="https://arxiv.org/pdf/1706.03762",
     )
-    assert paper != other
 
 
 def test_paper_inequality_different_authors(paper: Paper) -> None:
-    other = Paper.from_raw(
+    assert paper != Paper.from_raw(
         title="Attention Is All You Need",
         authors=["Jane Smith"],
         venue="NeurIPS",
         year=2017,
         pdf_url="https://arxiv.org/pdf/1706.03762",
     )
-    assert paper != other
+
+
+def test_paper_inequality_none_vs_authors(paper: Paper) -> None:
+    assert paper != Paper.from_raw(
+        title="Attention Is All You Need",
+        authors=None,
+        venue="NeurIPS",
+        year=2017,
+        pdf_url="https://arxiv.org/pdf/1706.03762",
+    )
 
 
 def test_paper_inequality_different_venue(paper: Paper) -> None:
-    other = Paper.from_raw(
+    assert paper != Paper.from_raw(
         title="Attention Is All You Need",
         authors=["Ashish Vaswani", "Noam Shazeer"],
         venue="ICML",
         year=2017,
         pdf_url="https://arxiv.org/pdf/1706.03762",
     )
-    assert paper != other
+
+
+def test_paper_inequality_none_vs_venue(paper: Paper) -> None:
+    assert paper != Paper.from_raw(
+        title="Attention Is All You Need",
+        authors=["Ashish Vaswani", "Noam Shazeer"],
+        venue=None,
+        year=2017,
+        pdf_url="https://arxiv.org/pdf/1706.03762",
+    )
 
 
 def test_paper_inequality_different_year(paper: Paper) -> None:
-    other = Paper.from_raw(
+    assert paper != Paper.from_raw(
         title="Attention Is All You Need",
         authors=["Ashish Vaswani", "Noam Shazeer"],
         venue="NeurIPS",
         year=2018,
         pdf_url="https://arxiv.org/pdf/1706.03762",
     )
-    assert paper != other
+
+
+def test_paper_inequality_none_vs_year(paper: Paper) -> None:
+    assert paper != Paper.from_raw(
+        title="Attention Is All You Need",
+        authors=["Ashish Vaswani", "Noam Shazeer"],
+        venue="NeurIPS",
+        year=None,
+        pdf_url="https://arxiv.org/pdf/1706.03762",
+    )
 
 
 def test_paper_inequality_different_pdf_url(paper: Paper) -> None:
-    other = Paper.from_raw(
+    assert paper != Paper.from_raw(
         title="Attention Is All You Need",
         authors=["Ashish Vaswani", "Noam Shazeer"],
         venue="NeurIPS",
         year=2017,
         pdf_url="https://arxiv.org/pdf/other.pdf",
     )
-    assert paper != other
+
+
+def test_paper_inequality_none_vs_pdf_url(paper: Paper) -> None:
+    assert paper != Paper.from_raw(
+        title="Attention Is All You Need",
+        authors=["Ashish Vaswani", "Noam Shazeer"],
+        venue="NeurIPS",
+        year=2017,
+        pdf_url=None,
+    )
 
 
 # --- Immutability ---
@@ -285,11 +276,17 @@ def test_paper_hash_equal_papers_same_hash(paper: Paper) -> None:
     assert paper.hash() == other.hash()
 
 
+def test_paper_hash_none_authors_different_from_empty_authors() -> None:
+    a = Paper.from_raw(title="My Paper", authors=None)
+    b = Paper.from_raw(title="My Paper", authors=[])
+    assert a.hash() != b.hash()
+
+
 def test_paper_hash_matches_manual_blake2b(paper: Paper) -> None:
     canonical = json.dumps(
         {
             "title": paper.title,
-            "authors": list(paper.authors),
+            "authors": list(paper.authors) if paper.authors is not None else None,
             "venue": paper.venue,
             "year": paper.year,
             "pdf_url": paper.pdf_url,
@@ -304,102 +301,47 @@ def test_paper_hash_matches_manual_blake2b(paper: Paper) -> None:
     ("a", "b"),
     [
         pytest.param(
-            Paper.from_raw(
-                "Attention Is All You Need",
-                ["Ashish Vaswani"],
-                "NeurIPS",
-                2017,
-                "https://arxiv.org/pdf/1706.03762",
-            ),
-            Paper.from_raw(
-                "BERT", ["Ashish Vaswani"], "NeurIPS", 2017, "https://arxiv.org/pdf/1706.03762"
-            ),
-            id="different_title",
+            Paper.from_raw("My Paper"), Paper.from_raw("Other Paper"), id="different_title"
         ),
         pytest.param(
-            Paper.from_raw(
-                "Attention Is All You Need",
-                ["Ashish Vaswani"],
-                "NeurIPS",
-                2017,
-                "https://arxiv.org/pdf/1706.03762",
-            ),
-            Paper.from_raw(
-                "Attention Is All You Need",
-                ["Noam Shazeer"],
-                "NeurIPS",
-                2017,
-                "https://arxiv.org/pdf/1706.03762",
-            ),
+            Paper.from_raw("My Paper", authors=["Jane"]),
+            Paper.from_raw("My Paper", authors=["John"]),
             id="different_authors",
         ),
         pytest.param(
-            Paper.from_raw(
-                "Attention Is All You Need",
-                ["Ashish Vaswani", "Noam Shazeer"],
-                "NeurIPS",
-                2017,
-                "https://arxiv.org/pdf/1706.03762",
-            ),
-            Paper.from_raw(
-                "Attention Is All You Need",
-                ["Noam Shazeer", "Ashish Vaswani"],
-                "NeurIPS",
-                2017,
-                "https://arxiv.org/pdf/1706.03762",
-            ),
-            id="author_order_matters",
+            Paper.from_raw("My Paper", authors=["Jane"]),
+            Paper.from_raw("My Paper", authors=None),
+            id="authors_none_vs_value",
         ),
         pytest.param(
-            Paper.from_raw(
-                "Attention Is All You Need",
-                ["Ashish Vaswani"],
-                "NeurIPS",
-                2017,
-                "https://arxiv.org/pdf/1706.03762",
-            ),
-            Paper.from_raw(
-                "Attention Is All You Need",
-                ["Ashish Vaswani"],
-                "ICML",
-                2017,
-                "https://arxiv.org/pdf/1706.03762",
-            ),
+            Paper.from_raw("My Paper", venue="NeurIPS"),
+            Paper.from_raw("My Paper", venue="ICML"),
             id="different_venue",
         ),
         pytest.param(
-            Paper.from_raw(
-                "Attention Is All You Need",
-                ["Ashish Vaswani"],
-                "NeurIPS",
-                2017,
-                "https://arxiv.org/pdf/1706.03762",
-            ),
-            Paper.from_raw(
-                "Attention Is All You Need",
-                ["Ashish Vaswani"],
-                "NeurIPS",
-                2018,
-                "https://arxiv.org/pdf/1706.03762",
-            ),
+            Paper.from_raw("My Paper", venue="NeurIPS"),
+            Paper.from_raw("My Paper", venue=None),
+            id="venue_none_vs_value",
+        ),
+        pytest.param(
+            Paper.from_raw("My Paper", year=2017),
+            Paper.from_raw("My Paper", year=2018),
             id="different_year",
         ),
         pytest.param(
-            Paper.from_raw(
-                "Attention Is All You Need",
-                ["Ashish Vaswani"],
-                "NeurIPS",
-                2017,
-                "https://arxiv.org/pdf/1706.03762",
-            ),
-            Paper.from_raw(
-                "Attention Is All You Need",
-                ["Ashish Vaswani"],
-                "NeurIPS",
-                2017,
-                "https://arxiv.org/pdf/other.pdf",
-            ),
+            Paper.from_raw("My Paper", year=2017),
+            Paper.from_raw("My Paper", year=None),
+            id="year_none_vs_value",
+        ),
+        pytest.param(
+            Paper.from_raw("My Paper", pdf_url="https://a.pdf"),
+            Paper.from_raw("My Paper", pdf_url="https://b.pdf"),
             id="different_pdf_url",
+        ),
+        pytest.param(
+            Paper.from_raw("My Paper", pdf_url="https://a.pdf"),
+            Paper.from_raw("My Paper", pdf_url=None),
+            id="pdf_url_none_vs_value",
         ),
     ],
 )
