@@ -5,16 +5,18 @@ from __future__ import annotations
 __all__ = [
     "CVFPaperScraper",
     "build_listing_url",
+    "load_or_scrape_papers",
     "parse_paper",
     "parse_paper_entries",
     "resolve_url",
-    "scrape_cvf_papers",
+    "scrape_papers",
 ]
 
 import logging
 import re
 from typing import TYPE_CHECKING
 
+import polars as pl
 from bs4 import BeautifulSoup, Tag
 
 from candidex.columns import PAPER_AUTHORS, PAPER_URL
@@ -25,7 +27,7 @@ from candidex.utils.http import fetch_html
 from candidex.utils.progressbar import make_progressbar
 
 if TYPE_CHECKING:
-    import polars as pl
+    from pathlib import Path
 
 logger: logging.Logger = logging.getLogger(__name__)
 
@@ -55,7 +57,7 @@ def build_listing_url(venue: str, year: int) -> str:
 
     Args:
         venue: The venue name as it appears in the CVF URL
-               (e.g. 'CVPR', 'ICCV', 'ECCV').
+               (e.g. 'CVPR', 'ICCV', 'WACV').
         year:  The year of the venue (e.g. 2024).
 
     Returns:
@@ -85,8 +87,8 @@ def parse_paper_entries(html: str) -> list[Tag]:
 
     Returns:
         A list of `<dt>` Tag objects, one per paper. Returns an empty list
-        if no paper entries are found, which may indicate a malformed page
-        or a change in the page structure.
+            if no paper entries are found, which may indicate a malformed page
+            or a change in the page structure.
     """
     soup = BeautifulSoup(html, HTML_PARSER)
     entries = soup.find_all("dt", class_=PAPER_ENTRY_CLASS)
@@ -134,7 +136,7 @@ def parse_paper(
 
     Returns:
         A `Paper` object with title, authors, venue, year, and PDF URL.
-        Fields that cannot be parsed are set to None.
+            Fields that cannot be parsed are set to None.
 
     Example:
         >>> from bs4 import BeautifulSoup
@@ -192,7 +194,7 @@ def parse_paper(
     )
 
 
-def scrape_cvf_papers(venue: str, year: int) -> pl.DataFrame:
+def scrape_papers(venue: str, year: int) -> pl.DataFrame:
     """Scrape paper metadata from a CVF OpenAccess listing page into a
     DataFrame.
 
@@ -204,7 +206,7 @@ def scrape_cvf_papers(venue: str, year: int) -> pl.DataFrame:
 
     Args:
         venue: The venue name as it appears in the CVF URL
-               (e.g. 'CVPR', 'ICCV', 'ECCV').
+               (e.g. 'CVPR', 'ICCV', 'WACV').
         year:  The year of the venue (e.g. 2024).
 
     Returns:
@@ -223,9 +225,8 @@ def scrape_cvf_papers(venue: str, year: int) -> pl.DataFrame:
 
     Example:
         ```pycon
-        >>> from candidex.scraper.cvf import scrape_cvf_papers
-        >>> from candidex.columns import PAPER_TITLE, PAPER_ID
-        >>> df = scrape_cvf_papers(venue="CVPR", year=2024)  # doctest: +SKIP
+        >>> from candidex.scraper.cvf import scrape_papers
+        >>> df = scrape_papers(venue="CVPR", year=2024)  # doctest: +SKIP
 
         ```
     """
@@ -253,4 +254,76 @@ def scrape_cvf_papers(venue: str, year: int) -> pl.DataFrame:
         missing_pdf,
         missing_authors,
     )
+    return frame
+
+
+def load_or_scrape_papers(
+    venue: str,
+    year: int,
+    cache_dir: Path | None = None,
+) -> pl.DataFrame:
+    """Load cached CVF papers from disk or scrape them if not yet
+    cached.
+
+    On the first call for a given venue and year, scrapes the CVF listing
+    page, saves the results as a Parquet file under `cache_dir`, and returns
+    the DataFrame. On subsequent calls, loads directly from the cached Parquet
+    file, making repeated runs fast and network-independent.
+
+    If `cache_dir` is None, scrapes on every call without caching.
+
+    The cache file is named `{venue}_{year}.parquet` (e.g. `CVPR_2024.parquet`).
+
+    Args:
+        venue:     The venue name as it appears in the CVF URL
+                   (e.g. 'CVPR', 'ICCV', 'ECCV').
+        year:      The year of the venue (e.g. 2024).
+        cache_dir: Directory where the Parquet cache file will be read from
+                   or written to. Created automatically if it does not exist.
+                   If None, caching is disabled and papers are scraped on
+                   every call.
+
+    Returns:
+        A Polars DataFrame with columns as returned by `scrape_cvf_papers`:
+            - PAPER_TITLE   (String):       Paper title.
+            - PAPER_AUTHORS (List[String]): Author names. Null if not found.
+            - PAPER_VENUE   (String):       Venue name.
+            - PAPER_YEAR    (Int32):        Year of the venue.
+            - PAPER_URL     (String):       Direct URL to the paper's PDF.
+                                            Null if not found.
+            - PAPER_ID      (String):       BLAKE2b hash of the paper.
+
+    Raises:
+        requests.exceptions.RequestException: If the scrape fails due to a
+            network or HTTP error and no cached file exists.
+
+    Example:
+        ```pycon
+        >>> from pathlib import Path
+        >>> from candidex.scraper.cvf import load_or_scrape_papers
+        >>> df = load_or_scrape_papers(
+        ...     venue="CVPR", year=2024, cache_dir=Path("data/papers")
+        ... )  # doctest: +SKIP
+        >>> df = load_or_scrape_papers(venue="CVPR", year=2024)  # doctest: +SKIP — no caching
+
+        ```
+    """
+    if cache_dir is not None:
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        path = cache_dir / f"{venue}_{year}.parquet"
+
+        if path.is_file():
+            logger.info("Loading cached %s %d papers from %s.", venue, year, path)
+            return pl.read_parquet(path)
+
+        logger.info("No cache found at %s. Scraping %s %d papers...", path, venue, year)
+    else:
+        logger.info("No cache directory provided. Scraping %s %d papers...", venue, year)
+
+    frame = scrape_papers(venue=venue, year=year)
+
+    if cache_dir is not None:
+        frame.write_parquet(path)
+        logger.info("Saved %d papers to %s.", len(frame), path)
+
     return frame

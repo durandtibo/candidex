@@ -19,11 +19,16 @@ from candidex.paper import Paper
 from candidex.scraper.cvf import (
     BASE_URL,
     build_listing_url,
+    load_or_scrape_papers,
     parse_paper,
     parse_paper_entries,
     resolve_url,
-    scrape_cvf_papers,
+    scrape_papers,
 )
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 MODULE = "candidex.scraper.cvf"
 
@@ -517,9 +522,9 @@ def test_parse_paper_full_output_missing_authors_and_pdf() -> None:
     )
 
 
-#######################################
-#     Tests for scrape_cvf_papers     #
-#######################################
+###################################
+#     Tests for scrape_papers     #
+###################################
 
 
 # --- Fixtures ---
@@ -550,56 +555,56 @@ def paper_b() -> Paper:
 # --- URL building ---
 
 
-def test_scrape_cvf_papers_builds_correct_url() -> None:
+def test_scrape_papers_builds_correct_url() -> None:
     with (
         patch(f"{MODULE}.fetch_html", return_value="<html></html>") as mock_fetch,
         patch(f"{MODULE}.parse_paper_entries", return_value=[]),
     ):
-        scrape_cvf_papers(venue="CVPR", year=2024)
+        scrape_papers(venue="CVPR", year=2024)
         mock_fetch.assert_called_once_with("https://openaccess.thecvf.com/CVPR2024?day=all")
 
 
-def test_scrape_cvf_papers_builds_correct_url_different_venue() -> None:
+def test_scrape_papers_builds_correct_url_different_venue() -> None:
     with (
         patch(f"{MODULE}.fetch_html", return_value="<html></html>") as mock_fetch,
         patch(f"{MODULE}.parse_paper_entries", return_value=[]),
     ):
-        scrape_cvf_papers(venue="ICCV", year=2023)
+        scrape_papers(venue="ICCV", year=2023)
         mock_fetch.assert_called_once_with("https://openaccess.thecvf.com/ICCV2023?day=all")
 
 
 # --- Passes venue and year to parse_paper ---
 
 
-def test_scrape_cvf_papers_passes_venue_and_year_to_parse_paper(paper_a: Paper) -> None:
+def test_scrape_papers_passes_venue_and_year_to_parse_paper(paper_a: Paper) -> None:
     mock_dt = Mock()
     with (
         patch(f"{MODULE}.fetch_html", return_value="<html></html>"),
         patch(f"{MODULE}.parse_paper_entries", return_value=[mock_dt]),
         patch(f"{MODULE}.parse_paper", return_value=paper_a) as mock_parse,
     ):
-        scrape_cvf_papers(venue="CVPR", year=2024)
+        scrape_papers(venue="CVPR", year=2024)
         mock_parse.assert_called_once_with(mock_dt, venue="CVPR", year=2024)
 
 
 # --- Empty listing ---
 
 
-def test_scrape_cvf_papers_returns_empty_dataframe_when_no_entries() -> None:
+def test_scrape_papers_returns_empty_dataframe_when_no_entries() -> None:
     with (
         patch(f"{MODULE}.fetch_html", return_value="<html></html>"),
         patch(f"{MODULE}.parse_paper_entries", return_value=[]),
     ):
-        result = scrape_cvf_papers(venue="CVPR", year=2024)
+        result = scrape_papers(venue="CVPR", year=2024)
     assert result.is_empty()
 
 
-def test_scrape_cvf_papers_empty_dataframe_has_correct_schema() -> None:
+def test_scrape_papers_empty_dataframe_has_correct_schema() -> None:
     with (
         patch(f"{MODULE}.fetch_html", return_value="<html></html>"),
         patch(f"{MODULE}.parse_paper_entries", return_value=[]),
     ):
-        result = scrape_cvf_papers(venue="CVPR", year=2024)
+        result = scrape_papers(venue="CVPR", year=2024)
     assert result.schema == {
         PAPER_TITLE: pl.String,
         PAPER_AUTHORS: pl.List(pl.String),
@@ -613,14 +618,14 @@ def test_scrape_cvf_papers_empty_dataframe_has_correct_schema() -> None:
 # --- Single paper ---
 
 
-def test_scrape_cvf_papers_single_paper(paper_a: Paper) -> None:
+def test_scrape_papers_single_paper(paper_a: Paper) -> None:
     mock_dt = Mock()
     with (
         patch(f"{MODULE}.fetch_html", return_value="<html></html>"),
         patch(f"{MODULE}.parse_paper_entries", return_value=[mock_dt]),
         patch(f"{MODULE}.parse_paper", return_value=paper_a),
     ):
-        result = scrape_cvf_papers(venue="CVPR", year=2024)
+        result = scrape_papers(venue="CVPR", year=2024)
     assert_frame_equal(
         result,
         pl.DataFrame(
@@ -647,7 +652,7 @@ def test_scrape_cvf_papers_single_paper(paper_a: Paper) -> None:
 # --- Multiple papers ---
 
 
-def test_scrape_cvf_papers_multiple_papers(paper_a: Paper, paper_b: Paper) -> None:
+def test_scrape_papers_multiple_papers(paper_a: Paper, paper_b: Paper) -> None:
     mock_dt_a = Mock()
     mock_dt_b = Mock()
 
@@ -663,7 +668,7 @@ def test_scrape_cvf_papers_multiple_papers(paper_a: Paper, paper_b: Paper) -> No
         patch(f"{MODULE}.parse_paper_entries", return_value=[mock_dt_a, mock_dt_b]),
         patch(f"{MODULE}.parse_paper", side_effect=side_effect),
     ):
-        result = scrape_cvf_papers(venue="CVPR", year=2024)
+        result = scrape_papers(venue="CVPR", year=2024)
     assert_frame_equal(
         result,
         pl.DataFrame(
@@ -693,7 +698,7 @@ def test_scrape_cvf_papers_multiple_papers(paper_a: Paper, paper_b: Paper) -> No
 # --- Papers with None fields ---
 
 
-def test_scrape_cvf_papers_paper_with_null_pdf_url() -> None:
+def test_scrape_papers_paper_with_null_pdf_url() -> None:
     paper = Paper.from_raw(
         title="My Paper", authors=["Jane Smith"], venue="CVPR", year=2024, pdf_url=None
     )
@@ -702,11 +707,11 @@ def test_scrape_cvf_papers_paper_with_null_pdf_url() -> None:
         patch(f"{MODULE}.parse_paper_entries", return_value=[Mock()]),
         patch(f"{MODULE}.parse_paper", return_value=paper),
     ):
-        result = scrape_cvf_papers(venue="CVPR", year=2024)
+        result = scrape_papers(venue="CVPR", year=2024)
     assert result[PAPER_URL][0] is None
 
 
-def test_scrape_cvf_papers_paper_with_null_authors() -> None:
+def test_scrape_papers_paper_with_null_authors() -> None:
     paper = Paper.from_raw(
         title="My Paper",
         authors=None,
@@ -719,14 +724,14 @@ def test_scrape_cvf_papers_paper_with_null_authors() -> None:
         patch(f"{MODULE}.parse_paper_entries", return_value=[Mock()]),
         patch(f"{MODULE}.parse_paper", return_value=paper),
     ):
-        result = scrape_cvf_papers(venue="CVPR", year=2024)
+        result = scrape_papers(venue="CVPR", year=2024)
     assert result[PAPER_AUTHORS][0] is None
 
 
 # --- Network error propagates ---
 
 
-def test_scrape_cvf_papers_propagates_network_error() -> None:
+def test_scrape_papers_propagates_network_error() -> None:
     import requests
 
     with (
@@ -735,4 +740,225 @@ def test_scrape_cvf_papers_propagates_network_error() -> None:
         ),
         pytest.raises(requests.exceptions.ConnectionError),
     ):
-        scrape_cvf_papers(venue="CVPR", year=2024)
+        scrape_papers(venue="CVPR", year=2024)
+
+
+###########################################
+#     Tests for load_or_scrape_papers     #
+###########################################
+
+
+# --- Fixtures ---
+
+
+@pytest.fixture
+def cache_dir(tmp_path: Path) -> Path:
+    return tmp_path / "papers"
+
+
+@pytest.fixture
+def sample_frame() -> pl.DataFrame:
+    paper = Paper.from_raw(
+        title="Attention Is All You Need",
+        authors=["Jane Smith", "John Doe"],
+        venue="CVPR",
+        year=2024,
+        pdf_url="https://openaccess.thecvf.com/content/CVPR2024/papers/paper.pdf",
+    )
+    return pl.DataFrame(
+        {
+            PAPER_TITLE: ["Attention Is All You Need"],
+            PAPER_AUTHORS: [["Jane Smith", "John Doe"]],
+            PAPER_VENUE: ["CVPR"],
+            PAPER_YEAR: [2024],
+            PAPER_URL: ["https://openaccess.thecvf.com/content/CVPR2024/papers/paper.pdf"],
+            PAPER_ID: [paper.hash()],
+        },
+        schema={
+            PAPER_TITLE: pl.String,
+            PAPER_AUTHORS: pl.List(pl.String),
+            PAPER_VENUE: pl.String,
+            PAPER_YEAR: pl.Int32,
+            PAPER_URL: pl.String,
+            PAPER_ID: pl.String,
+        },
+    )
+
+
+# --- Default cache_dir is None ---
+
+
+def test_load_or_scrape_papers_default_cache_dir_is_none(
+    sample_frame: pl.DataFrame,
+) -> None:
+    with patch(f"{MODULE}.scrape_papers", return_value=sample_frame) as mock_scrape:
+        load_or_scrape_papers(venue="CVPR", year=2024)
+        mock_scrape.assert_called_once_with(venue="CVPR", year=2024)
+
+
+# --- cache_dir=None: no caching ---
+
+
+def test_load_or_scrape_papers_scrapes_when_cache_dir_is_none(
+    sample_frame: pl.DataFrame,
+) -> None:
+    with patch(f"{MODULE}.scrape_papers", return_value=sample_frame) as mock_scrape:
+        load_or_scrape_papers(venue="CVPR", year=2024, cache_dir=None)
+        mock_scrape.assert_called_once_with(venue="CVPR", year=2024)
+
+
+def test_load_or_scrape_papers_returns_frame_when_cache_dir_is_none(
+    sample_frame: pl.DataFrame,
+) -> None:
+    with patch(f"{MODULE}.scrape_papers", return_value=sample_frame):
+        result = load_or_scrape_papers(venue="CVPR", year=2024, cache_dir=None)
+    assert_frame_equal(result, sample_frame)
+
+
+def test_load_or_scrape_papers_does_not_write_file_when_cache_dir_is_none(
+    tmp_path: Path,
+    sample_frame: pl.DataFrame,
+) -> None:
+    with patch(f"{MODULE}.scrape_papers", return_value=sample_frame):
+        load_or_scrape_papers(venue="CVPR", year=2024, cache_dir=None)
+    assert not any(tmp_path.glob("*.parquet"))
+
+
+def test_load_or_scrape_papers_scrapes_every_call_when_cache_dir_is_none(
+    sample_frame: pl.DataFrame,
+) -> None:
+    with patch(f"{MODULE}.scrape_papers", return_value=sample_frame) as mock_scrape:
+        load_or_scrape_papers(venue="CVPR", year=2024, cache_dir=None)
+        load_or_scrape_papers(venue="CVPR", year=2024, cache_dir=None)
+        assert mock_scrape.call_count == 2
+
+
+# --- cache_dir provided: directory creation ---
+
+
+def test_load_or_scrape_papers_creates_cache_dir(
+    cache_dir: Path,
+    sample_frame: pl.DataFrame,
+) -> None:
+    assert not cache_dir.exists()
+    with patch(f"{MODULE}.scrape_papers", return_value=sample_frame):
+        load_or_scrape_papers(venue="CVPR", year=2024, cache_dir=cache_dir)
+    assert cache_dir.exists()
+
+
+# --- cache_dir provided: cache miss ---
+
+
+def test_load_or_scrape_papers_scrapes_when_no_cache(
+    cache_dir: Path,
+    sample_frame: pl.DataFrame,
+) -> None:
+    with patch(f"{MODULE}.scrape_papers", return_value=sample_frame) as mock_scrape:
+        load_or_scrape_papers(venue="CVPR", year=2024, cache_dir=cache_dir)
+        mock_scrape.assert_called_once_with(venue="CVPR", year=2024)
+
+
+def test_load_or_scrape_papers_saves_parquet_when_no_cache(
+    cache_dir: Path,
+    sample_frame: pl.DataFrame,
+) -> None:
+    with patch(f"{MODULE}.scrape_papers", return_value=sample_frame):
+        load_or_scrape_papers(venue="CVPR", year=2024, cache_dir=cache_dir)
+    assert (cache_dir / "CVPR_2024.parquet").is_file()
+
+
+def test_load_or_scrape_papers_returns_scraped_frame_when_no_cache(
+    cache_dir: Path,
+    sample_frame: pl.DataFrame,
+) -> None:
+    with patch(f"{MODULE}.scrape_papers", return_value=sample_frame):
+        result = load_or_scrape_papers(venue="CVPR", year=2024, cache_dir=cache_dir)
+    assert_frame_equal(result, sample_frame)
+
+
+# --- cache_dir provided: cache hit ---
+
+
+def test_load_or_scrape_papers_does_not_scrape_when_cache_exists(
+    cache_dir: Path,
+    sample_frame: pl.DataFrame,
+) -> None:
+    cache_dir.mkdir(parents=True)
+    sample_frame.write_parquet(cache_dir / "CVPR_2024.parquet")
+    with patch(f"{MODULE}.scrape_papers") as mock_scrape:
+        load_or_scrape_papers(venue="CVPR", year=2024, cache_dir=cache_dir)
+        mock_scrape.assert_not_called()
+
+
+def test_load_or_scrape_papers_returns_cached_frame(
+    cache_dir: Path,
+    sample_frame: pl.DataFrame,
+) -> None:
+    cache_dir.mkdir(parents=True)
+    sample_frame.write_parquet(cache_dir / "CVPR_2024.parquet")
+    result = load_or_scrape_papers(venue="CVPR", year=2024, cache_dir=cache_dir)
+    assert_frame_equal(result, sample_frame)
+
+
+def test_load_or_scrape_papers_scrapes_only_once_across_multiple_calls(
+    cache_dir: Path,
+    sample_frame: pl.DataFrame,
+) -> None:
+    with patch(f"{MODULE}.scrape_papers", return_value=sample_frame) as mock_scrape:
+        load_or_scrape_papers(venue="CVPR", year=2024, cache_dir=cache_dir)
+        load_or_scrape_papers(venue="CVPR", year=2024, cache_dir=cache_dir)
+        mock_scrape.assert_called_once()
+
+
+# --- Cache filename ---
+
+
+@pytest.mark.parametrize(
+    ("venue", "year", "expected_filename"),
+    [
+        pytest.param("CVPR", 2024, "CVPR_2024.parquet", id="cvpr_2024"),
+        pytest.param("ICCV", 2023, "ICCV_2023.parquet", id="iccv_2023"),
+        pytest.param("WACV", 2022, "WACV_2022.parquet", id="wacv_2022"),
+    ],
+)
+def test_load_or_scrape_papers_cache_filename(
+    venue: str,
+    year: int,
+    expected_filename: str,
+    cache_dir: Path,
+    sample_frame: pl.DataFrame,
+) -> None:
+    with patch(f"{MODULE}.scrape_papers", return_value=sample_frame):
+        load_or_scrape_papers(venue=venue, year=year, cache_dir=cache_dir)
+    assert (cache_dir / expected_filename).is_file()
+
+
+# --- Network error propagates ---
+
+
+def test_load_or_scrape_papers_propagates_network_error_when_no_cache(
+    cache_dir: Path,
+) -> None:
+    import requests
+
+    with (
+        patch(
+            f"{MODULE}.scrape_papers",
+            side_effect=requests.exceptions.ConnectionError("unreachable"),
+        ),
+        pytest.raises(requests.exceptions.ConnectionError),
+    ):
+        load_or_scrape_papers(venue="CVPR", year=2024, cache_dir=cache_dir)
+
+
+def test_load_or_scrape_papers_propagates_network_error_when_cache_dir_is_none() -> None:
+    import requests
+
+    with (
+        patch(
+            f"{MODULE}.scrape_papers",
+            side_effect=requests.exceptions.ConnectionError("unreachable"),
+        ),
+        pytest.raises(requests.exceptions.ConnectionError),
+    ):
+        load_or_scrape_papers(venue="CVPR", year=2024, cache_dir=None)
