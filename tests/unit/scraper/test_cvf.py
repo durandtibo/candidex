@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
 from unittest.mock import Mock, patch
 
 import polars as pl
@@ -25,7 +26,6 @@ from candidex.scraper.cvf import (
     resolve_url,
     scrape_papers,
 )
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -946,7 +946,7 @@ def test_load_or_scrape_papers_propagates_network_error_when_no_cache(
             f"{MODULE}.scrape_papers",
             side_effect=requests.exceptions.ConnectionError("unreachable"),
         ),
-        pytest.raises(requests.exceptions.ConnectionError),
+        pytest.raises(requests.exceptions.ConnectionError, match="unreachable"),
     ):
         load_or_scrape_papers(venue="CVPR", year=2024, cache_dir=cache_dir)
 
@@ -959,6 +959,6 @@ def test_load_or_scrape_papers_propagates_network_error_when_cache_dir_is_none()
             f"{MODULE}.scrape_papers",
             side_effect=requests.exceptions.ConnectionError("unreachable"),
         ),
-        pytest.raises(requests.exceptions.ConnectionError),
+        pytest.raises(requests.exceptions.ConnectionError, match="unreachable"),
     ):
         load_or_scrape_papers(venue="CVPR", year=2024, cache_dir=None)

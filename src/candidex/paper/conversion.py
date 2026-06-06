@@ -73,7 +73,7 @@ def papers_to_dataframe(
     """
     data = {
         PAPER_TITLE: [p.title for p in papers],
-        PAPER_AUTHORS: [list(p.authors) for p in papers],
+        PAPER_AUTHORS: [list(p.authors) if p.authors is not None else None for p in papers],
         PAPER_VENUE: [p.venue for p in papers],
         PAPER_YEAR: [p.year for p in papers],
         PAPER_URL: [p.pdf_url for p in papers],
