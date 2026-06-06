@@ -2,13 +2,21 @@ r"""Define the class for scraping CVF papers."""
 
 from __future__ import annotations
 
-__all__ = ["CVFPaperScraper", "build_listing_url", "parse_paper_entries"]
+__all__ = [
+    "CVFPaperScraper",
+    "build_listing_url",
+    "parse_paper",
+    "parse_paper_entries",
+    "resolve_url",
+]
 
 import logging
-from typing import TYPE_CHECKING
+import re
+from typing import TYPE_CHECKING, Any
 
 from bs4 import BeautifulSoup, Tag
 
+from candidex.columns import PAPER_AUTHORS, PAPER_PDF_URL, PAPER_TITLE
 from candidex.scraper.base import BasePaperScraper
 
 if TYPE_CHECKING:
@@ -20,6 +28,7 @@ BASE_URL = "https://openaccess.thecvf.com"
 
 PAPER_ENTRY_CLASS = "ptitle"
 HTML_PARSER = "html.parser"
+PDF_HREF_PATTERN = re.compile(r"\.pdf$", re.IGNORECASE)
 
 
 class CVFPaperScraper(BasePaperScraper):
@@ -86,3 +95,78 @@ def parse_paper_entries(html: str) -> list[Tag]:
         logger.debug("Found %d paper entries in HTML.", len(entries))
 
     return entries
+
+
+def resolve_url(href: str, base_url: str) -> str:
+    """Resolve a potentially relative href to an absolute URL.
+
+    Args:
+        href:     The href attribute value, either absolute or relative.
+        base_url: The base URL to prepend to relative hrefs.
+
+    Returns:
+        An absolute URL string.
+    """
+    return href if href.startswith("http") else f"{base_url}{href}"
+
+
+def parse_paper(dt: Tag, base_url: str = BASE_URL) -> dict[str, Any]:
+    """Extract all metadata for a single paper from its <dt> tag.
+
+    The CVPR listing page uses a definition list structure where each paper
+    occupies one <dt> (title) followed by two <dd> tags: the first holds the
+    authors as comma-separated text, and the second contains action links
+    including the PDF download.
+
+    Args:
+        dt:       The <dt class='ptitle'> Tag for a single paper entry.
+        base_url: Root URL used to resolve relative hrefs. Defaults to BASE_URL.
+
+    Returns:
+        A dict with keys:
+            - PAPER_TITLE   (str):       Paper title.
+            - PAPER_PDF_URL (str):       Absolute URL to the PDF file.
+                                         Empty string if no PDF link is found.
+            - PAPER_AUTHORS (list[str]): Author names parsed from the first <dd>,
+                                         split on commas. Empty list if the <dd>
+                                         is missing.
+    """
+    # Title from the <a> tag inside <dt>
+    a_tag = dt.find("a")
+    title = a_tag.get_text(strip=True) if a_tag else dt.get_text(strip=True)
+
+    # Authors from the first <dd> sibling, comma-separated
+    dd_authors = dt.find_next_sibling("dd")
+    authors = (
+        [
+            re.sub(r"\s+", " ", auth.strip())
+            for auth in dd_authors.get_text(strip=True).split(",")
+            if auth.strip()
+        ]
+        if dd_authors
+        else []
+    )
+
+    if not authors:
+        logger.debug("No authors found for paper: %s", title)
+
+    # PDF URL from any subsequent <dd> siblings
+    all_dd = dt.find_next_siblings("dd")
+    pdf_link = next(
+        (
+            dd.find("a", href=PDF_HREF_PATTERN)
+            for dd in all_dd
+            if dd.find("a", href=PDF_HREF_PATTERN)
+        ),
+        None,
+    )
+    pdf_url = resolve_url(pdf_link["href"], base_url) if pdf_link else ""
+
+    if not pdf_url:
+        logger.debug("No PDF URL found for paper: %s", title)
+
+    return {
+        PAPER_TITLE: title,
+        PAPER_PDF_URL: pdf_url,
+        PAPER_AUTHORS: authors,
+    }
