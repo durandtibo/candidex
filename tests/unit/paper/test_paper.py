@@ -15,21 +15,19 @@ from candidex.paper import Paper
 def paper() -> Paper:
     return Paper.from_raw(
         title="Attention Is All You Need",
+        authors=["Ashish Vaswani", "Noam Shazeer"],
         venue="NeurIPS",
         year=2017,
         pdf_url="https://arxiv.org/pdf/1706.03762",
     )
 
 
-###########################
-#     Tests for Paper     #
-###########################
-
 # --- Construction ---
 
 
 def test_paper_from_raw_basic(paper: Paper) -> None:
     assert paper.title == "Attention Is All You Need"
+    assert paper.authors == ("Ashish Vaswani", "Noam Shazeer")
     assert paper.venue == "NeurIPS"
     assert paper.year == 2017
     assert paper.pdf_url == "https://arxiv.org/pdf/1706.03762"
@@ -38,14 +36,19 @@ def test_paper_from_raw_basic(paper: Paper) -> None:
 def test_paper_from_raw_raises_on_empty_title() -> None:
     with pytest.raises(ValueError, match="Paper title cannot be empty"):
         Paper.from_raw(
-            title="   ", venue="NeurIPS", year=2017, pdf_url="https://arxiv.org/pdf/1706.03762"
+            title="   ",
+            authors=["Jane Smith"],
+            venue="NeurIPS",
+            year=2017,
+            pdf_url="https://arxiv.org/pdf/1706.03762",
         )
 
 
 def test_paper_from_raw_raises_on_empty_venue() -> None:
     with pytest.raises(ValueError, match="Paper venue cannot be empty"):
         Paper.from_raw(
-            title="Attention Is All You Need",
+            title="My Paper",
+            authors=["Jane Smith"],
             venue="   ",
             year=2017,
             pdf_url="https://arxiv.org/pdf/1706.03762",
@@ -54,7 +57,9 @@ def test_paper_from_raw_raises_on_empty_venue() -> None:
 
 def test_paper_from_raw_raises_on_empty_pdf_url() -> None:
     with pytest.raises(ValueError, match="Paper PDF URL cannot be empty"):
-        Paper.from_raw(title="Attention Is All You Need", venue="NeurIPS", year=2017, pdf_url="   ")
+        Paper.from_raw(
+            title="My Paper", authors=["Jane Smith"], venue="NeurIPS", year=2017, pdf_url="   "
+        )
 
 
 # --- Normalization ---
@@ -74,9 +79,40 @@ def test_paper_from_raw_raises_on_empty_pdf_url() -> None:
 )
 def test_paper_from_raw_normalizes_title(title: str, expected: str) -> None:
     paper = Paper.from_raw(
-        title=title, venue="NeurIPS", year=2017, pdf_url="https://arxiv.org/pdf/1706.03762"
+        title=title,
+        authors=["Jane Smith"],
+        venue="NeurIPS",
+        year=2017,
+        pdf_url="https://arxiv.org/pdf/1706.03762",
     )
     assert paper.title == expected
+
+
+@pytest.mark.parametrize(
+    ("authors", "expected"),
+    [
+        pytest.param(
+            ["  Ashish Vaswani  ", "  Noam Shazeer  "],
+            ("Ashish Vaswani", "Noam Shazeer"),
+            id="strips_whitespace",
+        ),
+        pytest.param(
+            ["Université Smith", "École Doe"],
+            ("Universite Smith", "Ecole Doe"),
+            id="normalizes_unicode",
+        ),
+        pytest.param(["  Université Smith  "], ("Universite Smith",), id="strips_and_normalizes"),
+    ],
+)
+def test_paper_from_raw_normalizes_authors(authors: list[str], expected: tuple[str, ...]) -> None:
+    paper = Paper.from_raw(
+        title="My Paper",
+        authors=authors,
+        venue="NeurIPS",
+        year=2024,
+        pdf_url="https://arxiv.org/pdf/paper.pdf",
+    )
+    assert paper.authors == expected
 
 
 @pytest.mark.parametrize(
@@ -88,7 +124,8 @@ def test_paper_from_raw_normalizes_title(title: str, expected: str) -> None:
 )
 def test_paper_from_raw_normalizes_venue(venue: str, expected: str) -> None:
     paper = Paper.from_raw(
-        title="Attention Is All You Need",
+        title="My Paper",
+        authors=["Jane Smith"],
         venue=venue,
         year=2017,
         pdf_url="https://arxiv.org/pdf/1706.03762",
@@ -111,7 +148,7 @@ def test_paper_from_raw_normalizes_venue(venue: str, expected: str) -> None:
 )
 def test_paper_from_raw_normalizes_pdf_url(pdf_url: str, expected: str) -> None:
     paper = Paper.from_raw(
-        title="Attention Is All You Need", venue="NeurIPS", year=2017, pdf_url=pdf_url
+        title="My Paper", authors=["Jane Smith"], venue="NeurIPS", year=2017, pdf_url=pdf_url
     )
     assert paper.pdf_url == expected
 
@@ -131,12 +168,14 @@ def test_paper_can_be_used_as_dict_key(paper: Paper) -> None:
 def test_paper_can_be_used_in_set() -> None:
     a = Paper.from_raw(
         title="Attention Is All You Need",
+        authors=["Ashish Vaswani"],
         venue="NeurIPS",
         year=2017,
         pdf_url="https://arxiv.org/pdf/1706.03762",
     )
     b = Paper.from_raw(
         title="Attention Is All You Need",
+        authors=["Ashish Vaswani"],
         venue="NeurIPS",
         year=2017,
         pdf_url="https://arxiv.org/pdf/1706.03762",
@@ -147,6 +186,7 @@ def test_paper_can_be_used_in_set() -> None:
 def test_paper_equality_same_fields(paper: Paper) -> None:
     other = Paper.from_raw(
         title="Attention Is All You Need",
+        authors=["Ashish Vaswani", "Noam Shazeer"],
         venue="NeurIPS",
         year=2017,
         pdf_url="https://arxiv.org/pdf/1706.03762",
@@ -156,7 +196,22 @@ def test_paper_equality_same_fields(paper: Paper) -> None:
 
 def test_paper_inequality_different_title(paper: Paper) -> None:
     other = Paper.from_raw(
-        title="BERT", venue="NeurIPS", year=2017, pdf_url="https://arxiv.org/pdf/1706.03762"
+        title="BERT",
+        authors=["Ashish Vaswani", "Noam Shazeer"],
+        venue="NeurIPS",
+        year=2017,
+        pdf_url="https://arxiv.org/pdf/1706.03762",
+    )
+    assert paper != other
+
+
+def test_paper_inequality_different_authors(paper: Paper) -> None:
+    other = Paper.from_raw(
+        title="Attention Is All You Need",
+        authors=["Jane Smith"],
+        venue="NeurIPS",
+        year=2017,
+        pdf_url="https://arxiv.org/pdf/1706.03762",
     )
     assert paper != other
 
@@ -164,6 +219,7 @@ def test_paper_inequality_different_title(paper: Paper) -> None:
 def test_paper_inequality_different_venue(paper: Paper) -> None:
     other = Paper.from_raw(
         title="Attention Is All You Need",
+        authors=["Ashish Vaswani", "Noam Shazeer"],
         venue="ICML",
         year=2017,
         pdf_url="https://arxiv.org/pdf/1706.03762",
@@ -174,6 +230,7 @@ def test_paper_inequality_different_venue(paper: Paper) -> None:
 def test_paper_inequality_different_year(paper: Paper) -> None:
     other = Paper.from_raw(
         title="Attention Is All You Need",
+        authors=["Ashish Vaswani", "Noam Shazeer"],
         venue="NeurIPS",
         year=2018,
         pdf_url="https://arxiv.org/pdf/1706.03762",
@@ -184,6 +241,7 @@ def test_paper_inequality_different_year(paper: Paper) -> None:
 def test_paper_inequality_different_pdf_url(paper: Paper) -> None:
     other = Paper.from_raw(
         title="Attention Is All You Need",
+        authors=["Ashish Vaswani", "Noam Shazeer"],
         venue="NeurIPS",
         year=2017,
         pdf_url="https://arxiv.org/pdf/other.pdf",
@@ -196,7 +254,7 @@ def test_paper_inequality_different_pdf_url(paper: Paper) -> None:
 
 def test_paper_is_frozen(paper: Paper) -> None:
     with pytest.raises(FrozenInstanceError, match=r"cannot assign to field 'title'"):
-        paper.title = "BERT"  # type: ignore[misc]
+        paper.title = "BERT"
 
 
 # --- hash method ---
@@ -219,6 +277,7 @@ def test_paper_hash_same_paper_same_hash(paper: Paper) -> None:
 def test_paper_hash_equal_papers_same_hash(paper: Paper) -> None:
     other = Paper.from_raw(
         title="Attention Is All You Need",
+        authors=["Ashish Vaswani", "Noam Shazeer"],
         venue="NeurIPS",
         year=2017,
         pdf_url="https://arxiv.org/pdf/1706.03762",
@@ -230,6 +289,7 @@ def test_paper_hash_matches_manual_blake2b(paper: Paper) -> None:
     canonical = json.dumps(
         {
             "title": paper.title,
+            "authors": list(paper.authors),
             "venue": paper.venue,
             "year": paper.year,
             "pdf_url": paper.pdf_url,
@@ -237,8 +297,7 @@ def test_paper_hash_matches_manual_blake2b(paper: Paper) -> None:
         sort_keys=True,
         ensure_ascii=True,
     )
-    expected = hashlib.blake2b(canonical.encode()).hexdigest()
-    assert paper.hash() == expected
+    assert paper.hash() == hashlib.blake2b(canonical.encode()).hexdigest()
 
 
 @pytest.mark.parametrize(
@@ -246,35 +305,99 @@ def test_paper_hash_matches_manual_blake2b(paper: Paper) -> None:
     [
         pytest.param(
             Paper.from_raw(
-                "Attention Is All You Need", "NeurIPS", 2017, "https://arxiv.org/pdf/1706.03762"
+                "Attention Is All You Need",
+                ["Ashish Vaswani"],
+                "NeurIPS",
+                2017,
+                "https://arxiv.org/pdf/1706.03762",
             ),
-            Paper.from_raw("BERT", "NeurIPS", 2017, "https://arxiv.org/pdf/1706.03762"),
+            Paper.from_raw(
+                "BERT", ["Ashish Vaswani"], "NeurIPS", 2017, "https://arxiv.org/pdf/1706.03762"
+            ),
             id="different_title",
         ),
         pytest.param(
             Paper.from_raw(
-                "Attention Is All You Need", "NeurIPS", 2017, "https://arxiv.org/pdf/1706.03762"
+                "Attention Is All You Need",
+                ["Ashish Vaswani"],
+                "NeurIPS",
+                2017,
+                "https://arxiv.org/pdf/1706.03762",
             ),
             Paper.from_raw(
-                "Attention Is All You Need", "ICML", 2017, "https://arxiv.org/pdf/1706.03762"
+                "Attention Is All You Need",
+                ["Noam Shazeer"],
+                "NeurIPS",
+                2017,
+                "https://arxiv.org/pdf/1706.03762",
+            ),
+            id="different_authors",
+        ),
+        pytest.param(
+            Paper.from_raw(
+                "Attention Is All You Need",
+                ["Ashish Vaswani", "Noam Shazeer"],
+                "NeurIPS",
+                2017,
+                "https://arxiv.org/pdf/1706.03762",
+            ),
+            Paper.from_raw(
+                "Attention Is All You Need",
+                ["Noam Shazeer", "Ashish Vaswani"],
+                "NeurIPS",
+                2017,
+                "https://arxiv.org/pdf/1706.03762",
+            ),
+            id="author_order_matters",
+        ),
+        pytest.param(
+            Paper.from_raw(
+                "Attention Is All You Need",
+                ["Ashish Vaswani"],
+                "NeurIPS",
+                2017,
+                "https://arxiv.org/pdf/1706.03762",
+            ),
+            Paper.from_raw(
+                "Attention Is All You Need",
+                ["Ashish Vaswani"],
+                "ICML",
+                2017,
+                "https://arxiv.org/pdf/1706.03762",
             ),
             id="different_venue",
         ),
         pytest.param(
             Paper.from_raw(
-                "Attention Is All You Need", "NeurIPS", 2017, "https://arxiv.org/pdf/1706.03762"
+                "Attention Is All You Need",
+                ["Ashish Vaswani"],
+                "NeurIPS",
+                2017,
+                "https://arxiv.org/pdf/1706.03762",
             ),
             Paper.from_raw(
-                "Attention Is All You Need", "NeurIPS", 2018, "https://arxiv.org/pdf/1706.03762"
+                "Attention Is All You Need",
+                ["Ashish Vaswani"],
+                "NeurIPS",
+                2018,
+                "https://arxiv.org/pdf/1706.03762",
             ),
             id="different_year",
         ),
         pytest.param(
             Paper.from_raw(
-                "Attention Is All You Need", "NeurIPS", 2017, "https://arxiv.org/pdf/1706.03762"
+                "Attention Is All You Need",
+                ["Ashish Vaswani"],
+                "NeurIPS",
+                2017,
+                "https://arxiv.org/pdf/1706.03762",
             ),
             Paper.from_raw(
-                "Attention Is All You Need", "NeurIPS", 2017, "https://arxiv.org/pdf/other.pdf"
+                "Attention Is All You Need",
+                ["Ashish Vaswani"],
+                "NeurIPS",
+                2017,
+                "https://arxiv.org/pdf/other.pdf",
             ),
             id="different_pdf_url",
         ),

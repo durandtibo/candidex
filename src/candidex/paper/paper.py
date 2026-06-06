@@ -8,8 +8,12 @@ import hashlib
 import json
 import logging
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from candidex.utils.string import normalize_unicode
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 logger: logging.Logger = logging.getLogger(__name__)
 
@@ -24,6 +28,7 @@ class Paper:
 
     Attributes:
         title:   Title of the paper, unicode-normalized and stripped.
+        authors: Tuple of author names, each unicode-normalized and stripped.
         venue:   Venue where the paper was published (e.g. 'CVPR', 'NeurIPS'),
                  unicode-normalized and stripped.
         year:    Year the paper was published.
@@ -31,6 +36,7 @@ class Paper:
     """
 
     title: str
+    authors: tuple[str, ...]
     venue: str
     year: int
     pdf_url: str
@@ -46,22 +52,21 @@ class Paper:
             A 128-character lowercase hexadecimal BLAKE2b digest string.
 
         Example:
-            ```pycon
             >>> from candidex.paper import Paper
             >>> paper = Paper.from_raw(
             ...     title="Attention Is All You Need",
+            ...     authors=["Ashish Vaswani", "Noam Shazeer"],
             ...     venue="NeurIPS",
             ...     year=2017,
             ...     pdf_url="https://arxiv.org/pdf/1706.03762",
             ... )
             >>> len(paper.hash())
             128
-
-            ```
         """
         canonical = json.dumps(
             {
                 "title": self.title,
+                "authors": list(self.authors),
                 "venue": self.venue,
                 "year": self.year,
                 "pdf_url": self.pdf_url,
@@ -75,6 +80,7 @@ class Paper:
     def from_raw(
         cls,
         title: str,
+        authors: Sequence[str],
         venue: str,
         year: int,
         pdf_url: str,
@@ -83,12 +89,14 @@ class Paper:
         whitespace.
 
         Normalizes unicode characters (e.g. 'é' → 'e') and strips leading/
-        trailing whitespace from the title, venue, and PDF URL. Always use
-        this constructor rather than the dataclass constructor directly to
-        ensure consistent normalization.
+        trailing whitespace from the title, venue, PDF URL, and each author
+        name. Always use this constructor rather than the dataclass constructor
+        directly to ensure consistent normalization.
 
         Args:
             title:   Title of the paper.
+            authors: Sequence of author names. May be empty if authors are
+                     not known at construction time.
             venue:   Venue where the paper was published (e.g. 'CVPR').
             year:    Year the paper was published.
             pdf_url: URL of the paper's PDF.
@@ -102,24 +110,16 @@ class Paper:
             ValueError: If `pdf_url` is empty or whitespace-only.
 
         Example:
-            ```pycon
             >>> from candidex.paper import Paper
             >>> paper = Paper.from_raw(
             ...     title="Attention Is All You Need",
+            ...     authors=["Ashish Vaswani", "Noam Shazeer"],
             ...     venue="NeurIPS",
             ...     year=2017,
             ...     pdf_url="https://arxiv.org/pdf/1706.03762",
             ... )
-            >>> paper.title
-            'Attention Is All You Need'
-            >>> paper.venue
-            'NeurIPS'
-            >>> paper.year
-            2017
-            >>> paper.pdf_url
-            'https://arxiv.org/pdf/1706.03762'
-
-            ```
+            >>> paper.authors
+            ('Ashish Vaswani', 'Noam Shazeer')
         """
         title = normalize_unicode(title.strip())
         if not title:
@@ -136,4 +136,10 @@ class Paper:
             msg = "Paper PDF URL cannot be empty."
             raise ValueError(msg)
 
-        return cls(title=title, venue=venue, year=year, pdf_url=pdf_url)
+        return cls(
+            title=title,
+            authors=tuple(normalize_unicode(a.strip()) for a in authors),
+            venue=venue,
+            year=year,
+            pdf_url=pdf_url,
+        )
