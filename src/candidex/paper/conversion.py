@@ -2,7 +2,7 @@ r"""Contain conversion utilities."""
 
 from __future__ import annotations
 
-__all__ = ["papers_to_dataframe"]
+__all__ = ["dataframe_to_papers", "papers_to_dataframe"]
 
 
 from typing import TYPE_CHECKING
@@ -17,11 +17,64 @@ from candidex.columns import (
     PAPER_VENUE,
     PAPER_YEAR,
 )
+from candidex.paper.paper import Paper
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from candidex.paper import Paper
+
+def dataframe_to_papers(frame: pl.DataFrame) -> list[Paper]:
+    """Convert a Polars DataFrame to a list of `Paper` objects.
+
+    Reconstructs `Paper` instances from the DataFrame rows using `Paper.from_raw`.
+    This is the inverse of `papers_to_dataframe`. Useful when domain-level
+    operations are needed after loading a cached DataFrame from disk.
+
+    Args:
+        frame: A Polars DataFrame with at least a `PAPER_TITLE` column.
+               All other columns (`PAPER_AUTHORS`, `PAPER_VENUE`, `PAPER_YEAR`,
+               `PAPER_URL`) are optional — missing columns are treated as None
+               for every row.
+
+    Returns:
+        A list of `Paper` objects in the same row order as the input DataFrame.
+            Returns an empty list if the DataFrame is empty.
+
+    Example:
+        ```pycon
+        >>> from candidex.paper import dataframe_to_papers, Paper
+        >>> frame = ...
+        >>> restored = dataframe_to_papers(frame)
+        >>> restored[0].title
+        'My Paper'
+
+        ```
+    """
+    authors_col = (
+        frame[PAPER_AUTHORS].to_list() if PAPER_AUTHORS in frame.columns else [None] * len(frame)
+    )
+    venue_col = (
+        frame[PAPER_VENUE].to_list() if PAPER_VENUE in frame.columns else [None] * len(frame)
+    )
+    year_col = frame[PAPER_YEAR].to_list() if PAPER_YEAR in frame.columns else [None] * len(frame)
+    url_col = frame[PAPER_URL].to_list() if PAPER_URL in frame.columns else [None] * len(frame)
+
+    return [
+        Paper.from_raw(
+            title=title,
+            authors=authors,
+            venue=venue,
+            year=year,
+            pdf_url=pdf_url,
+        )
+        for title, authors, venue, year, pdf_url in zip(
+            frame[PAPER_TITLE].to_list(),
+            authors_col,
+            venue_col,
+            year_col,
+            url_col,
+        )
+    ]
 
 
 def papers_to_dataframe(
