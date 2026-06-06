@@ -10,10 +10,13 @@ __all__ = [
     "AUTHOR_NAME",
     "AUTHOR_OPENREVIEW_PROFILE",
     "AUTHOR_OPENREVIEW_PROFILE_ID",
+    "PAPER_ID",
     "PAPER_PDF_URL",
     "PAPER_STEM",
     "PAPER_TITLE",
     "PAPER_URL",
+    "PAPER_VENUE",
+    "PAPER_YEAR",
 ]
 
 
@@ -27,6 +30,9 @@ AUTHOR_OPENREVIEW_PROFILE_ID = "author_openreview_profile_id"
 AUTHOR_OPENREVIEW_PROFILE = "author_openreview_profile"
 
 PAPER_PDF_URL = "paper_pdf_url"
+PAPER_STEM = "paper_stem"
 PAPER_TITLE = "paper_title"
 PAPER_URL = "paper_url"
-PAPER_STEM = "paper_stem"
+PAPER_VENUE = "paper_venue"
+PAPER_YEAR = "paper_year"
+PAPER_ID = "paper_id"
