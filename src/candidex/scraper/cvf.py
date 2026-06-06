@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING
 
 import polars as pl
 from bs4 import BeautifulSoup, Tag
+from coola.utils.format import repr_indent, repr_mapping
 
 from candidex.columns import PAPER_AUTHORS, PAPER_URL
 from candidex.paper import papers_to_dataframe
@@ -39,14 +40,53 @@ PDF_HREF_PATTERN = re.compile(r"\.pdf$", re.IGNORECASE)
 
 
 class CVFPaperScraper(BasePaperScraper):
-    """Scrape papers from the CVF open access website (CVPR, ICCV,
-    WACV)."""
+    """Scrape papers from the CVF OpenAccess website.
 
-    def __init__(self, venue: str, year: int) -> None:
-        self._venue = venue.strip()
+    Supports all venues published on `openaccess.thecvf.com`, including
+    CVPR, ICCV, ECCV, and WACV. Results are optionally cached to disk as
+    a Parquet file to avoid re-scraping on subsequent runs.
+
+    Args:
+        venue:     The venue name as it appears in the CVF URL
+                   (e.g. 'CVPR', 'ICCV', 'ECCV', 'WACV').
+        year:      The year of the venue (e.g. 2024).
+        cache_dir: Directory where the Parquet cache file will be read
+                   from or written to. If None, caching is disabled and
+                   papers are scraped on every call to `scrape`.
+
+    Raises:
+        ValueError: If `venue` is empty or whitespace-only.
+
+    Example:
+        ```pycon
+        >>> from pathlib import Path
+        >>> from candidex.scraper.cvf import CVFPaperScraper
+        >>> scraper = CVFPaperScraper(venue="CVPR", year=2024)
+        >>> df = scraper.scrape()  # doctest: +SKIP
+
+        ```
+    """
+
+    def __init__(
+        self,
+        venue: str,
+        year: int,
+        cache_dir: Path | None = None,
+    ) -> None:
+        venue = venue.strip()
+        if not venue:
+            msg = "Venue cannot be empty."
+            raise ValueError(msg)
+        self._venue = venue
         self._year = year
+        self._cache_dir = cache_dir
 
-    def scrape(self) -> pl.DataFrame: ...
+    def __repr__(self) -> str:
+        args = {"venue": self._venue, "year": self._year, "cache_dir": self._cache_dir}
+        return f"{self.__class__.__qualname__}(\n  {repr_indent(repr_mapping(args))}\n)"
+
+    def scrape(self) -> pl.DataFrame:
+        return load_or_scrape_papers(venue=self._venue, year=self._year, cache_dir=self._cache_dir)
 
 
 def build_listing_url(venue: str, year: int) -> str:
@@ -310,7 +350,7 @@ def load_or_scrape_papers(
     """
     if cache_dir is not None:
         cache_dir.mkdir(parents=True, exist_ok=True)
-        path = cache_dir / f"{venue}_{year}.parquet"
+        path = cache_dir / f"papers_{venue}_{year}.parquet"
 
         if path.is_file():
             logger.info("Loading cached %s %d papers from %s.", venue, year, path)
