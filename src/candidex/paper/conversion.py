@@ -47,8 +47,7 @@ def papers_to_dataframe(papers: Sequence[Paper], *, include_id: bool = False) ->
 
     Example:
         ```pycon
-        >>> from candidex.schemas.paper import Paper
-        >>> from candidex.paper import papers_to_dataframe
+        >>> from candidex.paper import Paper, papers_to_dataframe
         >>> papers = [
         ...     Paper.from_raw(
         ...         title="Attention Is All You Need",

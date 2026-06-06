@@ -46,7 +46,8 @@ class Paper:
             A 128-character lowercase hexadecimal BLAKE2b digest string.
 
         Example:
-            >>> from candidex.schemas.paper import Paper
+            ```pycon
+            >>> from candidex.paper import Paper
             >>> paper = Paper.from_raw(
             ...     title="Attention Is All You Need",
             ...     venue="NeurIPS",
@@ -55,6 +56,8 @@ class Paper:
             ... )
             >>> len(paper.hash())
             128
+
+            ```
         """
         canonical = json.dumps(
             {
@@ -99,7 +102,8 @@ class Paper:
             ValueError: If `pdf_url` is empty or whitespace-only.
 
         Example:
-            >>> from candidex.schemas.paper import Paper
+            ```pycon
+            >>> from candidex.paper import Paper
             >>> paper = Paper.from_raw(
             ...     title="Attention Is All You Need",
             ...     venue="NeurIPS",
@@ -114,6 +118,8 @@ class Paper:
             2017
             >>> paper.pdf_url
             'https://arxiv.org/pdf/1706.03762'
+
+            ```
         """
         title = normalize_unicode(title.strip())
         if not title:
