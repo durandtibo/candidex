@@ -95,7 +95,8 @@ class Paper:
 
         Args:
             title:   Title of the paper.
-            authors: A sequence of author names.
+            authors: Sequence of author names. May be empty if authors are
+                     not known at construction time.
             venue:   Venue where the paper was published (e.g. 'CVPR').
             year:    Year the paper was published.
             pdf_url: URL of the paper's PDF.
