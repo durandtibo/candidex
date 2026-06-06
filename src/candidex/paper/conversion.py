@@ -42,11 +42,36 @@ def dataframe_to_papers(frame: pl.DataFrame) -> list[Paper]:
 
     Example:
         ```pycon
-        >>> from candidex.paper import dataframe_to_papers, Paper
-        >>> frame = ...
-        >>> restored = dataframe_to_papers(frame)
-        >>> restored[0].title
-        'My Paper'
+        >>> import polars as pl
+        >>> from candidex.columns import (
+        ...     PAPER_TITLE,
+        ...     PAPER_AUTHORS,
+        ...     PAPER_VENUE,
+        ...     PAPER_YEAR,
+        ...     PAPER_URL,
+        ... )
+        >>> from candidex.paper import dataframe_to_papers
+        >>> frame = pl.DataFrame(
+        ...     {
+        ...         PAPER_TITLE: ["Attention Is All You Need"],
+        ...         PAPER_AUTHORS: [["Jane Smith", "John Doe"]],
+        ...         PAPER_VENUE: ["NeurIPS"],
+        ...         PAPER_YEAR: [2017],
+        ...         PAPER_URL: ["https://arxiv.org/pdf/1706.03762"],
+        ...     },
+        ...     schema={
+        ...         PAPER_TITLE: pl.String,
+        ...         PAPER_AUTHORS: pl.List(pl.String),
+        ...         PAPER_VENUE: pl.String,
+        ...         PAPER_YEAR: pl.Int32,
+        ...         PAPER_URL: pl.String,
+        ...     },
+        ... )
+        >>> papers = dataframe_to_papers(frame)
+        >>> papers[0].title
+        'Attention Is All You Need'
+        >>> papers[0].authors
+        ('Jane Smith', 'Noam Shazeer')
 
         ```
     """
