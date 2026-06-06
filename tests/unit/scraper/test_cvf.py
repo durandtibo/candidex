@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 from bs4 import BeautifulSoup, Tag
 
-from candidex.columns import PAPER_AUTHORS, PAPER_PDF_URL, PAPER_TITLE
+from candidex.paper import Paper
 from candidex.scraper.cvf import (
     BASE_URL,
     build_listing_url,
@@ -249,109 +249,254 @@ def test_resolve_url(href: str, base_url: str, expected: str) -> None:
 #############################################
 
 
+#############################################
+#           Tests for parse_paper           #
+#############################################
+
+
+# --- Returns Paper object ---
+
+
+def test_parse_paper_returns_paper_instance() -> None:
+    dt = BeautifulSoup(
+        '<dt class="ptitle"><a href="/content/CVPR2024/html/paper.html">My Paper</a></dt>'
+        "<dd>Jane Smith</dd>"
+        '<dd><a href="/content/CVPR2024/papers/paper.pdf">pdf</a></dd>',
+        "html.parser",
+    ).dt
+    assert isinstance(parse_paper(dt), Paper)
+
+
 # --- Title ---
 
 
 def test_parse_paper_title() -> None:
-    dt = make_dt(make_paper_html(title="Attention Is All You Need"))
-    result = parse_paper(dt)
-    assert result[PAPER_TITLE] == "Attention Is All You Need"
+    dt = BeautifulSoup(
+        '<dt class="ptitle"><a href="/content/CVPR2024/html/paper.html">Attention Is All You Need</a></dt>'
+        "<dd>Jane Smith, John Doe</dd>"
+        '<dd><a href="/content/CVPR2024/papers/paper.pdf">pdf</a></dd>',
+        "html.parser",
+    ).dt
+    assert parse_paper(dt).title == "Attention Is All You Need"
 
 
 def test_parse_paper_title_stripped() -> None:
-    dt = make_dt(make_paper_html(title="  Attention Is All You Need  "))
-    result = parse_paper(dt)
-    assert result[PAPER_TITLE] == "Attention Is All You Need"
+    dt = BeautifulSoup(
+        '<dt class="ptitle"><a href="/content/CVPR2024/html/paper.html">  Attention Is All You Need  </a></dt>'
+        "<dd>Jane Smith</dd>"
+        '<dd><a href="/content/CVPR2024/papers/paper.pdf">pdf</a></dd>',
+        "html.parser",
+    ).dt
+    assert parse_paper(dt).title == "Attention Is All You Need"
 
 
 def test_parse_paper_title_fallback_when_no_a_tag() -> None:
-    dt = make_dt("<dl><dt class='ptitle'>Fallback Title</dt></dl>")
-    result = parse_paper(dt)
-    assert result[PAPER_TITLE] == "Fallback Title"
+    dt = BeautifulSoup(
+        '<dt class="ptitle">Fallback Title</dt>'
+        "<dd>Jane Smith</dd>"
+        '<dd><a href="/content/CVPR2024/papers/paper.pdf">pdf</a></dd>',
+        "html.parser",
+    ).dt
+    assert parse_paper(dt).title == "Fallback Title"
+
+
+# --- Venue ---
+
+
+def test_parse_paper_venue_none_by_default() -> None:
+    dt = BeautifulSoup(
+        '<dt class="ptitle"><a href="/content/CVPR2024/html/paper.html">My Paper</a></dt>'
+        "<dd>Jane Smith</dd>"
+        '<dd><a href="/content/CVPR2024/papers/paper.pdf">pdf</a></dd>',
+        "html.parser",
+    ).dt
+    assert parse_paper(dt).venue is None
+
+
+def test_parse_paper_venue() -> None:
+    dt = BeautifulSoup(
+        '<dt class="ptitle"><a href="/content/CVPR2024/html/paper.html">My Paper</a></dt>'
+        "<dd>Jane Smith</dd>"
+        '<dd><a href="/content/CVPR2024/papers/paper.pdf">pdf</a></dd>',
+        "html.parser",
+    ).dt
+    assert parse_paper(dt, venue="CVPR").venue == "CVPR"
+
+
+# --- Year ---
+
+
+def test_parse_paper_year_none_by_default() -> None:
+    dt = BeautifulSoup(
+        '<dt class="ptitle"><a href="/content/CVPR2024/html/paper.html">My Paper</a></dt>'
+        "<dd>Jane Smith</dd>"
+        '<dd><a href="/content/CVPR2024/papers/paper.pdf">pdf</a></dd>',
+        "html.parser",
+    ).dt
+    assert parse_paper(dt).year is None
+
+
+def test_parse_paper_year() -> None:
+    dt = BeautifulSoup(
+        '<dt class="ptitle"><a href="/content/CVPR2024/html/paper.html">My Paper</a></dt>'
+        "<dd>Jane Smith</dd>"
+        '<dd><a href="/content/CVPR2024/papers/paper.pdf">pdf</a></dd>',
+        "html.parser",
+    ).dt
+    assert parse_paper(dt, year=2024).year == 2024
 
 
 # --- Authors ---
 
 
 def test_parse_paper_authors_single() -> None:
-    dt = make_dt(make_paper_html(authors="Jane Smith"))
-    result = parse_paper(dt)
-    assert result[PAPER_AUTHORS] == ["Jane Smith"]
+    dt = BeautifulSoup(
+        '<dt class="ptitle"><a href="/content/CVPR2024/html/paper.html">My Paper</a></dt>'
+        "<dd>Jane Smith</dd>"
+        '<dd><a href="/content/CVPR2024/papers/paper.pdf">pdf</a></dd>',
+        "html.parser",
+    ).dt
+    assert parse_paper(dt).authors == ("Jane Smith",)
 
 
 def test_parse_paper_authors_multiple() -> None:
-    dt = make_dt(make_paper_html(authors="Jane Smith, John Doe, Alice Brown"))
-    result = parse_paper(dt)
-    assert result[PAPER_AUTHORS] == ["Jane Smith", "John Doe", "Alice Brown"]
+    dt = BeautifulSoup(
+        '<dt class="ptitle"><a href="/content/CVPR2024/html/paper.html">My Paper</a></dt>'
+        "<dd>Jane Smith, John Doe, Alice Brown</dd>"
+        '<dd><a href="/content/CVPR2024/papers/paper.pdf">pdf</a></dd>',
+        "html.parser",
+    ).dt
+    assert parse_paper(dt).authors == ("Jane Smith", "John Doe", "Alice Brown")
 
 
 def test_parse_paper_authors_strips_whitespace() -> None:
-    dt = make_dt(make_paper_html(authors="  Jane Smith  ,  John Doe  "))
-    result = parse_paper(dt)
-    assert result[PAPER_AUTHORS] == ["Jane Smith", "John Doe"]
+    dt = BeautifulSoup(
+        '<dt class="ptitle"><a href="/content/CVPR2024/html/paper.html">My Paper</a></dt>'
+        "<dd>  Jane Smith  ,  John Doe  </dd>"
+        '<dd><a href="/content/CVPR2024/papers/paper.pdf">pdf</a></dd>',
+        "html.parser",
+    ).dt
+    assert parse_paper(dt).authors == ("Jane Smith", "John Doe")
 
 
 def test_parse_paper_authors_collapses_internal_whitespace() -> None:
-    dt = make_dt(make_paper_html(authors="Jane  Smith,John   Doe"))
-    result = parse_paper(dt)
-    assert result[PAPER_AUTHORS] == ["Jane Smith", "John Doe"]
+    dt = BeautifulSoup(
+        '<dt class="ptitle"><a href="/content/CVPR2024/html/paper.html">My Paper</a></dt>'
+        "<dd>Jane  Smith,John   Doe</dd>"
+        '<dd><a href="/content/CVPR2024/papers/paper.pdf">pdf</a></dd>',
+        "html.parser",
+    ).dt
+    assert parse_paper(dt).authors == ("Jane Smith", "John Doe")
 
 
-def test_parse_paper_authors_empty_when_no_dd() -> None:
-    dt = make_dt("<dl><dt class='ptitle'><a href='/paper'>My Paper</a></dt></dl>")
-    result = parse_paper(dt)
-    assert result[PAPER_AUTHORS] == []
+def test_parse_paper_authors_none_when_no_dd() -> None:
+    dt = BeautifulSoup(
+        '<dt class="ptitle"><a href="/content/CVPR2024/html/paper.html">My Paper</a></dt>',
+        "html.parser",
+    ).dt
+    assert parse_paper(dt).authors is None
 
 
 # --- PDF URL ---
 
 
 def test_parse_paper_pdf_url_relative() -> None:
-    dt = make_dt(make_paper_html(pdf_href="/content/CVPR2024/papers/paper.pdf"))
-    result = parse_paper(dt)
-    assert result[PAPER_PDF_URL] == f"{BASE_URL}/content/CVPR2024/papers/paper.pdf"
+    dt = BeautifulSoup(
+        '<dt class="ptitle"><a href="/content/CVPR2024/html/paper.html">My Paper</a></dt>'
+        "<dd>Jane Smith</dd>"
+        '<dd><a href="/content/CVPR2024/papers/paper.pdf">pdf</a></dd>',
+        "html.parser",
+    ).dt
+    assert parse_paper(dt).pdf_url == f"{BASE_URL}/content/CVPR2024/papers/paper.pdf"
 
 
 def test_parse_paper_pdf_url_absolute() -> None:
-    dt = make_dt(make_paper_html(pdf_href="https://openaccess.thecvf.com/content/paper.pdf"))
-    result = parse_paper(dt)
-    assert result[PAPER_PDF_URL] == "https://openaccess.thecvf.com/content/paper.pdf"
+    dt = BeautifulSoup(
+        '<dt class="ptitle"><a href="/content/CVPR2024/html/paper.html">My Paper</a></dt>'
+        "<dd>Jane Smith</dd>"
+        '<dd><a href="https://openaccess.thecvf.com/content/paper.pdf">pdf</a></dd>',
+        "html.parser",
+    ).dt
+    assert parse_paper(dt).pdf_url == "https://openaccess.thecvf.com/content/paper.pdf"
 
 
 def test_parse_paper_pdf_url_custom_base_url() -> None:
-    dt = make_dt(make_paper_html(pdf_href="/content/paper.pdf"))
-    result = parse_paper(dt, base_url="https://custom.example.com")
-    assert result[PAPER_PDF_URL] == "https://custom.example.com/content/paper.pdf"
+    dt = BeautifulSoup(
+        '<dt class="ptitle"><a href="/content/CVPR2024/html/paper.html">My Paper</a></dt>'
+        "<dd>Jane Smith</dd>"
+        '<dd><a href="/content/paper.pdf">pdf</a></dd>',
+        "html.parser",
+    ).dt
+    assert (
+        parse_paper(dt, base_url="https://custom.example.com").pdf_url
+        == "https://custom.example.com/content/paper.pdf"
+    )
 
 
-def test_parse_paper_pdf_url_empty_when_no_pdf_link() -> None:
-    html = """
-    <dl>
-        <dt class="ptitle"><a href="/paper">My Paper</a></dt>
-        <dd>Jane Smith</dd>
-        <dd><a href="/content/paper.html">html</a></dd>
-    </dl>
-    """
-    dt = make_dt(html)
-    result = parse_paper(dt)
-    assert result[PAPER_PDF_URL] == ""
+def test_parse_paper_pdf_url_none_when_no_pdf_link() -> None:
+    dt = BeautifulSoup(
+        '<dt class="ptitle"><a href="/content/CVPR2024/html/paper.html">My Paper</a></dt>'
+        "<dd>Jane Smith</dd>"
+        '<dd><a href="/content/paper.html">html</a></dd>',
+        "html.parser",
+    ).dt
+    assert parse_paper(dt).pdf_url is None
 
 
 def test_parse_paper_pdf_url_case_insensitive() -> None:
-    dt = make_dt(make_paper_html(pdf_href="/content/CVPR2024/papers/paper.PDF"))
-    result = parse_paper(dt)
-    assert result[PAPER_PDF_URL] == f"{BASE_URL}/content/CVPR2024/papers/paper.PDF"
+    dt = BeautifulSoup(
+        '<dt class="ptitle"><a href="/content/CVPR2024/html/paper.html">My Paper</a></dt>'
+        "<dd>Jane Smith</dd>"
+        '<dd><a href="/content/CVPR2024/papers/paper.PDF">pdf</a></dd>',
+        "html.parser",
+    ).dt
+    assert parse_paper(dt).pdf_url == f"{BASE_URL}/content/CVPR2024/papers/paper.PDF"
 
 
-# --- Return keys ---
+# --- Full Paper object ---
 
 
-def test_parse_paper_returns_expected_keys() -> None:
-    dt = make_dt(make_paper_html())
-    result = parse_paper(dt)
-    assert set(result.keys()) == {PAPER_TITLE, PAPER_PDF_URL, PAPER_AUTHORS}
+def test_parse_paper_full_output_with_venue_and_year() -> None:
+    dt = BeautifulSoup(
+        '<dt class="ptitle"><a href="/content/CVPR2024/html/paper.html">Attention Is All You Need</a></dt>'
+        "<dd>Jane Smith, John Doe</dd>"
+        '<dd><a href="/content/CVPR2024/papers/paper.pdf">pdf</a></dd>',
+        "html.parser",
+    ).dt
+    assert parse_paper(dt, venue="CVPR", year=2024) == Paper.from_raw(
+        title="Attention Is All You Need",
+        authors=["Jane Smith", "John Doe"],
+        venue="CVPR",
+        year=2024,
+        pdf_url=f"{BASE_URL}/content/CVPR2024/papers/paper.pdf",
+    )
 
 
-def test_parse_paper_does_not_return_paper_url() -> None:
-    dt = make_dt(make_paper_html())
-    assert "paper_url" not in parse_paper(dt)
+def test_parse_paper_full_output_without_venue_and_year() -> None:
+    dt = BeautifulSoup(
+        '<dt class="ptitle"><a href="/content/CVPR2024/html/paper.html">Attention Is All You Need</a></dt>'
+        "<dd>Jane Smith, John Doe</dd>"
+        '<dd><a href="/content/CVPR2024/papers/paper.pdf">pdf</a></dd>',
+        "html.parser",
+    ).dt
+    assert parse_paper(dt) == Paper.from_raw(
+        title="Attention Is All You Need",
+        authors=["Jane Smith", "John Doe"],
+        venue=None,
+        year=None,
+        pdf_url=f"{BASE_URL}/content/CVPR2024/papers/paper.pdf",
+    )
+
+
+def test_parse_paper_full_output_missing_authors_and_pdf() -> None:
+    dt = BeautifulSoup(
+        '<dt class="ptitle"><a href="/content/CVPR2024/html/paper.html">Attention Is All You Need</a></dt>',
+        "html.parser",
+    ).dt
+    assert parse_paper(dt, venue="CVPR", year=2024) == Paper.from_raw(
+        title="Attention Is All You Need",
+        authors=None,
+        venue="CVPR",
+        year=2024,
+        pdf_url=None,
+    )
