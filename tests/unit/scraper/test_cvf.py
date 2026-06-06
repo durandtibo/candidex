@@ -1,8 +1,20 @@
 from __future__ import annotations
 
+from unittest.mock import Mock, patch
+
+import polars as pl
 import pytest
 from bs4 import BeautifulSoup, Tag
+from polars.testing import assert_frame_equal
 
+from candidex.columns import (
+    PAPER_AUTHORS,
+    PAPER_ID,
+    PAPER_TITLE,
+    PAPER_URL,
+    PAPER_VENUE,
+    PAPER_YEAR,
+)
 from candidex.paper import Paper
 from candidex.scraper.cvf import (
     BASE_URL,
@@ -10,7 +22,10 @@ from candidex.scraper.cvf import (
     parse_paper,
     parse_paper_entries,
     resolve_url,
+    scrape_cvf_papers,
 )
+
+MODULE = "candidex.scraper.cvf"
 
 # --- Helpers ---
 
@@ -500,3 +515,224 @@ def test_parse_paper_full_output_missing_authors_and_pdf() -> None:
         year=2024,
         pdf_url=None,
     )
+
+
+#######################################
+#     Tests for scrape_cvf_papers     #
+#######################################
+
+
+# --- Fixtures ---
+
+
+@pytest.fixture
+def paper_a() -> Paper:
+    return Paper.from_raw(
+        title="Attention Is All You Need",
+        authors=["Jane Smith", "John Doe"],
+        venue="CVPR",
+        year=2024,
+        pdf_url="https://openaccess.thecvf.com/content/CVPR2024/papers/paper_a.pdf",
+    )
+
+
+@pytest.fixture
+def paper_b() -> Paper:
+    return Paper.from_raw(
+        title="BERT",
+        authors=["Alice Brown"],
+        venue="CVPR",
+        year=2024,
+        pdf_url="https://openaccess.thecvf.com/content/CVPR2024/papers/paper_b.pdf",
+    )
+
+
+# --- URL building ---
+
+
+def test_scrape_cvf_papers_builds_correct_url() -> None:
+    with (
+        patch(f"{MODULE}.fetch_html", return_value="<html></html>") as mock_fetch,
+        patch(f"{MODULE}.parse_paper_entries", return_value=[]),
+    ):
+        scrape_cvf_papers(venue="CVPR", year=2024)
+        mock_fetch.assert_called_once_with("https://openaccess.thecvf.com/CVPR2024?day=all")
+
+
+def test_scrape_cvf_papers_builds_correct_url_different_venue() -> None:
+    with (
+        patch(f"{MODULE}.fetch_html", return_value="<html></html>") as mock_fetch,
+        patch(f"{MODULE}.parse_paper_entries", return_value=[]),
+    ):
+        scrape_cvf_papers(venue="ICCV", year=2023)
+        mock_fetch.assert_called_once_with("https://openaccess.thecvf.com/ICCV2023?day=all")
+
+
+# --- Passes venue and year to parse_paper ---
+
+
+def test_scrape_cvf_papers_passes_venue_and_year_to_parse_paper(paper_a: Paper) -> None:
+    mock_dt = Mock()
+    with (
+        patch(f"{MODULE}.fetch_html", return_value="<html></html>"),
+        patch(f"{MODULE}.parse_paper_entries", return_value=[mock_dt]),
+        patch(f"{MODULE}.parse_paper", return_value=paper_a) as mock_parse,
+    ):
+        scrape_cvf_papers(venue="CVPR", year=2024)
+        mock_parse.assert_called_once_with(mock_dt, venue="CVPR", year=2024)
+
+
+# --- Empty listing ---
+
+
+def test_scrape_cvf_papers_returns_empty_dataframe_when_no_entries() -> None:
+    with (
+        patch(f"{MODULE}.fetch_html", return_value="<html></html>"),
+        patch(f"{MODULE}.parse_paper_entries", return_value=[]),
+    ):
+        result = scrape_cvf_papers(venue="CVPR", year=2024)
+    assert result.is_empty()
+
+
+def test_scrape_cvf_papers_empty_dataframe_has_correct_schema() -> None:
+    with (
+        patch(f"{MODULE}.fetch_html", return_value="<html></html>"),
+        patch(f"{MODULE}.parse_paper_entries", return_value=[]),
+    ):
+        result = scrape_cvf_papers(venue="CVPR", year=2024)
+    assert result.schema == {
+        PAPER_TITLE: pl.String,
+        PAPER_AUTHORS: pl.List(pl.String),
+        PAPER_VENUE: pl.String,
+        PAPER_YEAR: pl.Int32,
+        PAPER_URL: pl.String,
+        PAPER_ID: pl.String,
+    }
+
+
+# --- Single paper ---
+
+
+def test_scrape_cvf_papers_single_paper(paper_a: Paper) -> None:
+    mock_dt = Mock()
+    with (
+        patch(f"{MODULE}.fetch_html", return_value="<html></html>"),
+        patch(f"{MODULE}.parse_paper_entries", return_value=[mock_dt]),
+        patch(f"{MODULE}.parse_paper", return_value=paper_a),
+    ):
+        result = scrape_cvf_papers(venue="CVPR", year=2024)
+    assert_frame_equal(
+        result,
+        pl.DataFrame(
+            {
+                PAPER_TITLE: ["Attention Is All You Need"],
+                PAPER_AUTHORS: [["Jane Smith", "John Doe"]],
+                PAPER_VENUE: ["CVPR"],
+                PAPER_YEAR: [2024],
+                PAPER_URL: ["https://openaccess.thecvf.com/content/CVPR2024/papers/paper_a.pdf"],
+                PAPER_ID: [paper_a.hash()],
+            },
+            schema={
+                PAPER_TITLE: pl.String,
+                PAPER_AUTHORS: pl.List(pl.String),
+                PAPER_VENUE: pl.String,
+                PAPER_YEAR: pl.Int32,
+                PAPER_URL: pl.String,
+                PAPER_ID: pl.String,
+            },
+        ),
+    )
+
+
+# --- Multiple papers ---
+
+
+def test_scrape_cvf_papers_multiple_papers(paper_a: Paper, paper_b: Paper) -> None:
+    mock_dt_a = Mock()
+    mock_dt_b = Mock()
+
+    def side_effect(
+        dt: Tag,
+        venue: str,  # noqa: ARG001
+        year: int,  # noqa: ARG001
+    ) -> Paper:
+        return paper_a if dt is mock_dt_a else paper_b
+
+    with (
+        patch(f"{MODULE}.fetch_html", return_value="<html></html>"),
+        patch(f"{MODULE}.parse_paper_entries", return_value=[mock_dt_a, mock_dt_b]),
+        patch(f"{MODULE}.parse_paper", side_effect=side_effect),
+    ):
+        result = scrape_cvf_papers(venue="CVPR", year=2024)
+    assert_frame_equal(
+        result,
+        pl.DataFrame(
+            {
+                PAPER_TITLE: ["Attention Is All You Need", "BERT"],
+                PAPER_AUTHORS: [["Jane Smith", "John Doe"], ["Alice Brown"]],
+                PAPER_VENUE: ["CVPR", "CVPR"],
+                PAPER_YEAR: [2024, 2024],
+                PAPER_URL: [
+                    "https://openaccess.thecvf.com/content/CVPR2024/papers/paper_a.pdf",
+                    "https://openaccess.thecvf.com/content/CVPR2024/papers/paper_b.pdf",
+                ],
+                PAPER_ID: [paper_a.hash(), paper_b.hash()],
+            },
+            schema={
+                PAPER_TITLE: pl.String,
+                PAPER_AUTHORS: pl.List(pl.String),
+                PAPER_VENUE: pl.String,
+                PAPER_YEAR: pl.Int32,
+                PAPER_URL: pl.String,
+                PAPER_ID: pl.String,
+            },
+        ),
+    )
+
+
+# --- Papers with None fields ---
+
+
+def test_scrape_cvf_papers_paper_with_null_pdf_url() -> None:
+    paper = Paper.from_raw(
+        title="My Paper", authors=["Jane Smith"], venue="CVPR", year=2024, pdf_url=None
+    )
+    with (
+        patch(f"{MODULE}.fetch_html", return_value="<html></html>"),
+        patch(f"{MODULE}.parse_paper_entries", return_value=[Mock()]),
+        patch(f"{MODULE}.parse_paper", return_value=paper),
+    ):
+        result = scrape_cvf_papers(venue="CVPR", year=2024)
+    assert result[PAPER_URL][0] is None
+
+
+def test_scrape_cvf_papers_paper_with_null_authors() -> None:
+    paper = Paper.from_raw(
+        title="My Paper",
+        authors=None,
+        venue="CVPR",
+        year=2024,
+        pdf_url="https://example.com/paper.pdf",
+    )
+    with (
+        patch(f"{MODULE}.fetch_html", return_value="<html></html>"),
+        patch(f"{MODULE}.parse_paper_entries", return_value=[Mock()]),
+        patch(f"{MODULE}.parse_paper", return_value=paper),
+    ):
+        result = scrape_cvf_papers(venue="CVPR", year=2024)
+    assert result[PAPER_AUTHORS][0] is None
+
+
+# --- Network error propagates ---
+
+
+def test_scrape_cvf_papers_propagates_network_error() -> None:
+    import requests
+
+    with (
+        patch(
+            f"{MODULE}.fetch_html", side_effect=requests.exceptions.ConnectionError("unreachable")
+        ),
+        pytest.raises(requests.exceptions.ConnectionError),
+    ):
+        scrape_cvf_papers(venue="CVPR", year=2024)
