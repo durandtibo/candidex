@@ -8,27 +8,28 @@ __all__ = [
     "parse_paper",
     "parse_paper_entries",
     "resolve_url",
+    "scrape_cvf_papers",
 ]
 
 import logging
 import re
-from typing import Any
+from typing import TYPE_CHECKING
 
-import polars as pl
 from bs4 import BeautifulSoup, Tag
 
-from candidex.columns import PAPER_AUTHORS, PAPER_PDF_URL, PAPER_TITLE
+from candidex.columns import PAPER_AUTHORS, PAPER_URL
+from candidex.paper import papers_to_dataframe
 from candidex.paper.paper import Paper
 from candidex.scraper.base import BasePaperScraper
+from candidex.utils.http import fetch_html
+from candidex.utils.progressbar import make_progressbar
+
+if TYPE_CHECKING:
+    import polars as pl
 
 logger: logging.Logger = logging.getLogger(__name__)
 
 BASE_URL = "https://openaccess.thecvf.com"
-PAPER_SCHEMA: dict[str, Any] = {
-    PAPER_TITLE: pl.String,
-    PAPER_PDF_URL: pl.String,
-    PAPER_AUTHORS: pl.List(pl.String),
-}
 
 PAPER_ENTRY_CLASS = "ptitle"
 HTML_PARSER = "html.parser"
@@ -191,54 +192,65 @@ def parse_paper(
     )
 
 
-# def scrape_cvf_papers(
-#     venue: str, year: int
-# ) -> pl.DataFrame:
-#     """Scrape paper metadata from a CVPR OpenAccess listing page into a
-#     DataFrame.
-#
-#     Fetches the listing page, parses each paper entry, and returns structured
-#     metadata as a typed Polars DataFrame. On network failure the exception
-#     propagates so callers can decide how to handle it (retry, log, etc.)
-#     rather than silently returning an empty result.
-#
-#     Args:
-#         url:      Full URL of the CVPR listing page, e.g.
-#                   'https://openaccess.thecvf.com/CVPR2024?day=all'.
-#         base_url: Root URL for resolving relative hrefs. Defaults to BASE_URL.
-#         limit:    Maximum number of papers to scrape. Defaults to 100.
-#                   Pass None to scrape the full listing (typically 2000+ papers).
-#
-#     Returns:
-#         A Polars DataFrame with columns:
-#             - title      (String):       Paper title.
-#             - paper_url  (String):       URL to the paper's HTML page on CVF.
-#             - pdf_url    (String):       Direct URL to the paper's PDF.
-#             - authors    (List[String]): Author names.
-#
-#     Raises:
-#         requests.exceptions.RequestException: On any network or HTTP error.
-#
-#     Example:
-#         >>> df = scrape_cvpr_papers("https://openaccess.thecvf.com/CVPR2024?day=all") # doctest: +SKIP
-#         >>> df.filter(pl.col(AUTHORS).list.len() > 5) # doctest: +SKIP
-#     """
-#     url = build_listing_url(venue, year)
-#     html = fetch_html(url)
-#     entries = parse_paper_entries(html)
-#
-#     logger.info("Extracting data for %d papers...", len(entries))
-#     records = []
-#     with make_progressbar() as progress:
-#         task = progress.add_task("Parsing papers", total=len(entries))
-#         for dt in entries:
-#             records.append(parse_paper(dt))
-#             progress.advance(task)
-#
-#     df = pl.DataFrame(records, schema=PAPER_SCHEMA)
-#     logger.info(
-#         "Scraping complete. %d papers extracted, %d missing PDF URLs.",
-#         len(df),
-#         df[PAPER_PDF_URL].is_in([""]).sum(),
-#     )
-#     return df
+def scrape_cvf_papers(venue: str, year: int) -> pl.DataFrame:
+    """Scrape paper metadata from a CVF OpenAccess listing page into a
+    DataFrame.
+
+    Builds the listing URL from the venue and year, fetches the page,
+    parses each paper entry, and returns structured metadata as a Polars
+    DataFrame. On network failure the exception propagates so callers can
+    decide how to handle it (retry, log, etc.) rather than silently
+    returning an empty result.
+
+    Args:
+        venue: The venue name as it appears in the CVF URL
+               (e.g. 'CVPR', 'ICCV', 'ECCV').
+        year:  The year of the venue (e.g. 2024).
+
+    Returns:
+        A Polars DataFrame with columns as defined in `candidex.columns`:
+            - PAPER_TITLE   (String):       Paper title.
+            - PAPER_AUTHORS (List[String]): Author names. Null if not found.
+            - PAPER_VENUE   (String):       Venue name.
+            - PAPER_YEAR    (Int32):        Year of the venue.
+            - PAPER_URL     (String):       Direct URL to the paper's PDF.
+                                            Null if not found.
+            - PAPER_ID      (String):       BLAKE2b hash of the paper,
+                                            derived from all fields.
+
+    Raises:
+        requests.exceptions.RequestException: On any network or HTTP error.
+
+    Example:
+        ```pycon
+        >>> from candidex.scraper.cvf import scrape_cvf_papers
+        >>> from candidex.columns import PAPER_TITLE, PAPER_ID
+        >>> df = scrape_cvf_papers(venue="CVPR", year=2024)  # doctest: +SKIP
+
+        ```
+    """
+    url = build_listing_url(venue, year)
+    logger.info("Scraping %s %d from %s...", venue, year, url)
+
+    html = fetch_html(url)
+    entries = parse_paper_entries(html)
+    logger.info("Found %d paper entries. Parsing...", len(entries))
+
+    papers: list[Paper] = []
+    with make_progressbar() as progress:
+        task = progress.add_task("Parsing papers", total=len(entries))
+        for dt in entries:
+            papers.append(parse_paper(dt, venue=venue, year=year))
+            progress.advance(task)
+
+    frame = papers_to_dataframe(papers, include_id=True)
+
+    missing_pdf = frame[PAPER_URL].null_count()
+    missing_authors = frame[PAPER_AUTHORS].null_count()
+    logger.info(
+        "Scraping complete: %d papers extracted, %d missing PDF URLs, %d missing authors.",
+        len(frame),
+        missing_pdf,
+        missing_authors,
+    )
+    return frame
