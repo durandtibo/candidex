@@ -1,7 +1,54 @@
 from __future__ import annotations
 
+import pytest
 
-from candidex.scraper.cvf import parse_paper_entries
+from candidex.scraper.cvf import BASE_URL, build_listing_url, parse_paper_entries
+
+#######################################
+#     Tests for build_listing_url     #
+#######################################
+
+
+@pytest.mark.parametrize(
+    ("venue", "year", "expected"),
+    [
+        pytest.param(
+            "CVPR", 2024, "https://openaccess.thecvf.com/CVPR2024?day=all", id="cvpr_2024"
+        ),
+        pytest.param(
+            "CVPR", 2023, "https://openaccess.thecvf.com/CVPR2023?day=all", id="cvpr_2023"
+        ),
+        pytest.param(
+            "ICCV", 2023, "https://openaccess.thecvf.com/ICCV2023?day=all", id="iccv_2023"
+        ),
+        pytest.param(
+            "WACV", 2022, "https://openaccess.thecvf.com/WACV2022?day=all", id="wacv_2022"
+        ),
+        pytest.param(
+            "CVPR", 2020, "https://openaccess.thecvf.com/CVPR2020?day=all", id="cvpr_2020"
+        ),
+    ],
+)
+def test_build_listing_url(venue: str, year: int, expected: str) -> None:
+    assert build_listing_url(venue, year) == expected
+
+
+def test_build_listing_url_contains_day_all_query_param() -> None:
+    assert "day=all" in build_listing_url("CVPR", 2024)
+
+
+def test_build_listing_url_contains_venue() -> None:
+    assert "CVPR" in build_listing_url("CVPR", 2024)
+
+
+def test_build_listing_url_contains_year() -> None:
+    assert "2024" in build_listing_url("CVPR", 2024)
+
+
+def test_build_listing_url_starts_with_base_url() -> None:
+
+    assert build_listing_url("CVPR", 2024).startswith(BASE_URL)
+
 
 #########################################
 #     Tests for parse_paper_entries     #
