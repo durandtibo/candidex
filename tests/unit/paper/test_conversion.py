@@ -11,7 +11,7 @@ from candidex.columns import (
     PAPER_VENUE,
     PAPER_YEAR,
 )
-from candidex.paper import Paper, papers_to_dataframe
+from candidex.paper import Paper, dataframe_to_papers, papers_to_dataframe
 
 # --- Helpers ---
 
@@ -32,6 +32,230 @@ def make_paper(
     )
 
 
+SCHEMA = {
+    PAPER_TITLE: pl.String,
+    PAPER_AUTHORS: pl.List(pl.String),
+    PAPER_VENUE: pl.String,
+    PAPER_YEAR: pl.Int32,
+    PAPER_URL: pl.String,
+}
+
+#########################################
+#     Tests for dataframe_to_papers     #
+#########################################
+
+# --- Empty DataFrame ---
+
+
+def test_dataframe_to_papers_empty_dataframe() -> None:
+    frame = pl.DataFrame(schema=SCHEMA)
+    assert dataframe_to_papers(frame) == []
+
+
+# --- Single paper ---
+
+
+def test_dataframe_to_papers_single_paper_title() -> None:
+    frame = pl.DataFrame(
+        {
+            PAPER_TITLE: ["Attention Is All You Need"],
+            PAPER_AUTHORS: [["Jane Smith"]],
+            PAPER_VENUE: ["NeurIPS"],
+            PAPER_YEAR: [2017],
+            PAPER_URL: ["https://arxiv.org/pdf/1706.03762"],
+        },
+        schema=SCHEMA,
+    )
+    assert dataframe_to_papers(frame)[0].title == "Attention Is All You Need"
+
+
+def test_dataframe_to_papers_single_paper_authors() -> None:
+    frame = pl.DataFrame(
+        {
+            PAPER_TITLE: ["My Paper"],
+            PAPER_AUTHORS: [["Jane Smith", "John Doe"]],
+            PAPER_VENUE: ["NeurIPS"],
+            PAPER_YEAR: [2017],
+            PAPER_URL: ["https://arxiv.org/pdf/1706.03762"],
+        },
+        schema=SCHEMA,
+    )
+    assert dataframe_to_papers(frame)[0].authors == ("Jane Smith", "John Doe")
+
+
+def test_dataframe_to_papers_single_paper_venue() -> None:
+    frame = pl.DataFrame(
+        {
+            PAPER_TITLE: ["My Paper"],
+            PAPER_AUTHORS: [None],
+            PAPER_VENUE: ["CVPR"],
+            PAPER_YEAR: [2024],
+            PAPER_URL: [None],
+        },
+        schema=SCHEMA,
+    )
+    assert dataframe_to_papers(frame)[0].venue == "CVPR"
+
+
+def test_dataframe_to_papers_single_paper_year() -> None:
+    frame = pl.DataFrame(
+        {
+            PAPER_TITLE: ["My Paper"],
+            PAPER_AUTHORS: [None],
+            PAPER_VENUE: ["CVPR"],
+            PAPER_YEAR: [2024],
+            PAPER_URL: [None],
+        },
+        schema=SCHEMA,
+    )
+    assert dataframe_to_papers(frame)[0].year == 2024
+
+
+def test_dataframe_to_papers_single_paper_pdf_url() -> None:
+    frame = pl.DataFrame(
+        {
+            PAPER_TITLE: ["My Paper"],
+            PAPER_AUTHORS: [None],
+            PAPER_VENUE: [None],
+            PAPER_YEAR: [None],
+            PAPER_URL: ["https://arxiv.org/pdf/1706.03762"],
+        },
+        schema=SCHEMA,
+    )
+    assert dataframe_to_papers(frame)[0].pdf_url == "https://arxiv.org/pdf/1706.03762"
+
+
+# --- None fields ---
+
+
+def test_dataframe_to_papers_none_authors() -> None:
+    frame = pl.DataFrame(
+        {
+            PAPER_TITLE: ["My Paper"],
+            PAPER_AUTHORS: [None],
+            PAPER_VENUE: [None],
+            PAPER_YEAR: [None],
+            PAPER_URL: [None],
+        },
+        schema=SCHEMA,
+    )
+    assert dataframe_to_papers(frame)[0].authors is None
+
+
+def test_dataframe_to_papers_none_venue() -> None:
+    frame = pl.DataFrame(
+        {
+            PAPER_TITLE: ["My Paper"],
+            PAPER_AUTHORS: [None],
+            PAPER_VENUE: [None],
+            PAPER_YEAR: [None],
+            PAPER_URL: [None],
+        },
+        schema=SCHEMA,
+    )
+    assert dataframe_to_papers(frame)[0].venue is None
+
+
+def test_dataframe_to_papers_none_year() -> None:
+    frame = pl.DataFrame(
+        {
+            PAPER_TITLE: ["My Paper"],
+            PAPER_AUTHORS: [None],
+            PAPER_VENUE: [None],
+            PAPER_YEAR: [None],
+            PAPER_URL: [None],
+        },
+        schema=SCHEMA,
+    )
+    assert dataframe_to_papers(frame)[0].year is None
+
+
+def test_dataframe_to_papers_none_pdf_url() -> None:
+    frame = pl.DataFrame(
+        {
+            PAPER_TITLE: ["My Paper"],
+            PAPER_AUTHORS: [None],
+            PAPER_VENUE: [None],
+            PAPER_YEAR: [None],
+            PAPER_URL: [None],
+        },
+        schema=SCHEMA,
+    )
+    assert dataframe_to_papers(frame)[0].pdf_url is None
+
+
+# --- Multiple papers ---
+
+
+def test_dataframe_to_papers_multiple_papers_count() -> None:
+    frame = pl.DataFrame(
+        {
+            PAPER_TITLE: ["Paper A", "Paper B", "Paper C"],
+            PAPER_AUTHORS: [None, None, None],
+            PAPER_VENUE: [None, None, None],
+            PAPER_YEAR: [None, None, None],
+            PAPER_URL: [None, None, None],
+        },
+        schema=SCHEMA,
+    )
+    assert len(dataframe_to_papers(frame)) == 3
+
+
+def test_dataframe_to_papers_preserves_order() -> None:
+    frame = pl.DataFrame(
+        {
+            PAPER_TITLE: ["Charlie", "Alice", "Bob"],
+            PAPER_AUTHORS: [None, None, None],
+            PAPER_VENUE: [None, None, None],
+            PAPER_YEAR: [None, None, None],
+            PAPER_URL: [None, None, None],
+        },
+        schema=SCHEMA,
+    )
+    assert [p.title for p in dataframe_to_papers(frame)] == ["Charlie", "Alice", "Bob"]
+
+
+# --- Missing optional columns ---
+
+
+def test_dataframe_to_papers_missing_authors_column() -> None:
+    frame = pl.DataFrame({PAPER_TITLE: ["My Paper"]}, schema={PAPER_TITLE: pl.String})
+    assert dataframe_to_papers(frame)[0].authors is None
+
+
+def test_dataframe_to_papers_missing_venue_column() -> None:
+    frame = pl.DataFrame({PAPER_TITLE: ["My Paper"]}, schema={PAPER_TITLE: pl.String})
+    assert dataframe_to_papers(frame)[0].venue is None
+
+
+def test_dataframe_to_papers_missing_year_column() -> None:
+    frame = pl.DataFrame({PAPER_TITLE: ["My Paper"]}, schema={PAPER_TITLE: pl.String})
+    assert dataframe_to_papers(frame)[0].year is None
+
+
+def test_dataframe_to_papers_missing_url_column() -> None:
+    frame = pl.DataFrame({PAPER_TITLE: ["My Paper"]}, schema={PAPER_TITLE: pl.String})
+    assert dataframe_to_papers(frame)[0].pdf_url is None
+
+
+# --- Full round-trip (uses papers_to_dataframe) ---
+
+
+def test_dataframe_to_papers_full_round_trip() -> None:
+    papers = [
+        Paper.from_raw(
+            title="Attention Is All You Need",
+            authors=["Jane Smith", "John Doe"],
+            venue="NeurIPS",
+            year=2017,
+            pdf_url="https://arxiv.org/pdf/1706.03762",
+        ),
+        Paper.from_raw(title="BERT", authors=None, venue="NAACL", year=2019, pdf_url=None),
+        Paper.from_raw(title="GPT-3", authors=["Alice Brown"], venue=None, year=None, pdf_url=None),
+    ]
+    assert dataframe_to_papers(papers_to_dataframe(papers)) == papers
+
+
 #########################################
 #     Tests for papers_to_dataframe     #
 #########################################
@@ -40,15 +264,7 @@ def make_paper(
 def test_papers_to_dataframe_empty_sequence() -> None:
     assert_frame_equal(
         papers_to_dataframe([]),
-        pl.DataFrame(
-            schema={
-                PAPER_TITLE: pl.String,
-                PAPER_AUTHORS: pl.List(pl.String),
-                PAPER_VENUE: pl.String,
-                PAPER_YEAR: pl.Int32,
-                PAPER_URL: pl.String,
-            }
-        ),
+        pl.DataFrame(schema=SCHEMA),
     )
 
 
@@ -64,13 +280,7 @@ def test_papers_to_dataframe_single_paper() -> None:
                 PAPER_YEAR: [2017],
                 PAPER_URL: ["https://arxiv.org/pdf/1706.03762"],
             },
-            schema={
-                PAPER_TITLE: pl.String,
-                PAPER_AUTHORS: pl.List(pl.String),
-                PAPER_VENUE: pl.String,
-                PAPER_YEAR: pl.Int32,
-                PAPER_URL: pl.String,
-            },
+            schema=SCHEMA,
         ),
     )
 
@@ -87,13 +297,7 @@ def test_papers_to_dataframe_empty_authors() -> None:
                 PAPER_YEAR: [2017],
                 PAPER_URL: ["https://arxiv.org/pdf/1706.03762"],
             },
-            schema={
-                PAPER_TITLE: pl.String,
-                PAPER_AUTHORS: pl.List(pl.String),
-                PAPER_VENUE: pl.String,
-                PAPER_YEAR: pl.Int32,
-                PAPER_URL: pl.String,
-            },
+            schema=SCHEMA,
         ),
     )
 
@@ -110,13 +314,7 @@ def test_papers_to_dataframe_none_authors() -> None:
                 PAPER_YEAR: [2017],
                 PAPER_URL: ["https://arxiv.org/pdf/1706.03762"],
             },
-            schema={
-                PAPER_TITLE: pl.String,
-                PAPER_AUTHORS: pl.List(pl.String),
-                PAPER_VENUE: pl.String,
-                PAPER_YEAR: pl.Int32,
-                PAPER_URL: pl.String,
-            },
+            schema=SCHEMA,
         ),
     )
 
@@ -148,13 +346,7 @@ def test_papers_to_dataframe_multiple_papers() -> None:
                 PAPER_YEAR: [2017, 2019],
                 PAPER_URL: ["https://arxiv.org/pdf/1706.03762", "https://arxiv.org/pdf/1810.04805"],
             },
-            schema={
-                PAPER_TITLE: pl.String,
-                PAPER_AUTHORS: pl.List(pl.String),
-                PAPER_VENUE: pl.String,
-                PAPER_YEAR: pl.Int32,
-                PAPER_URL: pl.String,
-            },
+            schema=SCHEMA,
         ),
     )
 
@@ -189,13 +381,7 @@ def test_papers_to_dataframe_preserves_order() -> None:
                     "https://arxiv.org/pdf/3.pdf",
                 ],
             },
-            schema={
-                PAPER_TITLE: pl.String,
-                PAPER_AUTHORS: pl.List(pl.String),
-                PAPER_VENUE: pl.String,
-                PAPER_YEAR: pl.Int32,
-                PAPER_URL: pl.String,
-            },
+            schema=SCHEMA,
         ),
     )
 
@@ -226,13 +412,6 @@ def test_papers_to_dataframe_include_id_full_output() -> None:
                 PAPER_URL: ["https://arxiv.org/pdf/1706.03762", "https://arxiv.org/pdf/1810.04805"],
                 PAPER_ID: [paper_a.hash(), paper_b.hash()],
             },
-            schema={
-                PAPER_TITLE: pl.String,
-                PAPER_AUTHORS: pl.List(pl.String),
-                PAPER_VENUE: pl.String,
-                PAPER_YEAR: pl.Int32,
-                PAPER_URL: pl.String,
-                PAPER_ID: pl.String,
-            },
+            schema=SCHEMA | {PAPER_ID: pl.String},
         ),
     )
