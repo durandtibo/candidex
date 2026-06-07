@@ -79,7 +79,7 @@ class Paper:
             sort_keys=True,
             ensure_ascii=True,
         )
-        return hashlib.blake2b(canonical.encode()).hexdigest()
+        return hashlib.blake2b(canonical.encode(), digest_size=32).hexdigest()
 
     @classmethod
     def from_raw(

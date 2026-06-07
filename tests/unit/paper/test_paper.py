@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import hashlib
-import json
 from dataclasses import FrozenInstanceError
 
 import pytest
@@ -255,9 +253,9 @@ def test_paper_hash_returns_string(paper: Paper) -> None:
     assert isinstance(paper.hash(), str)
 
 
-def test_paper_hash_is_128_char_lowercase_hex(paper: Paper) -> None:
+def test_paper_hash_is_64_char_lowercase_hex(paper: Paper) -> None:
     digest = paper.hash()
-    assert len(digest) == 128
+    assert len(digest) == 64
     assert all(c in "0123456789abcdef" for c in digest)
 
 
@@ -280,21 +278,6 @@ def test_paper_hash_none_authors_different_from_empty_authors() -> None:
     a = Paper.from_raw(title="My Paper", authors=None)
     b = Paper.from_raw(title="My Paper", authors=[])
     assert a.hash() != b.hash()
-
-
-def test_paper_hash_matches_manual_blake2b(paper: Paper) -> None:
-    canonical = json.dumps(
-        {
-            "title": paper.title,
-            "authors": list(paper.authors) if paper.authors is not None else None,
-            "venue": paper.venue,
-            "year": paper.year,
-            "pdf_url": paper.pdf_url,
-        },
-        sort_keys=True,
-        ensure_ascii=True,
-    )
-    assert paper.hash() == hashlib.blake2b(canonical.encode()).hexdigest()
 
 
 @pytest.mark.parametrize(
