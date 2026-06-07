@@ -29,6 +29,41 @@ HEADERS: dict[str, str] = {
 }
 
 
+def create_session(max_retries: int = 3) -> requests.Session:
+    """Create a `requests.Session` with a retry adapter mounted.
+
+    Configures exponential backoff retries for transient failures on both
+    `https://` and `http://` connections. Useful for sharing a single
+    session across multiple requests for connection pooling.
+
+    Args:
+        max_retries: Maximum number of retry attempts on transient failures
+                     (429, 500, 502, 503, 504) with exponential backoff.
+                     Defaults to 3.
+
+    Returns:
+        A configured `requests.Session` instance with retry adapters mounted.
+
+    Example:
+        >>> from candidex.utils.http import create_session
+        >>> session = create_session(max_retries=5)
+        >>> session.get("https://example.com")  # doctest: +SKIP
+    """
+    retry_strategy = Retry(
+        total=max_retries,
+        backoff_factor=1,
+        status_forcelist=[429, 500, 502, 503, 504],
+        allowed_methods=["GET"],
+        raise_on_status=False,
+        respect_retry_after_header=True,
+    )
+    adapter = HTTPAdapter(max_retries=retry_strategy)
+    session = requests.Session()
+    session.mount("https://", adapter)
+    session.mount("http://", adapter)
+    return session
+
+
 def fetch_html(
     url: str,
     timeout: int = 30,
@@ -82,18 +117,7 @@ def fetch_html(
 
     own_session = session is None
     if own_session:
-        retry_strategy = Retry(
-            total=max_retries,
-            backoff_factor=1,
-            status_forcelist=[429, 500, 502, 503, 504],
-            allowed_methods=["GET"],
-            raise_on_status=False,
-            respect_retry_after_header=True,
-        )
-        adapter = HTTPAdapter(max_retries=retry_strategy)
-        session = requests.Session()
-        session.mount("https://", adapter)
-        session.mount("http://", adapter)
+        session = create_session(max_retries=max_retries)
 
     try:
         start = time.perf_counter()

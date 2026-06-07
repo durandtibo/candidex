@@ -9,10 +9,8 @@ import logging
 from typing import TYPE_CHECKING
 
 import requests
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
 
-from candidex.utils.http import HEADERS
+from candidex.utils.http import HEADERS, create_session
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -53,8 +51,8 @@ def download_pdf(
                      (429, 500, 502, 503, 504) with exponential backoff.
                      Defaults to 3. Ignored if `session` is provided.
         session:     An optional `requests.Session` instance to reuse. If
-                     not provided, a new session is created with a retry
-                     adapter and closed after the request completes.
+                     not provided, a new session is created via
+                     `create_session` and closed after the request completes.
 
     Returns:
         True if the file was downloaded successfully or already exists.
@@ -81,18 +79,7 @@ def download_pdf(
 
     own_session = session is None
     if own_session:
-        retry_strategy = Retry(
-            total=max_retries,
-            backoff_factor=1,
-            status_forcelist=[429, 500, 502, 503, 504],
-            allowed_methods=["GET"],
-            raise_on_status=False,
-            respect_retry_after_header=True,
-        )
-        adapter = HTTPAdapter(max_retries=retry_strategy)
-        session = requests.Session()
-        session.mount("https://", adapter)
-        session.mount("http://", adapter)
+        session = create_session(max_retries=max_retries)
 
     try:
         with session.get(url, headers=HEADERS, timeout=timeout, stream=True) as response:

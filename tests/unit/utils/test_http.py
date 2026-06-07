@@ -4,8 +4,9 @@ from unittest.mock import Mock, patch
 
 import pytest
 import requests
+from requests.adapters import HTTPAdapter
 
-from candidex.utils.http import HEADERS, fetch_html
+from candidex.utils.http import HEADERS, create_session, fetch_html
 
 MODULE = "candidex.utils.http"
 
@@ -28,6 +29,92 @@ def mock_session(mock_response: Mock) -> Mock:
     session = Mock()
     session.get.return_value = mock_response
     return session
+
+
+####################################
+#     Tests for create_session     #
+####################################
+
+# --- Return type ---
+
+
+def test_create_session_returns_session() -> None:
+    assert isinstance(create_session(), requests.Session)
+
+
+def test_create_session_each_call_returns_new_instance() -> None:
+    assert create_session() is not create_session()
+
+
+# --- Adapters ---
+
+
+def test_create_session_mounts_https_adapter() -> None:
+    session = create_session()
+    assert "https://" in session.adapters
+
+
+def test_create_session_mounts_http_adapter() -> None:
+    session = create_session()
+    assert "http://" in session.adapters
+
+
+def test_create_session_https_adapter_is_http_adapter() -> None:
+    session = create_session()
+    assert isinstance(session.adapters["https://"], HTTPAdapter)
+
+
+def test_create_session_http_adapter_is_http_adapter() -> None:
+    session = create_session()
+    assert isinstance(session.adapters["http://"], HTTPAdapter)
+
+
+# --- Retry configuration ---
+
+
+def test_create_session_default_max_retries() -> None:
+    session = create_session()
+    assert session.adapters["https://"].max_retries.total == 3
+
+
+def test_create_session_custom_max_retries() -> None:
+    session = create_session(max_retries=5)
+    assert session.adapters["https://"].max_retries.total == 5
+
+
+def test_create_session_zero_max_retries() -> None:
+    session = create_session(max_retries=0)
+    assert session.adapters["https://"].max_retries.total == 0
+
+
+def test_create_session_retry_status_forcelist() -> None:
+    session = create_session()
+    assert set(session.adapters["https://"].max_retries.status_forcelist) == {
+        429,
+        500,
+        502,
+        503,
+        504,
+    }
+
+
+def test_create_session_retry_backoff_factor() -> None:
+    session = create_session()
+    assert session.adapters["https://"].max_retries.backoff_factor == 1
+
+
+def test_create_session_retry_respect_retry_after_header() -> None:
+    session = create_session()
+    assert session.adapters["https://"].max_retries.respect_retry_after_header is True
+
+
+def test_create_session_http_and_https_have_same_retry_config() -> None:
+    session = create_session(max_retries=5)
+    https_retries = session.adapters["https://"].max_retries
+    http_retries = session.adapters["http://"].max_retries
+    assert https_retries.total == http_retries.total
+    assert https_retries.backoff_factor == http_retries.backoff_factor
+    assert set(https_retries.status_forcelist) == set(http_retries.status_forcelist)
 
 
 ################################
