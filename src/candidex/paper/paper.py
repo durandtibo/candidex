@@ -43,6 +43,20 @@ class Paper:
     year: int | None = None
     pdf_url: str | None = None
 
+    @property
+    def pdf_filename(self) -> str:
+        r"""Return the PDF filename for this paper.
+
+        The filename is derived from the paper's BLAKE2b hash, ensuring it
+        is unique, filesystem-safe, and stable across runs. Used as the
+        filename when downloading or caching the paper's PDF.
+
+        Returns:
+            A string of the form `{hash}.pdf` where `{hash}` is the
+                64-character BLAKE2b hex digest of the paper.
+        """
+        return f"{self.hash()}.pdf"
+
     def hash(self) -> str:
         """Return a stable BLAKE2b hex digest of the paper.
 

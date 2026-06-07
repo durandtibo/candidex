@@ -77,7 +77,7 @@ def download_pdfs(
             return paper, False
         return paper, download_pdf(
             url=paper.pdf_url,
-            pdf_path=pdf_dir / f"{paper.hash()}.pdf",
+            pdf_path=pdf_dir / paper.pdf_filename,
             timeout=timeout,
             chunk_size=chunk_size,
             session=session,
