@@ -9,6 +9,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from rich.logging import RichHandler
 
+from candidex.paper import dataframe_to_papers, download_pdfs
 from candidex.scraper import CVFPaperScraper
 
 logging.basicConfig(
@@ -32,11 +33,14 @@ def main() -> None:
     paper_dir = data_path.joinpath("papers")
     author_dir = data_path.joinpath("authors")
     logger.info(f"paper_dir: {paper_dir} | author_dir: {author_dir}")
+    paper_pdf_dir = paper_dir.joinpath("pdf")
 
     scraper = CVFPaperScraper(venue="CVPR", year=2026, cache_dir=paper_dir)
     logger.info(scraper)
-    df_papers = scraper.scrape()
-    logger.info(df_papers)
+    papers = dataframe_to_papers(scraper.scrape().head(10))
+    logger.info(papers)
+
+    download_pdfs(papers=papers, pdf_dir=paper_pdf_dir)
 
 
 if __name__ == "__main__":
