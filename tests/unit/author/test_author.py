@@ -137,9 +137,9 @@ def test_author_hash_returns_string() -> None:
     assert isinstance(Author.from_raw("Jane Smith", ["MIT"], "jane@mit.edu").hash(), str)
 
 
-def test_author_hash_is_128_char_lowercase_hex() -> None:
+def test_author_hash_is_64_char_lowercase_hex() -> None:
     digest = Author.from_raw("Jane Smith", ["MIT"], "jane@mit.edu").hash()
-    assert len(digest) == 128
+    assert len(digest) == 64
     assert all(c in "0123456789abcdef" for c in digest)
 
 
