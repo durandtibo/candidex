@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING
 
 import polars as pl
 from bs4 import BeautifulSoup, Tag
-from coola.utils.format import repr_indent, repr_mapping
+from coola.utils.format import repr_indent, repr_mapping, str_indent, str_mapping
 
 from candidex.columns import PAPER_AUTHORS, PAPER_URL
 from candidex.paper import papers_to_dataframe
@@ -84,6 +84,10 @@ class CVFPaperScraper(BasePaperScraper):
     def __repr__(self) -> str:
         args = {"venue": self._venue, "year": self._year, "cache_dir": self._cache_dir}
         return f"{self.__class__.__qualname__}(\n  {repr_indent(repr_mapping(args))}\n)"
+
+    def __str__(self) -> str:
+        args = {"venue": self._venue, "year": self._year, "cache_dir": self._cache_dir}
+        return f"{self.__class__.__qualname__}(\n  {str_indent(str_mapping(args))}\n)"
 
     def scrape(self) -> pl.DataFrame:
         return load_or_scrape_papers(venue=self._venue, year=self._year, cache_dir=self._cache_dir)
