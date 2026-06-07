@@ -5,12 +5,12 @@ from __future__ import annotations
 __all__ = ["flatten"]
 
 from collections.abc import Iterable
-from typing import TypeVar
+from typing import Any, TypeVar
 
 T = TypeVar("T")
 
 
-def flatten(items: Iterable) -> list:
+def flatten(items: Iterable[Any]) -> list[Any]:
     """Recursively flatten a nested iterable into a flat list.
 
     Flattens arbitrarily deep nested iterables (lists, tuples, generators,
