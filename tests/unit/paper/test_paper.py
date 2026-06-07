@@ -120,6 +120,36 @@ def test_paper_from_raw_normalizes_pdf_url() -> None:
     )
 
 
+# --- PDF filename ---
+
+
+def test_paper_pdf_filename_ends_with_pdf(paper: Paper) -> None:
+    assert paper.pdf_filename.endswith(".pdf")
+
+
+def test_paper_pdf_filename_starts_with_hash(paper: Paper) -> None:
+    assert paper.pdf_filename == f"{paper.hash()}.pdf"
+
+
+def test_paper_pdf_filename_length(paper: Paper) -> None:
+    assert len(paper.pdf_filename) == 64 + len(".pdf")
+
+
+def test_paper_pdf_filename_is_stable(paper: Paper) -> None:
+    assert paper.pdf_filename == paper.pdf_filename
+
+
+def test_paper_pdf_filename_differs_for_different_papers(paper: Paper) -> None:
+    other = Paper.from_raw(
+        title="BERT",
+        authors=["Jacob Devlin"],
+        venue="NAACL",
+        year=2019,
+        pdf_url="https://arxiv.org/pdf/1810.04805",
+    )
+    assert paper.pdf_filename != other.pdf_filename
+
+
 # --- Hashability and equality ---
 
 
