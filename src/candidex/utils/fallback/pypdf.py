@@ -26,6 +26,8 @@ class FakeClass:
         raise_pypdf_missing_error()
 
 
+PdfReader = FakeClass
+
 # Create a fake pypdf package
 pypdf: ModuleType = ModuleType("pypdf")
-pypdf.PdfReader = FakeClass
+pypdf.PdfReader = PdfReader
