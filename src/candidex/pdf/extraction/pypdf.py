@@ -13,6 +13,8 @@ if TYPE_CHECKING:
 
 if is_pypdf_available():
     from pypdf import PdfReader
+else:  # pragma: no cover
+    from candidex.utils.fallback.pypdf import PdfReader
 
 
 def extract_text_pypdf(pdf_path: Path, max_pages: int | None = None) -> str:
