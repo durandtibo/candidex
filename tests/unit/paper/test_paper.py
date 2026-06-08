@@ -120,36 +120,6 @@ def test_paper_from_raw_normalizes_pdf_url() -> None:
     )
 
 
-# --- PDF filename ---
-
-
-def test_paper_pdf_filename_ends_with_pdf(paper: Paper) -> None:
-    assert paper.pdf_filename.endswith(".pdf")
-
-
-def test_paper_pdf_filename_starts_with_hash(paper: Paper) -> None:
-    assert paper.pdf_filename == f"{paper.hash()}.pdf"
-
-
-def test_paper_pdf_filename_length(paper: Paper) -> None:
-    assert len(paper.pdf_filename) == 64 + len(".pdf")
-
-
-def test_paper_pdf_filename_is_stable(paper: Paper) -> None:
-    assert paper.pdf_filename == paper.pdf_filename
-
-
-def test_paper_pdf_filename_differs_for_different_papers(paper: Paper) -> None:
-    other = Paper.from_raw(
-        title="BERT",
-        authors=["Jacob Devlin"],
-        venue="NAACL",
-        year=2019,
-        pdf_url="https://arxiv.org/pdf/1810.04805",
-    )
-    assert paper.pdf_filename != other.pdf_filename
-
-
 # --- Hashability and equality ---
 
 
@@ -360,3 +330,49 @@ def test_paper_hash_none_authors_different_from_empty_authors() -> None:
 )
 def test_paper_hash_different_papers_different_hash(a: Paper, b: Paper) -> None:
     assert a.hash() != b.hash()
+
+
+# --- filename ---
+
+
+def test_paper_to_filename_no_extension(paper: Paper) -> None:
+    assert paper.to_filename() == paper.hash()
+
+
+def test_paper_to_filename_pdf_extension(paper: Paper) -> None:
+    assert paper.to_filename(".pdf") == f"{paper.hash()}.pdf"
+
+
+def test_paper_to_filename_json_extension(paper: Paper) -> None:
+    assert paper.to_filename(".json") == f"{paper.hash()}.json"
+
+
+def test_paper_to_filename_ends_with_extension(paper: Paper) -> None:
+    assert paper.to_filename(".pdf").endswith(".pdf")
+
+
+def test_paper_to_filename_starts_with_hash(paper: Paper) -> None:
+    assert paper.to_filename(".pdf").startswith(paper.hash())
+
+
+def test_paper_to_filename_is_stable(paper: Paper) -> None:
+    assert paper.to_filename(".pdf") == paper.to_filename(".pdf")
+
+
+def test_paper_to_filename_differs_for_different_papers(paper: Paper) -> None:
+    other = Paper.from_raw(
+        title="BERT",
+        authors=["Jacob Devlin"],
+        venue="NAACL",
+        year=2019,
+        pdf_url="https://arxiv.org/pdf/1810.04805",
+    )
+    assert paper.to_filename(".pdf") != other.to_filename(".pdf")
+
+
+def test_paper_to_filename_length_with_extension(paper: Paper) -> None:
+    assert len(paper.to_filename(".pdf")) == 68
+
+
+def test_paper_to_filename_length_without_extension(paper: Paper) -> None:
+    assert len(paper.to_filename()) == 64
