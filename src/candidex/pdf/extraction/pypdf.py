@@ -6,10 +6,13 @@ __all__ = ["extract_text_pypdf"]
 
 from typing import TYPE_CHECKING
 
-from pypdf import PdfReader
+from candidex.utils.imports import check_pypdf, is_pypdf_available
 
 if TYPE_CHECKING:
     from pathlib import Path
+
+if is_pypdf_available():
+    from pypdf import PdfReader
 
 
 def extract_text_pypdf(pdf_path: Path, max_pages: int | None = None) -> str:
@@ -49,6 +52,7 @@ def extract_text_pypdf(pdf_path: Path, max_pages: int | None = None) -> str:
 
         ```
     """
+    check_pypdf()
     reader = PdfReader(pdf_path)
     pages = reader.pages[:max_pages] if max_pages is not None else reader.pages
 
