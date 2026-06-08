@@ -2,10 +2,11 @@ r"""Contain utilities for working with PDFs."""
 
 from __future__ import annotations
 
-__all__ = ["extract_text_pypdf"]
+__all__ = ["PyPdfExtractor", "extract_text_pypdf"]
 
 from typing import TYPE_CHECKING
 
+from candidex.pdf.extraction import BasePdfExtractor
 from candidex.utils.imports import check_pypdf, is_pypdf_available
 
 if TYPE_CHECKING:
@@ -15,6 +16,45 @@ if is_pypdf_available():
     from pypdf import PdfReader
 else:  # pragma: no cover
     from candidex.utils.fallback.pypdf import PdfReader
+
+
+class PyPdfExtractor(BasePdfExtractor):
+    r"""Extract text from digital PDFs using the `pypdf` library.
+
+    Wraps `extract_text_pypdf` as a `BasePdfExtractor` implementation.
+    Pages are separated by form feed characters (``\\f``), consistent
+    with the plain-text page separator convention. Suitable for
+    digitally-created PDFs where text is embedded as selectable
+    characters. Not suitable for scanned PDFs — use an OCR-based
+    extractor instead.
+
+    Args:
+        max_pages: Maximum number of pages to extract. If None, all
+                   pages are extracted. Defaults to None.
+
+    Raises:
+        RuntimeError: If `pypdf` is not installed.
+
+    Example:
+        ```pycon
+        >>> from pathlib import Path
+        >>> from candidex.pdf.extraction import PyPdfExtractor
+        >>> extractor = PyPdfExtractor(max_pages=1)
+        >>> text = extractor.extract(Path("paper.pdf"))  # doctest: +SKIP
+        >>> pages = text.split("\\f")  # doctest: +SKIP
+
+        ```
+    """
+
+    def __init__(self, max_pages: int | None = None) -> None:
+        check_pypdf()
+        self._max_pages = max_pages
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__qualname__}(max_pages={self._max_pages!r})"
+
+    def extract(self, pdf_path: Path) -> str:
+        return extract_text_pypdf(pdf_path=pdf_path, max_pages=self._max_pages)
 
 
 def extract_text_pypdf(pdf_path: Path, max_pages: int | None = None) -> str:

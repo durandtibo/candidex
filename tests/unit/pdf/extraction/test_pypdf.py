@@ -5,7 +5,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from candidex.pdf.extraction import extract_text_pypdf
+from candidex.pdf.extraction import PyPdfExtractor, extract_text_pypdf
 from candidex.testing.fixtures import pypdf_available
 
 MODULE = "candidex.pdf.extraction.pypdf"
@@ -22,6 +22,98 @@ def make_page(text: str | None) -> Mock:
 
 def make_reader(pages: list[Mock]) -> Mock:
     return Mock(pages=pages)
+
+
+####################################
+#     Tests for PyPdfExtractor     #
+####################################
+
+
+# --- Construction ---
+
+
+@pypdf_available
+def test_pypdf_extractor_calls_check_pypdf_on_init() -> None:
+    with patch(f"{MODULE}.check_pypdf") as mock_check:
+        PyPdfExtractor()
+        mock_check.assert_called_once()
+
+
+@pypdf_available
+def test_pypdf_extractor_raises_when_pypdf_not_available() -> None:
+    with (
+        patch(f"{MODULE}.check_pypdf", side_effect=RuntimeError("pypdf not installed")),
+        pytest.raises(RuntimeError, match="pypdf not installed"),
+    ):
+        PyPdfExtractor()
+
+
+@pypdf_available
+def test_pypdf_extractor_default_max_pages_is_none() -> None:
+    assert PyPdfExtractor()._max_pages is None
+
+
+@pypdf_available
+def test_pypdf_extractor_stores_max_pages() -> None:
+    assert PyPdfExtractor(max_pages=2)._max_pages == 2
+
+
+# --- __repr__ ---
+
+
+@pypdf_available
+def test_pypdf_extractor_repr_no_max_pages() -> None:
+    assert repr(PyPdfExtractor()) == "PyPdfExtractor(max_pages=None)"
+
+
+@pypdf_available
+def test_pypdf_extractor_repr_with_max_pages() -> None:
+    assert repr(PyPdfExtractor(max_pages=2)) == "PyPdfExtractor(max_pages=2)"
+
+
+# --- extract ---
+
+
+@pypdf_available
+def test_pypdf_extractor_calls_extract_text_pypdf() -> None:
+    with patch(f"{MODULE}.extract_text_pypdf", return_value="extracted text") as mock_extract:
+        PyPdfExtractor().extract(Path("paper.pdf"))
+        mock_extract.assert_called_once_with(pdf_path=Path("paper.pdf"), max_pages=None)
+
+
+@pypdf_available
+def test_pypdf_extractor_passes_max_pages_to_extract_text_pypdf() -> None:
+    with patch(f"{MODULE}.extract_text_pypdf", return_value="extracted text") as mock_extract:
+        PyPdfExtractor(max_pages=2).extract(Path("paper.pdf"))
+        mock_extract.assert_called_once_with(pdf_path=Path("paper.pdf"), max_pages=2)
+
+
+@pypdf_available
+def test_pypdf_extractor_returns_extracted_text() -> None:
+    with patch(f"{MODULE}.extract_text_pypdf", return_value="Hello world"):
+        assert PyPdfExtractor().extract(Path("paper.pdf")) == "Hello world"
+
+
+@pypdf_available
+def test_pypdf_extractor_returns_empty_string_when_no_text() -> None:
+    with patch(f"{MODULE}.extract_text_pypdf", return_value=""):
+        assert PyPdfExtractor().extract(Path("paper.pdf")) == ""
+
+
+@pypdf_available
+def test_pypdf_extractor_passes_pdf_path_correctly() -> None:
+    pdf_path = Path("papers/attention.pdf")
+    with patch(f"{MODULE}.extract_text_pypdf", return_value="text") as mock_extract:
+        PyPdfExtractor().extract(pdf_path)
+        _, kwargs = mock_extract.call_args
+        assert kwargs["pdf_path"] == pdf_path
+
+
+@pypdf_available
+def test_pypdf_extractor_integration_file_not_found(tmp_path: Path) -> None:
+    extractor = PyPdfExtractor()
+    with pytest.raises(FileNotFoundError, match="No such file or directory"):
+        extractor.extract(tmp_path / "nonexistent.pdf")
 
 
 ########################################
