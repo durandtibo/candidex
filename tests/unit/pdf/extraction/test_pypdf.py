@@ -3,6 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import Mock, patch
 
+import pytest
+
 from candidex.pdf.extraction import extract_text_pypdf
 from candidex.testing.fixtures import pypdf_available
 
@@ -152,3 +154,9 @@ def test_extract_text_pypdf_result_splittable_by_form_feed() -> None:
         result = extract_text_pypdf(Path("paper.pdf"))
     pages = result.split("\f")
     assert pages == ["Page one.", "Page two.", "Page three."]
+
+
+@pypdf_available
+def test_extract_text_pypdf_file_not_found(tmp_path: Path) -> None:
+    with pytest.raises(FileNotFoundError, match="No such file or directory"):
+        extract_text_pypdf(tmp_path / "nonexistent.pdf")
