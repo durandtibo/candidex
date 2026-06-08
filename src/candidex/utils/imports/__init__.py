@@ -11,9 +11,13 @@ from __future__ import annotations
 
 __all__ = [
     "check_colorlog",
+    "check_pypdf",
     "colorlog_available",
     "is_colorlog_available",
+    "is_pypdf_available",
+    "pypdf_available",
     "raise_colorlog_missing_error",
+    "raise_pypdf_missing_error",
 ]
 
 from candidex.utils.imports.colorlog import (
@@ -21,4 +25,10 @@ from candidex.utils.imports.colorlog import (
     colorlog_available,
     is_colorlog_available,
     raise_colorlog_missing_error,
+)
+from candidex.utils.imports.pypdf import (
+    check_pypdf,
+    is_pypdf_available,
+    pypdf_available,
+    raise_pypdf_missing_error,
 )
