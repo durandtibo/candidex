@@ -43,20 +43,6 @@ class Paper:
     year: int | None = None
     pdf_url: str | None = None
 
-    @property
-    def pdf_filename(self) -> str:
-        r"""Return the PDF filename for this paper.
-
-        The filename is derived from the paper's BLAKE2b hash, ensuring it
-        is unique, filesystem-safe, and stable across runs. Used as the
-        filename when downloading or caching the paper's PDF.
-
-        Returns:
-            A string of the form `{hash}.pdf` where `{hash}` is the
-                64-character BLAKE2b hex digest of the paper.
-        """
-        return f"{self.hash()}.pdf"
-
     def hash(self) -> str:
         """Return a stable BLAKE2b hex digest of the paper.
 
@@ -153,3 +139,40 @@ class Paper:
             year=year,
             pdf_url=pdf_url.strip() if pdf_url is not None else None,
         )
+
+    def to_filename(self, extension: str = "") -> str:
+        """Return a unique filesystem-safe filename derived from this
+        paper.
+
+        The filename is based on the paper's BLAKE2b hash, ensuring it is
+        unique, stable across runs, and safe to use as a filename on all
+        platforms. Optionally appends a file extension.
+
+        Args:
+            extension: File extension to append, including the leading dot
+                       (e.g. '.pdf', '.json'). Defaults to no extension.
+
+        Returns:
+            A string of the form `{hash}{extension}` where `{hash}` is the
+                64-character BLAKE2b hex digest of the paper.
+
+        Example:
+            ```pycon
+            >>> from candidex.paper import Paper
+            >>> paper = Paper.from_raw(
+            ...     title="Attention Is All You Need",
+            ...     authors=["Ashish Vaswani"],
+            ...     venue="NeurIPS",
+            ...     year=2017,
+            ...     pdf_url="https://arxiv.org/pdf/1706.03762",
+            ... )
+            >>> paper.to_filename(".pdf").endswith(".pdf")
+            True
+            >>> paper.to_filename(".json").endswith(".json")
+            True
+            >>> paper.to_filename() == paper.hash()
+            True
+
+            ```
+        """
+        return f"{self.hash()}{extension}"
