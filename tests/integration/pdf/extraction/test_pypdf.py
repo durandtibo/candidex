@@ -29,24 +29,34 @@ def multi_page_pdf(tmp_path: Path) -> Path:
 ####################################
 
 
+@pypdf_available
 def test_pypdf_extractor_integration_single_page(single_page_pdf: Path) -> None:
     extractor = PyPdfExtractor()
     assert extractor.extract(single_page_pdf) == "Hello from page one."
 
 
+@pypdf_available
 def test_pypdf_extractor_integration_multiple_pages(multi_page_pdf: Path) -> None:
     extractor = PyPdfExtractor()
     assert extractor.extract(multi_page_pdf) == "Page one text.\fPage two text.\fPage three text."
 
 
+@pypdf_available
 def test_pypdf_extractor_integration_max_pages_one(multi_page_pdf: Path) -> None:
     extractor = PyPdfExtractor(max_pages=1)
     assert extractor.extract(multi_page_pdf) == "Page one text."
 
 
+@pypdf_available
 def test_pypdf_extractor_integration_max_pages_two(multi_page_pdf: Path) -> None:
     extractor = PyPdfExtractor(max_pages=2)
     assert extractor.extract(multi_page_pdf) == "Page one text.\fPage two text."
+
+
+@pypdf_not_available
+def test_pypdf_extractor_without_pypdf() -> None:
+    with pytest.raises(RuntimeError, match=r"'pypdf' package is required but not installed."):
+        PyPdfExtractor()
 
 
 ########################################
@@ -56,7 +66,7 @@ def test_pypdf_extractor_integration_max_pages_two(multi_page_pdf: Path) -> None
 
 @pypdf_available
 def test_extract_text_pypdf_single_page_exact_output(single_page_pdf: Path) -> None:
-    assert extract_text_pypdf(single_page_pdf) == "Hello world"
+    assert extract_text_pypdf(single_page_pdf) == "Hello from page one."
 
 
 @pypdf_available
