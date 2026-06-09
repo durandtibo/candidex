@@ -29,7 +29,7 @@ def authors_to_dataframe(
     compatibility. Optionally includes a column with the author's hash-based ID.
 
     Args:
-        authors:    A sequence of `Author` objects to convert.
+        authors: A sequence of `Author` objects to convert.
         include_id: If True, includes an `author_id` column containing the
                     SHA-256 hash of each author as returned by `Author.hash()`.
                     Defaults to False.

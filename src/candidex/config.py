@@ -18,25 +18,24 @@ job. Override with a lower value in latency-sensitive or cost-sensitive
 contexts.
 """
 
-
 @dataclass(frozen=True)
 class ChatModelConfig:
     r"""A generic LLM configuration.
 
     Attributes:
-        model:         The model identifier string passed to ``init_chat_model``
+        model: The model identifier string passed to ``init_chat_model``
                        (e.g. ``"openai:gpt-4o"`` or ``"ollama:gemma3:1b"``).
         system_prompt: The system prompt that instructs the LLM on its
                        role and task.
-        batch_size:    Number of examples to process concurrently per
+        batch_size: Number of examples to process concurrently per
                        inference batch. Defaults to ``1``.
-        max_retries:   Maximum number of retries on failed LLM calls.
+        max_retries: Maximum number of retries on failed LLM calls.
                        Defaults to ``MAX_RETRIES_DEFAULT`` (9999). Set
                        deliberately high to survive transient failures in
                        long-running batch jobs.
-        temperature:   Sampling temperature passed to the LLM. Set to
+        temperature: Sampling temperature passed to the LLM. Set to
                        ``0.0`` for deterministic outputs. Defaults to ``0.0``.
-        init_kwargs:   Optional extra keyword arguments forwarded to
+        init_kwargs: Optional extra keyword arguments forwarded to
                        ``init_chat_model``. Defaults to ``None``.
     """
 

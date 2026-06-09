@@ -36,8 +36,8 @@ def download_paper(url: str, dest: Path, timeout: int = 30) -> bool:
     function safe to call repeatedly without re-downloading completed files.
 
     Args:
-        url:     Direct URL to the file to download.
-        dest:    Full destination path including filename, e.g.
+        url: Direct URL to the file to download.
+        dest: Full destination path including filename, e.g.
                  Path("papers/attention_is_all_you_need.pdf").
                  Parent directories must already exist.
         timeout: Request timeout in seconds. Defaults to 30.
@@ -86,11 +86,11 @@ def download_papers(
     entire batch.
 
     Args:
-        urls:        List of direct file URLs to download. Empty strings and
+        urls: List of direct file URLs to download. Empty strings and
                      duplicates are silently skipped.
         output_path: Directory to save downloaded files into. Created
                      automatically if it does not exist.
-        timeout:     Per-request timeout in seconds. Defaults to 30.
+        timeout: Per-request timeout in seconds. Defaults to 30.
         max_workers: Maximum number of concurrent download threads. Defaults
                      to 5. Increase for faster downloads on a fast connection;
                      reduce if the server rate-limits parallel requests.

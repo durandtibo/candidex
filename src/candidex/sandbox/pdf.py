@@ -47,7 +47,7 @@ def extract_first_page_text(pdf_path: Path) -> str:
 
     Raises:
         FileNotFoundError: If the PDF does not exist at `pdf_path`.
-        PDFReadError:      If the file is not a valid PDF, has no pages,
+        PDFReadError: If the file is not a valid PDF, has no pages,
                            or yields no extractable text on the first page
                            (e.g. scanned image without OCR).
     """
@@ -81,10 +81,10 @@ def remove_unreadable_pdfs(
     also removed from the returned DataFrame without attempting deletion.
 
     Args:
-        papers:      Polars DataFrame produced by `scrape_cvpr_papers` or
+        papers: Polars DataFrame produced by `scrape_cvpr_papers` or
                      equivalent. Must contain a column named by `PAPER_STEM`
                      with the PDF filename stem for each paper.
-        pdf_dir:     Directory where the PDF files are stored. Each PDF must
+        pdf_dir: Directory where the PDF files are stored. Each PDF must
                      be named `{stem}.pdf`.
         max_workers: Maximum number of concurrent threads for PDF reading.
                      Defaults to 4.

@@ -18,7 +18,7 @@ def make_pdf(path: Path, texts: list[str]) -> Path:
     as a single cell on its own page using Helvetica 12pt.
 
     Args:
-        path:  Destination path for the PDF file. Parent directory must
+        path: Destination path for the PDF file. Parent directory must
                exist.
         texts: List of strings to write, one per page.
 
