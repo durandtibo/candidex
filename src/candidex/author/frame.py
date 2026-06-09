@@ -38,12 +38,12 @@ def add_author_column(
     Authors not present in `data` are mapped to null.
 
     Args:
-        frame:       A Polars DataFrame containing an `AUTHOR_ID` column as
+        frame: A Polars DataFrame containing an `AUTHOR_ID` column as
                      returned by `authors_to_dataframe` with `include_id=True`.
-        data:        A dictionary mapping each `Author` to the value to add.
+        data: A dictionary mapping each `Author` to the value to add.
                      Authors not present in the dictionary are mapped to null.
         column_name: Name of the new column to add.
-        dtype:       Polars data type of the new column (e.g. `pl.List(pl.String)`).
+        dtype: Polars data type of the new column (e.g. `pl.List(pl.String)`).
 
     Returns:
         The input DataFrame with an additional column named `column_name`
@@ -91,7 +91,7 @@ def add_openreview_profile_ids_to_dataframe(
     `AUTHOR_OPENREVIEW_PROFILE_ID` column of type `List[String]`.
 
     Args:
-        frame:                 A Polars DataFrame containing an `AUTHOR_ID`
+        frame: A Polars DataFrame containing an `AUTHOR_ID`
                                column as returned by `authors_to_dataframe`
                                with `include_id=True`.
         profile_ids_by_author: A dictionary mapping each `Author` to their
@@ -138,10 +138,10 @@ def add_openreview_profiles_to_dataframe(
     `AUTHOR_OPENREVIEW_PROFILE` column of type `Object`.
 
     Args:
-        frame:               A Polars DataFrame containing an `AUTHOR_ID`
+        frame: A Polars DataFrame containing an `AUTHOR_ID`
                              column as returned by `authors_to_dataframe`
                              with `include_id=True`.
-        profiles_by_author:  A dictionary mapping each `Author` to their
+        profiles_by_author: A dictionary mapping each `Author` to their
                              list of `Profile` objects, or None if the
                              lookup failed. As returned by
                              `extract_profiles_by_author`.

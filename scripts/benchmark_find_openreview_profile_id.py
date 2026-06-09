@@ -93,7 +93,7 @@ def _evaluate_sample(
       Returning any IDs is a false positive and is reported as UNEXPECTED.
 
     Args:
-        index:  The original index of the sample in the dataset, used to
+        index: The original index of the sample in the dataset, used to
                 reassemble results in order after concurrent execution.
         sample: The `Sample` instance to evaluate.
         client: An authenticated `OpenReviewClient` instance shared across
@@ -188,7 +188,7 @@ def _run_evaluation(
     Returns None if the client cannot be created.
 
     Args:
-        samples:     List of `Sample` instances to evaluate.
+        samples: List of `Sample` instances to evaluate.
         max_workers: Maximum number of concurrent threads.
 
     Returns:
@@ -241,7 +241,7 @@ def evaluate(samples: list[Sample], max_workers: int = 4) -> None:
     a summary.
 
     Args:
-        samples:     A list of `Sample` instances to evaluate.
+        samples: A list of `Sample` instances to evaluate.
         max_workers: Maximum number of concurrent threads. Defaults to 4.
     """
     results = _run_evaluation(samples, max_workers=max_workers)

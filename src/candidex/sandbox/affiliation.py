@@ -88,12 +88,12 @@ def extract_affiliations(
 
     Args:
         pdf_path: Path to the PDF file to extract affiliations from.
-        llm:      Any LangChain-compatible chat model. The caller is responsible
+        llm: Any LangChain-compatible chat model. The caller is responsible
                   for initialising and configuring it, e.g.:
                       ChatAnthropic(model="claude-3-5-sonnet-20241022")
                       ChatOpenAI(model="gpt-4o")
                       ChatGoogleGenerativeAI(model="gemini-1.5-pro")
-        authors:  Optional list of known author names for this paper, typically
+        authors: Optional list of known author names for this paper, typically
                   taken from the `authors` column of the papers DataFrame. When
                   provided, the LLM uses it to verify completeness, resolve
                   ambiguous name formats, and anchor affiliation markers more
@@ -166,15 +166,15 @@ def extract_and_save_paper_affiliations(
     papers concurrently by submitting this function to a thread pool.
 
     Args:
-        row:             A single row from the papers DataFrame as a dict.
+        row: A single row from the papers DataFrame as a dict.
                          Must contain a key matching `PAPER_STEM` with the
                          PDF filename stem, and an `authors` key with the
                          list of author names.
-        pdf_dir:         Directory where the PDF files are stored. The PDF
+        pdf_dir: Directory where the PDF files are stored. The PDF
                          must be named `{stem}.pdf`.
         affiliation_dir: Directory where the affiliation JSON file will be
                          written. Must already exist.
-        llm:             Any LangChain-compatible chat model. The caller is
+        llm: Any LangChain-compatible chat model. The caller is
                          responsible for initialising and configuring it.
 
     Raises:
@@ -231,22 +231,22 @@ def extract_and_save_affiliations(
     object with `authors`, `affiliations`, and `email` keys.
 
     Args:
-        papers:          Polars DataFrame produced by `scrape_cvpr_papers` or
+        papers: Polars DataFrame produced by `scrape_cvpr_papers` or
                          equivalent. Must contain a column named by `PAPER_STEM`
                          with the PDF filename stem (i.e. without the `.pdf`
                          extension), and an `authors` column with the list of
                          author names for each paper.
-        pdf_dir:         Directory where the PDF files are stored. Each PDF must
+        pdf_dir: Directory where the PDF files are stored. Each PDF must
                          be named `{stem}.pdf` where `stem` matches the value in
                          the `PAPER_STEM` column.
         affiliation_dir: Directory where affiliation JSON files will be written.
                          Created automatically if it does not exist. Output files
                          are named `{stem}.json` to match their source PDF.
-        llm:             Any LangChain-compatible chat model. The caller is
+        llm: Any LangChain-compatible chat model. The caller is
                          responsible for initialising and configuring it, e.g.:
                              ChatAnthropic(model="claude-3-5-sonnet-20241022")
                              ChatOpenAI(model="gpt-4o")
-        max_workers:     Maximum number of concurrent threads for LLM calls.
+        max_workers: Maximum number of concurrent threads for LLM calls.
                          Defaults to 4. Reduce if hitting API rate limits.
 
     Example:
@@ -293,7 +293,7 @@ def load_affiliations(papers: pl.DataFrame, affiliation_dir: Path) -> dict[str, 
     extraction step.
 
     Args:
-        papers:          Polars DataFrame produced by `scrape_cvpr_papers` or
+        papers: Polars DataFrame produced by `scrape_cvpr_papers` or
                          equivalent. Must contain a column named by `PAPER_STEM`
                          with the PDF filename stem (i.e. without the `.pdf`
                          extension) for each paper.

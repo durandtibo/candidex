@@ -25,14 +25,14 @@ class AuthorExtraction(BaseModel):
     often linked to author names via superscript numbers or symbols.
 
     Attributes:
-        author:       Full name of the author exactly as it appears on the paper
+        author: Full name of the author exactly as it appears on the paper
                       (e.g. 'Jane Smith', 'J. Smith'). Do not normalise or infer
                       missing name parts.
         affiliations: List of institutional affiliations for this author. Each
                       entry should be a complete affiliation string as it appears
                       on the paper (e.g. 'MIT CSAIL, Cambridge, MA, USA').
                       Use an empty list if no affiliation can be determined.
-        email:        Email address of the author if explicitly stated on the
+        email: Email address of the author if explicitly stated on the
                       paper. None if not present or not determinable. Do not
                       infer or construct email addresses from names or affiliations.
     """

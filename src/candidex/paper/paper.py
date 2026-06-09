@@ -27,12 +27,12 @@ class Paper:
     with automatic normalization of unicode characters and whitespace.
 
     Attributes:
-        title:   Title of the paper, unicode-normalized and stripped.
+        title: Title of the paper, unicode-normalized and stripped.
         authors: Tuple of author names, each unicode-normalized and stripped.
                  None if authors are not available.
-        venue:   Venue where the paper was published (e.g. 'CVPR', 'NeurIPS'),
+        venue: Venue where the paper was published (e.g. 'CVPR', 'NeurIPS'),
                  unicode-normalized and stripped. None if not available.
-        year:    Year the paper was published. None if not available.
+        year: Year the paper was published. None if not available.
         pdf_url: URL of the paper's PDF, stripped of whitespace.
                  None if not available.
     """
@@ -99,11 +99,11 @@ class Paper:
         directly to ensure consistent normalization.
 
         Args:
-            title:   Title of the paper.
+            title: Title of the paper.
             authors: Sequence of author names, or None if not available.
-            venue:   Venue where the paper was published (e.g. 'CVPR'),
+            venue: Venue where the paper was published (e.g. 'CVPR'),
                      or None if not available.
-            year:    Year the paper was published, or None if not available.
+            year: Year the paper was published, or None if not available.
             pdf_url: URL of the paper's PDF, or None if not available.
 
         Returns:

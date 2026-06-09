@@ -63,8 +63,8 @@ def fetch_page(url: str, timeout: int = 30, max_retries: int = 3) -> str:
     1s, 2s, 4s, ... up to `max_retries` attempts.
 
     Args:
-        url:         The full URL to fetch.
-        timeout:     Request timeout in seconds per attempt. Defaults to 30.
+        url: The full URL to fetch.
+        timeout: Request timeout in seconds per attempt. Defaults to 30.
         max_retries: Maximum number of retry attempts on failure. Defaults to 3.
                      Set to 0 to disable retries.
 
@@ -112,7 +112,7 @@ def parse_paper_entries(html: str, limit: int | None = None) -> list[Tag]:
     which acts as the anchor for the title, authors, and PDF link.
 
     Args:
-        html:  Raw HTML string of the CVPR listing page.
+        html: Raw HTML string of the CVPR listing page.
         limit: Maximum number of entries to return. If None, returns all found.
                Useful for quick tests or partial scrapes without fetching extra pages.
 
@@ -139,7 +139,7 @@ def parse_paper(dt: Tag, base_url: str = BASE_URL) -> dict[str, Any]:
     including the PDF download.
 
     Args:
-        dt:       The <dt class='ptitle'> Tag for a single paper entry.
+        dt: The <dt class='ptitle'> Tag for a single paper entry.
         base_url: Root URL used to resolve relative hrefs. Defaults to BASE_URL.
 
     Returns:
@@ -213,10 +213,10 @@ def scrape_cvpr_papers(
     rather than silently returning an empty result.
 
     Args:
-        url:      Full URL of the CVPR listing page, e.g.
+        url: Full URL of the CVPR listing page, e.g.
                   'https://openaccess.thecvf.com/CVPR2024?day=all'.
         base_url: Root URL for resolving relative hrefs. Defaults to BASE_URL.
-        limit:    Maximum number of papers to scrape. Defaults to 100.
+        limit: Maximum number of papers to scrape. Defaults to 100.
                   Pass None to scrape the full listing (typically 2000+ papers).
 
     Returns:
@@ -273,11 +273,11 @@ def find_and_save_papers(
     network-independent.
 
     Args:
-        url:      Full URL of the CVPR listing page to scrape, e.g.
+        url: Full URL of the CVPR listing page to scrape, e.g.
                   'https://openaccess.thecvf.com/CVPR2024?day=all'.
         filepath: Path where the Parquet file will be read from or written
                   to. Parent directory must already exist.
-        limit:    Maximum number of papers to scrape. Defaults to 100.
+        limit: Maximum number of papers to scrape. Defaults to 100.
                   Pass None to scrape the full listing (typically 2000+ papers).
 
     Returns:

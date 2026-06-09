@@ -70,7 +70,7 @@ def extract_text_pypdf(pdf_path: Path, max_pages: int | None = None) -> str:
     into individual pages use `text.split("\\f")`.
 
     Args:
-        pdf_path:  Path to the PDF file to extract text from.
+        pdf_path: Path to the PDF file to extract text from.
         max_pages: Maximum number of pages to extract. If None, all pages
                    are extracted. Useful for extracting only the first page
                    (e.g. for affiliation extraction from paper headers).
@@ -82,7 +82,7 @@ def extract_text_pypdf(pdf_path: Path, max_pages: int | None = None) -> str:
 
     Raises:
         FileNotFoundError: If `pdf_path` does not exist.
-        PdfReadError:      If the PDF is encrypted or malformed.
+        PdfReadError: If the PDF is encrypted or malformed.
 
     Example:
         ```pycon

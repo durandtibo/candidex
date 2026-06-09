@@ -79,12 +79,12 @@ def find_author_profile_ids(
         affiliation filtering is applied.
 
     Args:
-        name:        Full name of the author to search for.
+        name: Full name of the author to search for.
         affiliation: Institutional affiliation to filter by (e.g. 'MIT CSAIL').
-        email:       Optional email address used as an additional filter.
-        mode:        Filtering mode controlling how affiliation and email
+        email: Optional email address used as an additional filter.
+        mode: Filtering mode controlling how affiliation and email
                      filters are combined. Defaults to `FilterMode.ANY`.
-        client:      An authenticated `OpenReviewClient` instance. If not
+        client: An authenticated `OpenReviewClient` instance. If not
                      provided, one is created via `create_client()` using
                      the `OPENREVIEW_USERNAME` and `OPENREVIEW_PASSWORD`
                      environment variables.
@@ -161,10 +161,10 @@ def load_or_fetch_profile_ids(
     created or the lookup fails.
 
     Args:
-        author:           The `Author` to look up.
+        author: The `Author` to look up.
         profile_ids_dir: Directory where profile ID JSON files are stored.
                           Must already exist.
-        client:           An authenticated `OpenReviewClient` instance. If
+        client: An authenticated `OpenReviewClient` instance. If
                           not provided, one is created via `create_client()`
                           using the `OPENREVIEW_USERNAME` and
                           `OPENREVIEW_PASSWORD` environment variables.
@@ -228,15 +228,15 @@ def extract_profile_ids_by_author(
     pool to reduce total wall time.
 
     Args:
-        authors:           Sequence of `Author` objects to look up.
-        profile_ids_dir:  Directory where profile ID JSON files will be
+        authors: Sequence of `Author` objects to look up.
+        profile_ids_dir: Directory where profile ID JSON files will be
                            saved. Created automatically if it does not exist.
                            Each file is named `{author.hash()}.json`.
-        client:            An authenticated `OpenReviewClient` instance. If
+        client: An authenticated `OpenReviewClient` instance. If
                            not provided, one is created via `create_client()`
                            using environment variables. The same client is
                            reused across all threads.
-        max_workers:       Maximum number of concurrent threads. Defaults to
+        max_workers: Maximum number of concurrent threads. Defaults to
                            4. Reduce if hitting OpenReview API rate limits.
 
     Returns:
