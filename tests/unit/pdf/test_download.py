@@ -6,12 +6,12 @@ from unittest.mock import Mock, patch
 import pytest
 import requests
 
-from candidex.utils.download import download_pdf
+from candidex.pdf.download import download_pdf
 
 if TYPE_CHECKING:
     from pathlib import Path
 
-MODULE = "candidex.utils.download.pdf"
+MODULE = "candidex.pdf.download"
 
 
 # --- Fixtures ---
