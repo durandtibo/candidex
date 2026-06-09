@@ -71,7 +71,7 @@ def dataframe_to_papers(frame: pl.DataFrame) -> list[Paper]:
         >>> papers[0].title
         'Attention Is All You Need'
         >>> papers[0].authors
-        ('Jane Smith', 'Noam Shazeer')
+        ('Jane Smith', 'John Doe')
 
         ```
     """
@@ -130,8 +130,7 @@ def papers_to_dataframe(
                                             if `include_id=True`.
 
     Example:
-        >>> from candidex.schemas.paper import Paper
-        >>> from candidex.paper import papers_to_dataframe
+        >>> from candidex.paper import Paper, papers_to_dataframe
         >>> papers = [
         ...     Paper.from_raw(
         ...         title="Attention Is All You Need",
@@ -143,9 +142,9 @@ def papers_to_dataframe(
         ... ]
         >>> df_papers = papers_to_dataframe(papers)
         >>> df_papers.columns
-        shape: (1, 5)
-        >>> df_papers
-        shape: (1, 5)
+        ['paper_title', 'paper_authors', 'paper_venue', 'paper_year', 'paper_url']
+        >>> df_papers.shape
+        (1, 5)
 
         ...
     """

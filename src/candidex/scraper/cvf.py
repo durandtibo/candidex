@@ -348,7 +348,7 @@ def load_or_scrape_papers(
         >>> df = load_or_scrape_papers(
         ...     venue="CVPR", year=2024, cache_dir=Path("data/papers")
         ... )  # doctest: +SKIP
-        >>> df = load_or_scrape_papers(venue="CVPR", year=2024)  # doctest: +SKIP — no caching
+        >>> df = load_or_scrape_papers(venue="CVPR", year=2024)  # doctest: +SKIP
 
         ```
     """
