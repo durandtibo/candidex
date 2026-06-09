@@ -18,7 +18,6 @@ job. Override with a lower value in latency-sensitive or cost-sensitive
 contexts.
 """
 
-
 @dataclass(frozen=True)
 class ChatModelConfig:
     r"""A generic LLM configuration.
