@@ -48,7 +48,6 @@ pdfminer_not_available: pytest.MarkDecorator = pytest.mark.skipif(
 )
 """Skip the test if the ``pdfminer`` package is installed."""
 
-
 pdfplumber_available: pytest.MarkDecorator = pytest.mark.skipif(
     not is_pdfplumber_available(), reason="Requires pdfplumber"
 )
