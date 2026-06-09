@@ -63,8 +63,10 @@ dependencies = [
 
 [project.optional-dependencies]
 colorlog = ["colorlog >=6.10,<7.0"]
+pdfminer = ["pdfminer.six >=20251230"]
 pdfplumber = ["pdfplumber >=0.11.9,<1.0",]
 pypdf = ["pypdf >=6.13,<7.0"]
+pypdfium2 = ["pypdfium2 >=5.9,<6.0"]
 
 [dependency-groups]
 dev = [
