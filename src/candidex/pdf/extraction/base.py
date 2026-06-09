@@ -49,5 +49,5 @@ class BasePdfExtractor(ABC):
         Raises:
             FileNotFoundError: If `pdf_path` does not exist.
             Exception: Subclass-specific exceptions may be raised
-                               for malformed, encrypted, or unreadable PDFs.
+                for malformed, encrypted, or unreadable PDFs.
         """

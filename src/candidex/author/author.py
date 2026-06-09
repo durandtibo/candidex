@@ -29,9 +29,9 @@ class Author:
     Attributes:
         name: Full name of the author, unicode-normalized and stripped.
         affiliations: Tuple of institutional affiliations, each unicode-normalized.
-                      None if no affiliation information is available.
+            None if no affiliation information is available.
         email: Email address of the author, stripped of whitespace.
-                      None if not available.
+            None if not available.
     """
 
     name: str

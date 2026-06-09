@@ -66,7 +66,7 @@ def fetch_page(url: str, timeout: int = 30, max_retries: int = 3) -> str:
         url: The full URL to fetch.
         timeout: Request timeout in seconds per attempt. Defaults to 30.
         max_retries: Maximum number of retry attempts on failure. Defaults to 3.
-                     Set to 0 to disable retries.
+            Set to 0 to disable retries.
 
     Returns:
         The raw HTML string of the page.
@@ -114,7 +114,7 @@ def parse_paper_entries(html: str, limit: int | None = None) -> list[Tag]:
     Args:
         html: Raw HTML string of the CVPR listing page.
         limit: Maximum number of entries to return. If None, returns all found.
-               Useful for quick tests or partial scrapes without fetching extra pages.
+            Useful for quick tests or partial scrapes without fetching extra pages.
 
     Returns:
         A list of <dt> Tag objects, one per paper, up to `limit`.
@@ -144,13 +144,13 @@ def parse_paper(dt: Tag, base_url: str = BASE_URL) -> dict[str, Any]:
 
     Returns:
         A dict with keys:
-            - title      (str):       Paper title.
-            - paper_url  (str):       Absolute URL to the paper's HTML page.
-                                      Empty string if no link is found.
-            - pdf_url    (str):       Absolute URL to the PDF file.
-                                      Empty string if no PDF link is found.
-            - authors    (list[str]): Author names parsed from the first <dd>.
-                                      Empty list if the <dd> is missing.
+                - title      (str):       Paper title.
+                - paper_url  (str):       Absolute URL to the paper's HTML page.
+                Empty string if no link is found.
+                - pdf_url    (str):       Absolute URL to the PDF file.
+                Empty string if no PDF link is found.
+                - authors    (list[str]): Author names parsed from the first <dd>.
+                Empty list if the <dd> is missing.
     """
     # Title and paper URL from the <a> tag inside <dt>
     a_tag = dt.find("a")
@@ -214,17 +214,17 @@ def scrape_cvpr_papers(
 
     Args:
         url: Full URL of the CVPR listing page, e.g.
-                  'https://openaccess.thecvf.com/CVPR2024?day=all'.
+            'https://openaccess.thecvf.com/CVPR2024?day=all'.
         base_url: Root URL for resolving relative hrefs. Defaults to BASE_URL.
         limit: Maximum number of papers to scrape. Defaults to 100.
-                  Pass None to scrape the full listing (typically 2000+ papers).
+            Pass None to scrape the full listing (typically 2000+ papers).
 
     Returns:
         A Polars DataFrame with columns:
-            - title      (String):       Paper title.
-            - paper_url  (String):       URL to the paper's HTML page on CVF.
-            - pdf_url    (String):       Direct URL to the paper's PDF.
-            - authors    (List[String]): Author names.
+                - title      (String):       Paper title.
+                - paper_url  (String):       URL to the paper's HTML page on CVF.
+                - pdf_url    (String):       Direct URL to the paper's PDF.
+                - authors    (List[String]): Author names.
 
     Raises:
         requests.exceptions.RequestException: On any network or HTTP error.
@@ -274,18 +274,18 @@ def find_and_save_papers(
 
     Args:
         url: Full URL of the CVPR listing page to scrape, e.g.
-                  'https://openaccess.thecvf.com/CVPR2024?day=all'.
+            'https://openaccess.thecvf.com/CVPR2024?day=all'.
         filepath: Path where the Parquet file will be read from or written
-                  to. Parent directory must already exist.
+            to. Parent directory must already exist.
         limit: Maximum number of papers to scrape. Defaults to 100.
-                  Pass None to scrape the full listing (typically 2000+ papers).
+            Pass None to scrape the full listing (typically 2000+ papers).
 
     Returns:
         A Polars DataFrame with columns as returned by `scrape_cvpr_papers`:
-            - title      (String):       Paper title.
-            - paper_url  (String):       URL to the paper's HTML page on CVF.
-            - pdf_url    (String):       Direct URL to the paper's PDF.
-            - authors    (List[String]): Author names.
+                - title      (String):       Paper title.
+                - paper_url  (String):       URL to the paper's HTML page on CVF.
+                - pdf_url    (String):       Direct URL to the paper's PDF.
+                - authors    (List[String]): Author names.
 
     Raises:
         requests.exceptions.RequestException: If the scrape fails due to a

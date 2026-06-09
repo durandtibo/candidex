@@ -40,19 +40,19 @@ def download_pdf(
     Args:
         url: Direct URL to the PDF to download.
         pdf_path: Full destination path including filename, e.g.
-                     Path("papers/attention_is_all_you_need.pdf").
-                     Parent directories are created automatically if they
-                     do not exist.
+            Path("papers/attention_is_all_you_need.pdf").
+            Parent directories are created automatically if they
+            do not exist.
         timeout: Request timeout in seconds. Defaults to 30.
         chunk_size: Number of bytes per chunk when streaming the response.
-                     Larger values use more memory but may be faster on fast
-                     connections. Defaults to 8192.
+            Larger values use more memory but may be faster on fast
+            connections. Defaults to 8192.
         max_retries: Maximum number of retry attempts on transient failures
-                     (429, 500, 502, 503, 504) with exponential backoff.
-                     Defaults to 3. Ignored if `session` is provided.
+            (429, 500, 502, 503, 504) with exponential backoff.
+            Defaults to 3. Ignored if `session` is provided.
         session: An optional `requests.Session` instance to reuse. If
-                     not provided, a new session is created via
-                     `create_session` and closed after the request completes.
+            not provided, a new session is created via
+            `create_session` and closed after the request completes.
 
     Returns:
         True if the file was downloaded successfully or already exists.

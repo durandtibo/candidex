@@ -38,8 +38,8 @@ def download_paper(url: str, dest: Path, timeout: int = 30) -> bool:
     Args:
         url: Direct URL to the file to download.
         dest: Full destination path including filename, e.g.
-                 Path("papers/attention_is_all_you_need.pdf").
-                 Parent directories must already exist.
+            Path("papers/attention_is_all_you_need.pdf").
+            Parent directories must already exist.
         timeout: Request timeout in seconds. Defaults to 30.
 
     Returns:
@@ -87,22 +87,22 @@ def download_papers(
 
     Args:
         urls: List of direct file URLs to download. Empty strings and
-                     duplicates are silently skipped.
+            duplicates are silently skipped.
         output_path: Directory to save downloaded files into. Created
-                     automatically if it does not exist.
+            automatically if it does not exist.
         timeout: Per-request timeout in seconds. Defaults to 30.
         max_workers: Maximum number of concurrent download threads. Defaults
-                     to 5. Increase for faster downloads on a fast connection;
-                     reduce if the server rate-limits parallel requests.
+            to 5. Increase for faster downloads on a fast connection;
+            reduce if the server rate-limits parallel requests.
 
     Returns:
         A Polars DataFrame summarising the result of each download attempt,
         with columns:
-            - url     (String):  The original URL.
-            - dest    (String):  Absolute path to the file on disk. Empty
-                                 string if the download failed.
-            - success (Boolean): True if the file is present on disk after
-                                 the attempt (downloaded or already existed).
+                - url     (String):  The original URL.
+                - dest    (String):  Absolute path to the file on disk. Empty
+                string if the download failed.
+                - success (Boolean): True if the file is present on disk after
+                the attempt (downloaded or already existed).
 
     Example:
         >>> df = scrape_cvpr_papers("https://openaccess.thecvf.com/CVPR2024?day=all")

@@ -19,7 +19,7 @@ def make_pdf(path: Path, texts: list[str]) -> Path:
 
     Args:
         path: Destination path for the PDF file. Parent directory must
-               exist.
+            exist.
         texts: List of strings to write, one per page.
 
     Returns:

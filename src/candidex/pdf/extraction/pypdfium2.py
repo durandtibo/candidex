@@ -30,7 +30,7 @@ class PyPdfium2Extractor(BasePdfExtractor):
 
     Args:
         max_pages: Maximum number of pages to extract. If None, all
-                   pages are extracted. Defaults to None.
+            pages are extracted. Defaults to None.
 
     Raises:
         RuntimeError: If `pypdf` is not installed.
@@ -75,8 +75,8 @@ def extract_text_pypdfium2(
     Args:
         pdf_path: Path to the PDF file to extract text from.
         max_pages: Maximum number of pages to extract. If None, all pages
-                   are extracted. Useful for extracting only the first page
-                   (e.g. for affiliation extraction from paper headers).
+            are extracted. Useful for extracting only the first page
+            (e.g. for affiliation extraction from paper headers).
 
     Returns:
         A single string containing the extracted text from all pages,

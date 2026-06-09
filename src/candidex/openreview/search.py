@@ -33,9 +33,9 @@ def search_profiles_by_name(
     Args:
         name: The name to search for. Whitespace is stripped before querying.
         client: An authenticated `OpenReviewClient` instance. If not provided,
-                one is created via `create_client()` using the
-                `OPENREVIEW_USERNAME` and `OPENREVIEW_PASSWORD` environment
-                variables.
+            one is created via `create_client()` using the
+            `OPENREVIEW_USERNAME` and `OPENREVIEW_PASSWORD` environment
+            variables.
 
     Returns:
         A list of `openreview.Profile` objects matching the search term.

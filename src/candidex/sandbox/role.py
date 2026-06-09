@@ -59,9 +59,9 @@ class AuthorRole(BaseModel):
         name: Full name of the author as it appears on the paper.
         affiliation: Known institutional affiliation taken from the paper.
         role: Current academic role from the `AcademicRole` enum.
-                        Use AcademicRole.UNKNOWN if the role cannot be determined
-                        from search results. AcademicRole.MISSING is reserved for
-                        system use only and must never be assigned by the LLM.
+            Use AcademicRole.UNKNOWN if the role cannot be determined
+            from search results. AcademicRole.MISSING is reserved for
+            system use only and must never be assigned by the LLM.
         phd_start_year: 4-digit year the PhD started (e.g. '2019').
         phd_end_year: 4-digit year the PhD was completed (e.g. '2023').
         phd_domain: Research field of the PhD (e.g. 'Computer Vision').
@@ -273,13 +273,13 @@ def _run_searches(
 
     Args:
         author: An `AuthorAffiliation` object containing the author's
-                        name and known affiliations.
+            name and known affiliations.
         max_retries: Maximum number of retry attempts per query on timeout
-                        or connectivity errors. Defaults to 3.
+            or connectivity errors. Defaults to 3.
         backoff_factor: Multiplier for the wait time between retries.
-                        Wait times are: 2s, 4s, 8s, ... Defaults to 2.0.
+            Wait times are: 2s, 4s, 8s, ... Defaults to 2.0.
         max_workers: Maximum number of concurrent threads. Defaults to 3
-                        to avoid rate limiting from DuckDuckGo.
+            to avoid rate limiting from DuckDuckGo.
 
     Returns:
         A formatted string of search results from all queries, separated by
@@ -336,9 +336,9 @@ def find_author_role(author: AuthorAffiliation, llm: BaseChatModel) -> AuthorRol
 
     Args:
         author: An `AuthorAffiliation` object containing the author's name and
-                known affiliations from the paper.
+            known affiliations from the paper.
         llm: Any LangChain-compatible chat model with structured output support.
-                The caller is responsible for initialising and configuring it.
+            The caller is responsible for initialising and configuring it.
 
     Returns:
         An `AuthorRole` object with the author's current role, PhD details,
@@ -398,14 +398,14 @@ def find_authors_role(
 
     Args:
         affiliations: A `PaperAffiliations` object as returned by
-                      `extract_affiliations`, containing each author's name
-                      and known affiliations.
+            `extract_affiliations`, containing each author's name
+            and known affiliations.
         llm: Any LangChain-compatible chat model with structured output
-                      support. The caller is responsible for initialising and
-                      configuring it.
+            support. The caller is responsible for initialising and
+            configuring it.
         search: A `DuckDuckGoSearchRun` instance. Defaults to a new
-                      instance if not provided. Override to inject a mock
-                      for testing.
+            instance if not provided. Override to inject a mock
+            for testing.
 
     Returns:
         A list of `AuthorRole` objects, one per author. Authors for whom the
@@ -485,19 +485,19 @@ def find_and_save_authors_role(
 
     Args:
         papers: Polars DataFrame produced by `scrape_cvpr_papers` or
-                          equivalent. Must contain a column named by `PAPER_STEM`
-                          with the PDF filename stem for each paper.
+            equivalent. Must contain a column named by `PAPER_STEM`
+            with the PDF filename stem for each paper.
         affiliations_dir: Directory containing the affiliation JSON files produced
-                          by `extract_and_save_affiliations`. Each file must be
-                          named `{stem}.json` where `stem` matches `PAPER_STEM`.
+            by `extract_and_save_affiliations`. Each file must be
+            named `{stem}.json` where `stem` matches `PAPER_STEM`.
         role_dir: Directory where author role JSON files will be saved.
-                          Created automatically if it does not exist.
+            Created automatically if it does not exist.
         llm: Any LangChain-compatible chat model with structured output
-                          support. The caller is responsible for initialising and
-                          configuring it.
+            support. The caller is responsible for initialising and
+            configuring it.
         max_authors: Maximum number of authors to process per paper, taking
-                          the first N authors in the order they appear. Defaults
-                          to 20. Set to None to process all authors.
+            the first N authors in the order they appear. Defaults
+            to 20. Set to None to process all authors.
 
     Example:
         >>> from langchain_anthropic import ChatAnthropic
@@ -575,22 +575,22 @@ def retry_authors_role(
 
     Args:
         papers: Polars DataFrame produced by `scrape_cvpr_papers` or
-                     equivalent. Must contain a column named by `PAPER_STEM`
-                     with the PDF filename stem for each paper.
+            equivalent. Must contain a column named by `PAPER_STEM`
+            with the PDF filename stem for each paper.
         role_dir: Directory containing the role JSON files produced by
-                     `find_and_save_authors_role`. Each file must be named
-                     `{stem}.json` where `stem` matches `PAPER_STEM`. Files
-                     are updated in place.
+            `find_and_save_authors_role`. Each file must be named
+            `{stem}.json` where `stem` matches `PAPER_STEM`. Files
+            are updated in place.
         llm: Any LangChain-compatible chat model with structured output
-                     support. The caller is responsible for initialising and
-                     configuring it.
+            support. The caller is responsible for initialising and
+            configuring it.
         retry_role: The `AcademicRole` value that triggers a retry. Only
-                     authors whose current role matches this value will be
-                     re-processed. Defaults to `AcademicRole.MISSING`.
+            authors whose current role matches this value will be
+            re-processed. Defaults to `AcademicRole.MISSING`.
         max_authors: Maximum number of authors to consider per paper, taking
-                     the first N authors in the order they appear. Authors
-                     beyond this limit are left unchanged. Defaults to 20.
-                     Set to None to consider all authors.
+            the first N authors in the order they appear. Authors
+            beyond this limit are left unchanged. Defaults to 20.
+            Set to None to consider all authors.
 
     Example:
         >>> from langchain_anthropic import ChatAnthropic
@@ -669,13 +669,13 @@ def load_author_roles(papers: pl.DataFrame, role_dir: Path) -> dict[str, list[Au
 
     Args:
         papers: Polars DataFrame produced by `scrape_cvpr_papers` or
-                  equivalent. Must contain a column named by `PAPER_STEM`
-                  with the PDF filename stem (i.e. without the `.pdf`
-                  extension) for each paper.
+            equivalent. Must contain a column named by `PAPER_STEM`
+            with the PDF filename stem (i.e. without the `.pdf`
+            extension) for each paper.
         role_dir: Directory containing the role JSON files produced by
-                  `find_and_save_authors_role`. Each file must be named
-                  `{stem}.json` where `stem` matches the value in the
-                  `PAPER_STEM` column.
+            `find_and_save_authors_role`. Each file must be named
+            `{stem}.json` where `stem` matches the value in the
+            `PAPER_STEM` column.
 
     Returns:
         A dictionary mapping each paper stem to its list of `AuthorRole`

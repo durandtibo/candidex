@@ -57,9 +57,9 @@ def does_email_match_domain(email: str | None, domain: str | None) -> bool:
 
     Args:
         email: The email address to check (e.g. 'jane.smith@csail.mit.edu').
-                Returns False if None.
+            Returns False if None.
         domain: The domain to match against (e.g. 'mit.edu' or '@mit.edu').
-                Returns False if None.
+            Returns False if None.
 
     Returns:
         True if the email domain contains or is contained by the given

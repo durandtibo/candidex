@@ -26,9 +26,9 @@ def create_client(
 
     Args:
         username: OpenReview account username. If not provided, falls back
-                  to the `OPENREVIEW_USERNAME` environment variable.
+            to the `OPENREVIEW_USERNAME` environment variable.
         password: OpenReview account password. If not provided, falls back
-                  to the `OPENREVIEW_PASSWORD` environment variable.
+            to the `OPENREVIEW_PASSWORD` environment variable.
 
     Returns:
         An authenticated `OpenReviewClient` instance, or None if credentials

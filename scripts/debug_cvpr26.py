@@ -38,7 +38,7 @@ class PathConfig:
         paper_dir: Directory where paper metadata is stored.
         author_dir: Directory where author data is stored.
         paper_pdf_dir: Directory where downloaded paper PDFs are stored.
-                       Nested under `paper_dir`.
+            Nested under `paper_dir`.
 
     Example:
         >>> from pathlib import Path

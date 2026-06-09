@@ -21,8 +21,8 @@ def combine_hashes(hashes: Sequence[str]) -> str:
 
     Args:
         hashes: List of hex digest strings to combine, typically produced
-                by ``ChatModelConfig.hash()``. Order matters — the same
-                hashes in a different order produce a different result.
+            by ``ChatModelConfig.hash()``. Order matters — the same
+            hashes in a different order produce a different result.
 
     Returns:
         A 64-character lowercase hexadecimal SHA-256 digest string.

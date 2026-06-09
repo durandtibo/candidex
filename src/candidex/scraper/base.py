@@ -37,8 +37,8 @@ class BasePaperScraper(ABC):
 
         Returns:
             A Polars DataFrame with at least the following columns:
-                - `PAPER_TITLE`   (String):       Title of the paper.
-                - `PAPER_URL`     (String):       URL of the paper's page.
-                - `PAPER_PDF_URL` (String):       URL of the paper's PDF.
-                - `AUTHORS`       (List[String]): List of author names.
+                    - `PAPER_TITLE`   (String):       Title of the paper.
+                    - `PAPER_URL`     (String):       URL of the paper's page.
+                    - `PAPER_PDF_URL` (String):       URL of the paper's PDF.
+                    - `AUTHORS`       (List[String]): List of author names.
         """

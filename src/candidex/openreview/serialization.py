@@ -19,8 +19,8 @@ def deserialize_profiles(serialized: list[str | None]) -> list[Profile | None]:
 
     Args:
         serialized: A list of JSON strings or `None` values, each representing
-                    a serialized `openreview.Profile` or absence of a profile,
-                    as returned by `serialize_profiles`.
+            a serialized `openreview.Profile` or absence of a profile,
+            as returned by `serialize_profiles`.
 
     Returns:
         A list of `openreview.Profile` objects or `None` values in the same
@@ -63,7 +63,7 @@ def serialize_profiles(profiles: list[Profile | None]) -> list[str | None]:
 
     Args:
         profiles: A list of `openreview.Profile` objects or `None` values
-                  to serialize.
+            to serialize.
 
     Returns:
         A list of JSON strings or `None` values, one per profile, in the
