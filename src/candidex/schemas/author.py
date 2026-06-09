@@ -2,7 +2,7 @@ r"""Contain schemas for authors."""
 
 from __future__ import annotations
 
-__all__ = ["AuthorExtraction"]
+__all__ = ["AuthorExtraction", "PaperAuthorExtraction"]
 
 import logging
 from typing import Annotated
@@ -104,3 +104,27 @@ class AuthorExtraction(BaseModel):
             ```
         """
         return Author.from_raw(name=self.author, affiliations=self.affiliations, email=self.email)
+
+
+class PaperAuthorExtraction(BaseModel):
+    """Contains the full, ordered list of authors (alongside their
+    extracted affiliations and emails) for a single paper.
+
+    Extracted from the first page of an academic paper where author names and
+    their corresponding institutional affiliations are listed. Each author is
+    represented as an `AuthorExtraction` entry. Preserve the order of authors
+    exactly as they appear on the paper, as author order carries meaning in
+    academic publishing (e.g. first author, last/senior author).
+
+    Attributes:
+        authors: Ordered list of all authors and their affiliations. Must
+                 include every author listed on the paper without omission.
+                 Each entry maps one author to their affiliations.
+    """
+
+    authors: list[AuthorExtraction] = Field(
+        description=(
+            "Ordered list of all authors, preserving the order in which they appear on the paper. "
+            "Must include every author without omission."
+        )
+    )

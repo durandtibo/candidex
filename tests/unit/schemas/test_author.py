@@ -3,11 +3,9 @@ from __future__ import annotations
 import pytest
 
 from candidex.author import Author
-from candidex.schemas import AuthorExtraction
+from candidex.schemas import AuthorExtraction, PaperAuthorExtraction
 
-######################################
-#     Tests for AuthorExtraction     #
-######################################
+# --- Fixtures ---
 
 
 @pytest.fixture
@@ -17,6 +15,29 @@ def author() -> AuthorExtraction:
         affiliations=["MIT CSAIL", "Stanford University"],
         email="jane@mit.edu",
     )
+
+
+@pytest.fixture
+def author_a() -> AuthorExtraction:
+    return AuthorExtraction(
+        author="Jane Smith",
+        affiliations=["MIT CSAIL"],
+        email="jane@mit.edu",
+    )
+
+
+@pytest.fixture
+def author_b() -> AuthorExtraction:
+    return AuthorExtraction(
+        author="John Doe",
+        affiliations=["Stanford University"],
+        email=None,
+    )
+
+
+######################################
+#     Tests for AuthorExtraction     #
+######################################
 
 
 @pytest.mark.parametrize(
@@ -172,3 +193,79 @@ def test_author_extraction_to_author_consistent_with_from_raw(
         email=author.email,
     )
     assert author.to_author() == expected
+
+
+###########################################
+#     Tests for PaperAuthorExtraction     #
+###########################################
+
+
+# --- Construction ---
+
+
+def test_paper_author_extraction_empty_authors() -> None:
+    paper = PaperAuthorExtraction(authors=[])
+    assert paper.authors == []
+
+
+def test_paper_author_extraction_single_author(author_a: AuthorExtraction) -> None:
+    paper = PaperAuthorExtraction(authors=[author_a])
+    assert len(paper.authors) == 1
+    assert paper.authors[0] == author_a
+
+
+def test_paper_author_extraction_multiple_authors(
+    author_a: AuthorExtraction, author_b: AuthorExtraction
+) -> None:
+    paper = PaperAuthorExtraction(authors=[author_a, author_b])
+    assert len(paper.authors) == 2
+
+
+# --- Order preservation ---
+
+
+def test_paper_author_extraction_preserves_author_order(
+    author_a: AuthorExtraction, author_b: AuthorExtraction
+) -> None:
+    paper = PaperAuthorExtraction(authors=[author_a, author_b])
+    assert paper.authors[0] == author_a
+    assert paper.authors[1] == author_b
+
+
+def test_paper_author_extraction_preserves_author_order_reversed(
+    author_a: AuthorExtraction, author_b: AuthorExtraction
+) -> None:
+    paper = PaperAuthorExtraction(authors=[author_b, author_a])
+    assert paper.authors[0] == author_b
+    assert paper.authors[1] == author_a
+
+
+# --- Author fields are accessible ---
+
+
+def test_paper_author_extraction_author_fields_accessible(author_a: AuthorExtraction) -> None:
+    paper = PaperAuthorExtraction(authors=[author_a])
+    assert paper.authors[0].author == "Jane Smith"
+    assert paper.authors[0].affiliations == ["MIT CSAIL"]
+    assert paper.authors[0].email == "jane@mit.edu"
+
+
+# --- Serialisation round-trip ---
+
+
+def test_paper_author_extraction_serialises_to_dict(
+    author_a: AuthorExtraction, author_b: AuthorExtraction
+) -> None:
+    paper = PaperAuthorExtraction(authors=[author_a, author_b])
+    data = paper.model_dump()
+    assert len(data["authors"]) == 2
+    assert data["authors"][0]["author"] == "Jane Smith"
+    assert data["authors"][1]["author"] == "John Doe"
+
+
+def test_paper_author_extraction_round_trip(
+    author_a: AuthorExtraction, author_b: AuthorExtraction
+) -> None:
+    paper = PaperAuthorExtraction(authors=[author_a, author_b])
+    restored = PaperAuthorExtraction.model_validate(paper.model_dump())
+    assert restored == paper
