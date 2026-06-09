@@ -2,11 +2,12 @@ r"""Contain utilities for working with PDFs."""
 
 from __future__ import annotations
 
-__all__ = ["extract_text_pdfplumber"]
+__all__ = ["PdfPlumberExtractor", "extract_text_pdfplumber"]
 
 from typing import TYPE_CHECKING
 
-from candidex.utils.imports import is_pdfplumber_available
+from candidex.pdf.extraction.base import BasePdfExtractor
+from candidex.utils.imports import check_pdfplumber, is_pdfplumber_available
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -15,6 +16,45 @@ if is_pdfplumber_available():
     import pdfplumber
 else:  # pragma: no cover
     from candidex.utils.fallback.pdfplumber import pdfplumber
+
+
+class PdfPlumberExtractor(BasePdfExtractor):
+    r"""Extract text from digital PDFs using the `pdfplumber` library.
+
+    Wraps `extract_text_pdfplumber` as a `BasePdfExtractor` implementation.
+    Pages are separated by form feed characters (``\\f``), consistent
+    with the plain-text page separator convention. Suitable for
+    digitally-created PDFs where text is embedded as selectable
+    characters. Not suitable for scanned PDFs — use an OCR-based
+    extractor instead.
+
+    Args:
+        max_pages: Maximum number of pages to extract. If None, all
+                   pages are extracted. Defaults to None.
+
+    Raises:
+        RuntimeError: If `pdfplumber` is not installed.
+
+    Example:
+        ```pycon
+        >>> from pathlib import Path
+        >>> from candidex.pdf.extraction import PyPdfExtractor
+        >>> extractor = PyPdfExtractor(max_pages=1)
+        >>> text = extractor.extract(Path("paper.pdf"))  # doctest: +SKIP
+        >>> pages = text.split("\\f")  # doctest: +SKIP
+
+        ```
+    """
+
+    def __init__(self, max_pages: int | None = None) -> None:
+        check_pdfplumber()
+        self._max_pages = max_pages
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__qualname__}(max_pages={self._max_pages!r})"
+
+    def extract(self, pdf_path: Path) -> str:
+        return extract_text_pdfplumber(pdf_path=pdf_path, max_pages=self._max_pages)
 
 
 def extract_text_pdfplumber(
@@ -49,12 +89,16 @@ def extract_text_pdfplumber(
         PDFSyntaxError:    If the PDF is malformed or unreadable.
 
     Example:
+        ```pycon
         >>> from pathlib import Path
         >>> from candidex.pdf.extraction import extract_text_pdfplumber
         >>> text = extract_text_pdfplumber(Path("paper.pdf"))
         >>> pages = text.split("\\f")
         >>> first_page = extract_text_pdfplumber(Path("paper.pdf"), max_pages=1)
+
+        ```
     """
+    check_pdfplumber()
     with pdfplumber.open(pdf_path) as pdf:
         pages = pdf.pages[:max_pages] if max_pages is not None else pdf.pages
         page_texts = [text for page in pages if (text := page.extract_text())]

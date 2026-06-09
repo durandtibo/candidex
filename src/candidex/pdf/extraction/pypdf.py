@@ -6,7 +6,7 @@ __all__ = ["PyPdfExtractor", "extract_text_pypdf"]
 
 from typing import TYPE_CHECKING
 
-from candidex.pdf.extraction import BasePdfExtractor
+from candidex.pdf.extraction.base import BasePdfExtractor
 from candidex.utils.imports import check_pypdf, is_pypdf_available
 
 if TYPE_CHECKING:
