@@ -47,9 +47,9 @@ class CVFPaperScraper(BasePaperScraper):
     a Parquet file to avoid re-scraping on subsequent runs.
 
     Args:
-        venue:     The venue name as it appears in the CVF URL
+        venue: The venue name as it appears in the CVF URL
                    (e.g. 'CVPR', 'ICCV', 'ECCV', 'WACV').
-        year:      The year of the venue (e.g. 2024).
+        year: The year of the venue (e.g. 2024).
         cache_dir: Directory where the Parquet cache file will be read
                    from or written to. If None, caching is disabled and
                    papers are scraped on every call to `scrape`.
@@ -102,7 +102,7 @@ def build_listing_url(venue: str, year: int) -> str:
     Args:
         venue: The venue name as it appears in the CVF URL
                (e.g. 'CVPR', 'ICCV', 'WACV').
-        year:  The year of the venue (e.g. 2024).
+        year: The year of the venue (e.g. 2024).
 
     Returns:
         The full URL of the CVF listing page for the given venue and year.
@@ -152,7 +152,7 @@ def resolve_url(href: str, base_url: str) -> str:
     """Resolve a potentially relative href to an absolute URL.
 
     Args:
-        href:     The href attribute value, either absolute or relative.
+        href: The href attribute value, either absolute or relative.
         base_url: The base URL to prepend to relative hrefs.
 
     Returns:
@@ -173,9 +173,9 @@ def parse_paper(
     including the PDF download.
 
     Args:
-        dt:       The <dt class='ptitle'> Tag for a single paper entry.
-        venue:    The venue name (e.g. 'CVPR', 'ICCV'), or None if not known.
-        year:     The year of the venue (e.g. 2024), or None if not known.
+        dt: The <dt class='ptitle'> Tag for a single paper entry.
+        venue: The venue name (e.g. 'CVPR', 'ICCV'), or None if not known.
+        year: The year of the venue (e.g. 2024), or None if not known.
         base_url: Root URL used to resolve relative hrefs. Defaults to BASE_URL.
 
     Returns:
@@ -251,7 +251,7 @@ def scrape_papers(venue: str, year: int) -> pl.DataFrame:
     Args:
         venue: The venue name as it appears in the CVF URL
                (e.g. 'CVPR', 'ICCV', 'WACV').
-        year:  The year of the venue (e.g. 2024).
+        year: The year of the venue (e.g. 2024).
 
     Returns:
         A Polars DataFrame with columns as defined in `candidex.columns`:
@@ -319,9 +319,9 @@ def load_or_scrape_papers(
     The cache file is named `{venue}_{year}.parquet` (e.g. `CVPR_2024.parquet`).
 
     Args:
-        venue:     The venue name as it appears in the CVF URL
+        venue: The venue name as it appears in the CVF URL
                    (e.g. 'CVPR', 'ICCV', 'ECCV').
-        year:      The year of the venue (e.g. 2024).
+        year: The year of the venue (e.g. 2024).
         cache_dir: Directory where the Parquet cache file will be read from
                    or written to. Created automatically if it does not exist.
                    If None, caching is disabled and papers are scraped on

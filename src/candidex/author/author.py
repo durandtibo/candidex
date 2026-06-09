@@ -27,10 +27,10 @@ class Author:
     with automatic normalization of unicode characters and whitespace.
 
     Attributes:
-        name:         Full name of the author, unicode-normalized and stripped.
+        name: Full name of the author, unicode-normalized and stripped.
         affiliations: Tuple of institutional affiliations, each unicode-normalized.
                       None if no affiliation information is available.
-        email:        Email address of the author, stripped of whitespace.
+        email: Email address of the author, stripped of whitespace.
                       None if not available.
     """
 
@@ -107,9 +107,9 @@ class Author:
         directly to ensure consistent normalization.
 
         Args:
-            name:         Full name of the author.
+            name: Full name of the author.
             affiliations: List of institutional affiliations, or None.
-            email:        Email address of the author, or None.
+            email: Email address of the author, or None.
 
         Returns:
             A new `Author` instance with normalized fields.

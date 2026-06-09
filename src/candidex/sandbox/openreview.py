@@ -29,7 +29,7 @@ def fetch_openreview_profile(url: str, timeout: int = 30) -> dict[str, Any] | No
         url: Full OpenReview profile URL, e.g.
                      'https://openreview.net/profile?id=~Thibaut_Durand1'.
                      The `id` query parameter is used to query the API.
-        timeout:     Request timeout in seconds. Defaults to 30.
+        timeout: Request timeout in seconds. Defaults to 30.
 
     Returns:
         A dict containing the raw profile data from the OpenReview API,
@@ -103,7 +103,7 @@ def fetch_openreview_profile_content(url: str, timeout: int = 30) -> dict[str, A
         url: Full OpenReview profile URL, e.g.
                      'https://openreview.net/profile?id=~Thibaut_Durand1'.
                      The `id` query parameter is used to query the API.
-        timeout:     Request timeout in seconds. Defaults to 30.
+        timeout: Request timeout in seconds. Defaults to 30.
 
     Returns:
         A dict containing the raw profile data from the OpenReview API,

@@ -31,7 +31,7 @@ def search_profiles_by_name(
     if the client cannot be created.
 
     Args:
-        name:   The name to search for. Whitespace is stripped before querying.
+        name: The name to search for. Whitespace is stripped before querying.
         client: An authenticated `OpenReviewClient` instance. If not provided,
                 one is created via `create_client()` using the
                 `OPENREVIEW_USERNAME` and `OPENREVIEW_PASSWORD` environment

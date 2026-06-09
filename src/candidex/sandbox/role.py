@@ -56,18 +56,18 @@ class AuthorRole(BaseModel):
                      AcademicRole.MISSING only.
 
     Attributes:
-        name:           Full name of the author as it appears on the paper.
-        affiliation:    Known institutional affiliation taken from the paper.
-        role:           Current academic role from the `AcademicRole` enum.
+        name: Full name of the author as it appears on the paper.
+        affiliation: Known institutional affiliation taken from the paper.
+        role: Current academic role from the `AcademicRole` enum.
                         Use AcademicRole.UNKNOWN if the role cannot be determined
                         from search results. AcademicRole.MISSING is reserved for
                         system use only and must never be assigned by the LLM.
         phd_start_year: 4-digit year the PhD started (e.g. '2019').
-        phd_end_year:   4-digit year the PhD was completed (e.g. '2023').
-        phd_domain:     Research field of the PhD (e.g. 'Computer Vision').
+        phd_end_year: 4-digit year the PhD was completed (e.g. '2023').
+        phd_domain: Research field of the PhD (e.g. 'Computer Vision').
         phd_university: Institution where the PhD was or is being completed.
-        details:        Additional context such as lab, supervisor, or department.
-        source:         Single raw URL of the most authoritative source used.
+        details: Additional context such as lab, supervisor, or department.
+        source: Single raw URL of the most authoritative source used.
     """
 
     name: str = Field(description="Full name of the author.")
@@ -272,13 +272,13 @@ def _run_searches(
     on timeout or connectivity errors.
 
     Args:
-        author:         An `AuthorAffiliation` object containing the author's
+        author: An `AuthorAffiliation` object containing the author's
                         name and known affiliations.
-        max_retries:    Maximum number of retry attempts per query on timeout
+        max_retries: Maximum number of retry attempts per query on timeout
                         or connectivity errors. Defaults to 3.
         backoff_factor: Multiplier for the wait time between retries.
                         Wait times are: 2s, 4s, 8s, ... Defaults to 2.0.
-        max_workers:    Maximum number of concurrent threads. Defaults to 3
+        max_workers: Maximum number of concurrent threads. Defaults to 3
                         to avoid rate limiting from DuckDuckGo.
 
     Returns:
@@ -337,7 +337,7 @@ def find_author_role(author: AuthorAffiliation, llm: BaseChatModel) -> AuthorRol
     Args:
         author: An `AuthorAffiliation` object containing the author's name and
                 known affiliations from the paper.
-        llm:    Any LangChain-compatible chat model with structured output support.
+        llm: Any LangChain-compatible chat model with structured output support.
                 The caller is responsible for initialising and configuring it.
 
     Returns:
@@ -400,10 +400,10 @@ def find_authors_role(
         affiliations: A `PaperAffiliations` object as returned by
                       `extract_affiliations`, containing each author's name
                       and known affiliations.
-        llm:          Any LangChain-compatible chat model with structured output
+        llm: Any LangChain-compatible chat model with structured output
                       support. The caller is responsible for initialising and
                       configuring it.
-        search:       A `DuckDuckGoSearchRun` instance. Defaults to a new
+        search: A `DuckDuckGoSearchRun` instance. Defaults to a new
                       instance if not provided. Override to inject a mock
                       for testing.
 
@@ -484,18 +484,18 @@ def find_and_save_authors_role(
     in `role_dir`. Each file contains a list of serialised `AuthorRole` objects.
 
     Args:
-        papers:           Polars DataFrame produced by `scrape_cvpr_papers` or
+        papers: Polars DataFrame produced by `scrape_cvpr_papers` or
                           equivalent. Must contain a column named by `PAPER_STEM`
                           with the PDF filename stem for each paper.
         affiliations_dir: Directory containing the affiliation JSON files produced
                           by `extract_and_save_affiliations`. Each file must be
                           named `{stem}.json` where `stem` matches `PAPER_STEM`.
-        role_dir:         Directory where author role JSON files will be saved.
+        role_dir: Directory where author role JSON files will be saved.
                           Created automatically if it does not exist.
-        llm:              Any LangChain-compatible chat model with structured output
+        llm: Any LangChain-compatible chat model with structured output
                           support. The caller is responsible for initialising and
                           configuring it.
-        max_authors:      Maximum number of authors to process per paper, taking
+        max_authors: Maximum number of authors to process per paper, taking
                           the first N authors in the order they appear. Defaults
                           to 20. Set to None to process all authors.
 
@@ -574,17 +574,17 @@ def retry_authors_role(
     the entire dataset.
 
     Args:
-        papers:      Polars DataFrame produced by `scrape_cvpr_papers` or
+        papers: Polars DataFrame produced by `scrape_cvpr_papers` or
                      equivalent. Must contain a column named by `PAPER_STEM`
                      with the PDF filename stem for each paper.
-        role_dir:    Directory containing the role JSON files produced by
+        role_dir: Directory containing the role JSON files produced by
                      `find_and_save_authors_role`. Each file must be named
                      `{stem}.json` where `stem` matches `PAPER_STEM`. Files
                      are updated in place.
-        llm:         Any LangChain-compatible chat model with structured output
+        llm: Any LangChain-compatible chat model with structured output
                      support. The caller is responsible for initialising and
                      configuring it.
-        retry_role:  The `AcademicRole` value that triggers a retry. Only
+        retry_role: The `AcademicRole` value that triggers a retry. Only
                      authors whose current role matches this value will be
                      re-processed. Defaults to `AcademicRole.MISSING`.
         max_authors: Maximum number of authors to consider per paper, taking
@@ -668,7 +668,7 @@ def load_author_roles(papers: pl.DataFrame, role_dir: Path) -> dict[str, list[Au
     lookup step.
 
     Args:
-        papers:   Polars DataFrame produced by `scrape_cvpr_papers` or
+        papers: Polars DataFrame produced by `scrape_cvpr_papers` or
                   equivalent. Must contain a column named by `PAPER_STEM`
                   with the PDF filename stem (i.e. without the `.pdf`
                   extension) for each paper.

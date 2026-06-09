@@ -81,7 +81,7 @@ def fetch_profile_by_id(
     Args:
         profile_id: The OpenReview profile ID to fetch
                     (e.g. '~Thibaut_Durand1').
-        client:     An authenticated `OpenReviewClient` instance. If not
+        client: An authenticated `OpenReviewClient` instance. If not
                     provided, one is created via `create_client()` using
                     the `OPENREVIEW_USERNAME` and `OPENREVIEW_PASSWORD`
                     environment variables.
@@ -129,11 +129,11 @@ def load_or_fetch_profile_by_author(
     the profile from OpenReview and saves it to disk for future calls.
 
     Args:
-        author:      The `Author` associated with the profile ID.
-        profile_id:  The OpenReview profile ID to fetch (e.g. '~Jane_Smith1').
+        author: The `Author` associated with the profile ID.
+        profile_id: The OpenReview profile ID to fetch (e.g. '~Jane_Smith1').
         profiles_dir: Directory where profile JSON files are stored.
                       Must already exist.
-        client:      An authenticated `OpenReviewClient` instance. If not
+        client: An authenticated `OpenReviewClient` instance. If not
                      provided, one is created via `create_client()` using
                      the `OPENREVIEW_USERNAME` and `OPENREVIEW_PASSWORD`
                      environment variables.
@@ -199,14 +199,14 @@ def extract_profiles_by_author(
                                list of OpenReview profile ID strings, or None
                                if the lookup previously failed. As returned by
                                `extract_profile_ids_by_author`.
-        profiles_dir:          Directory where profile JSON files will be saved.
+        profiles_dir: Directory where profile JSON files will be saved.
                                Created automatically if it does not exist.
                                Each file is named `{profile_id}.json`.
-        client:                An authenticated `OpenReviewClient` instance. If
+        client: An authenticated `OpenReviewClient` instance. If
                                not provided, one is created via `create_client()`
                                using environment variables. The same client is
                                reused across all threads.
-        max_workers:           Maximum number of concurrent threads. Defaults
+        max_workers: Maximum number of concurrent threads. Defaults
                                to 4. Reduce if hitting OpenReview API rate limits.
 
     Returns:
@@ -284,11 +284,11 @@ def load_or_fetch_profile_by_id(
     the profile from OpenReview and saves it to disk for future calls.
 
     Args:
-        profile_id:   The OpenReview profile ID to fetch
+        profile_id: The OpenReview profile ID to fetch
                       (e.g. '~Jane_Smith1').
         profiles_dir: Directory where profile JSON files are stored.
                       Must already exist.
-        client:       An authenticated `OpenReviewClient` instance. If not
+        client: An authenticated `OpenReviewClient` instance. If not
                       provided, one is created via `create_client()` using
                       the `OPENREVIEW_USERNAME` and `OPENREVIEW_PASSWORD`
                       environment variables.
@@ -344,17 +344,17 @@ def extract_profiles_by_id(
     using a thread pool to reduce total wall time.
 
     Args:
-        profile_ids:  List of OpenReview profile ID strings to fetch
+        profile_ids: List of OpenReview profile ID strings to fetch
                       (e.g. ['~Jane_Smith1', '~John_Doe1']).
         profiles_dir: Directory where profile JSON files will be saved.
                       Created automatically if it does not exist. Each
                       file is named `{profile_id}.json`.
-        client:       An authenticated `OpenReviewClient` instance. If not
+        client: An authenticated `OpenReviewClient` instance. If not
                       provided, one is created via `create_client()` using
                       the `OPENREVIEW_USERNAME` and `OPENREVIEW_PASSWORD`
                       environment variables. The same client is reused
                       across all threads.
-        max_workers:  Maximum number of concurrent threads. Defaults to 4.
+        max_workers: Maximum number of concurrent threads. Defaults to 4.
                       Reduce if hitting OpenReview API rate limits.
 
     Returns:

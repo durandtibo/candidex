@@ -74,7 +74,7 @@ def extract_text_pdfplumber(
     into individual pages use ``text.split("\\f")``.
 
     Args:
-        pdf_path:  Path to the PDF file to extract text from.
+        pdf_path: Path to the PDF file to extract text from.
         max_pages: Maximum number of pages to extract. If None, all pages
                    are extracted. Useful for extracting only the first page
                    (e.g. for affiliation extraction from paper headers).
@@ -86,7 +86,7 @@ def extract_text_pdfplumber(
 
     Raises:
         FileNotFoundError: If `pdf_path` does not exist.
-        PDFSyntaxError:    If the PDF is malformed or unreadable.
+        PDFSyntaxError: If the PDF is malformed or unreadable.
 
     Example:
         ```pycon

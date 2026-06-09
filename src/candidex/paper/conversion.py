@@ -114,7 +114,7 @@ def papers_to_dataframe(
     hash-based ID.
 
     Args:
-        papers:     A sequence of `Paper` objects to convert.
+        papers: A sequence of `Paper` objects to convert.
         include_id: If True, includes a `paper_id` column containing the
                     BLAKE2b hash of each paper as returned by `Paper.hash()`.
                     Defaults to False.
