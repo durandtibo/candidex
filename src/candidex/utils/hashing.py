@@ -40,6 +40,8 @@ def combine_hashes(hashes: Sequence[str]) -> str:
         True
         >>> len(result)
         64
+        >>> all(c in "0123456789abcdef" for c in result)
+        True
 
         ```
     """

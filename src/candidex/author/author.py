@@ -79,6 +79,8 @@ class Author:
             True
             >>> len(author.hash())
             64
+            >>> all(c in "0123456789abcdef" for c in author.hash())
+            True
 
             ```
         """

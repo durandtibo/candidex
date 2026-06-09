@@ -70,6 +70,8 @@ class ChatModelConfig:
             True
             >>> len(config.hash())
             64
+            >>> all(c in "0123456789abcdef" for c in config.hash())
+            True
 
             ```
         """
