@@ -34,9 +34,9 @@ def make_progressbar(*, transient: bool = False) -> Progress:
 
     Args:
         transient: If True, the progress bar is cleared from the terminal
-                   when the context manager exits. Useful for short-lived
-                   tasks where the bar would clutter the output. Defaults
-                   to False.
+            when the context manager exits. Useful for short-lived
+            tasks where the bar would clutter the output. Defaults
+            to False.
 
     Returns:
         A configured `Progress` instance, ready to use as a context manager.

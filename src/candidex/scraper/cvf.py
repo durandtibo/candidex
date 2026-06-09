@@ -48,11 +48,11 @@ class CVFPaperScraper(BasePaperScraper):
 
     Args:
         venue: The venue name as it appears in the CVF URL
-                   (e.g. 'CVPR', 'ICCV', 'ECCV', 'WACV').
+            (e.g. 'CVPR', 'ICCV', 'ECCV', 'WACV').
         year: The year of the venue (e.g. 2024).
         cache_dir: Directory where the Parquet cache file will be read
-                   from or written to. If None, caching is disabled and
-                   papers are scraped on every call to `scrape`.
+            from or written to. If None, caching is disabled and
+            papers are scraped on every call to `scrape`.
 
     Raises:
         ValueError: If `venue` is empty or whitespace-only.
@@ -101,7 +101,7 @@ def build_listing_url(venue: str, year: int) -> str:
 
     Args:
         venue: The venue name as it appears in the CVF URL
-               (e.g. 'CVPR', 'ICCV', 'WACV').
+            (e.g. 'CVPR', 'ICCV', 'WACV').
         year: The year of the venue (e.g. 2024).
 
     Returns:
@@ -250,19 +250,19 @@ def scrape_papers(venue: str, year: int) -> pl.DataFrame:
 
     Args:
         venue: The venue name as it appears in the CVF URL
-               (e.g. 'CVPR', 'ICCV', 'WACV').
+            (e.g. 'CVPR', 'ICCV', 'WACV').
         year: The year of the venue (e.g. 2024).
 
     Returns:
         A Polars DataFrame with columns as defined in `candidex.columns`:
-            - PAPER_TITLE   (String):       Paper title.
-            - PAPER_AUTHORS (List[String]): Author names. Null if not found.
-            - PAPER_VENUE   (String):       Venue name.
-            - PAPER_YEAR    (Int32):        Year of the venue.
-            - PAPER_URL     (String):       Direct URL to the paper's PDF.
-                                            Null if not found.
-            - PAPER_ID      (String):       BLAKE2b hash of the paper,
-                                            derived from all fields.
+                - PAPER_TITLE   (String):       Paper title.
+                - PAPER_AUTHORS (List[String]): Author names. Null if not found.
+                - PAPER_VENUE   (String):       Venue name.
+                - PAPER_YEAR    (Int32):        Year of the venue.
+                - PAPER_URL     (String):       Direct URL to the paper's PDF.
+                Null if not found.
+                - PAPER_ID      (String):       BLAKE2b hash of the paper,
+                derived from all fields.
 
     Raises:
         requests.exceptions.RequestException: On any network or HTTP error.
@@ -320,22 +320,22 @@ def load_or_scrape_papers(
 
     Args:
         venue: The venue name as it appears in the CVF URL
-                   (e.g. 'CVPR', 'ICCV', 'ECCV').
+            (e.g. 'CVPR', 'ICCV', 'ECCV').
         year: The year of the venue (e.g. 2024).
         cache_dir: Directory where the Parquet cache file will be read from
-                   or written to. Created automatically if it does not exist.
-                   If None, caching is disabled and papers are scraped on
-                   every call.
+            or written to. Created automatically if it does not exist.
+            If None, caching is disabled and papers are scraped on
+            every call.
 
     Returns:
         A Polars DataFrame with columns as returned by `scrape_cvf_papers`:
-            - PAPER_TITLE   (String):       Paper title.
-            - PAPER_AUTHORS (List[String]): Author names. Null if not found.
-            - PAPER_VENUE   (String):       Venue name.
-            - PAPER_YEAR    (Int32):        Year of the venue.
-            - PAPER_URL     (String):       Direct URL to the paper's PDF.
-                                            Null if not found.
-            - PAPER_ID      (String):       BLAKE2b hash of the paper.
+                - PAPER_TITLE   (String):       Paper title.
+                - PAPER_AUTHORS (List[String]): Author names. Null if not found.
+                - PAPER_VENUE   (String):       Venue name.
+                - PAPER_YEAR    (Int32):        Year of the venue.
+                - PAPER_URL     (String):       Direct URL to the paper's PDF.
+                Null if not found.
+                - PAPER_ID      (String):       BLAKE2b hash of the paper.
 
     Raises:
         requests.exceptions.RequestException: If the scrape fails due to a

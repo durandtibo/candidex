@@ -22,7 +22,7 @@ def flatten_authors(papers: Sequence[PaperAffiliations]) -> list[AuthorAffiliati
 
     Args:
         papers: A sequence of `PaperAffiliations` objects, each containing
-                an ordered list of authors and their affiliations.
+            an ordered list of authors and their affiliations.
 
     Returns:
         A flat list of `AuthorAffiliation` objects from all papers in the

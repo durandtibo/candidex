@@ -39,9 +39,9 @@ def add_author_column(
 
     Args:
         frame: A Polars DataFrame containing an `AUTHOR_ID` column as
-                     returned by `authors_to_dataframe` with `include_id=True`.
+            returned by `authors_to_dataframe` with `include_id=True`.
         data: A dictionary mapping each `Author` to the value to add.
-                     Authors not present in the dictionary are mapped to null.
+            Authors not present in the dictionary are mapped to null.
         column_name: Name of the new column to add.
         dtype: Polars data type of the new column (e.g. `pl.List(pl.String)`).
 
@@ -92,12 +92,12 @@ def add_openreview_profile_ids_to_dataframe(
 
     Args:
         frame: A Polars DataFrame containing an `AUTHOR_ID`
-                               column as returned by `authors_to_dataframe`
-                               with `include_id=True`.
+            column as returned by `authors_to_dataframe`
+            with `include_id=True`.
         profile_ids_by_author: A dictionary mapping each `Author` to their
-                               list of OpenReview profile ID strings, or None
-                               if the lookup failed. As returned by
-                               `extract_profile_ids_by_author`.
+            list of OpenReview profile ID strings, or None
+            if the lookup failed. As returned by
+            `extract_profile_ids_by_author`.
 
     Returns:
         The input DataFrame with an additional `AUTHOR_OPENREVIEW_PROFILE_ID`
@@ -139,12 +139,12 @@ def add_openreview_profiles_to_dataframe(
 
     Args:
         frame: A Polars DataFrame containing an `AUTHOR_ID`
-                             column as returned by `authors_to_dataframe`
-                             with `include_id=True`.
+            column as returned by `authors_to_dataframe`
+            with `include_id=True`.
         profiles_by_author: A dictionary mapping each `Author` to their
-                             list of `Profile` objects, or None if the
-                             lookup failed. As returned by
-                             `extract_profiles_by_author`.
+            list of `Profile` objects, or None if the
+            lookup failed. As returned by
+            `extract_profiles_by_author`.
 
     Returns:
         The input DataFrame with an additional `AUTHOR_OPENREVIEW_PROFILE`

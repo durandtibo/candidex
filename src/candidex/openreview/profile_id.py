@@ -43,11 +43,11 @@ class FilterMode(str, Enum):
 
     Attributes:
         ALL: AND logic — a profile must match both the affiliation and the
-             email domain to be included. More restrictive, reduces false
-             positives.
+            email domain to be included. More restrictive, reduces false
+            positives.
         ANY: OR logic — a profile is included if it matches either the
-             affiliation or the email domain. More permissive, reduces false
-             negatives.
+            affiliation or the email domain. More permissive, reduces false
+            negatives.
     """
 
     ALL = "all"
@@ -83,11 +83,11 @@ def find_author_profile_ids(
         affiliation: Institutional affiliation to filter by (e.g. 'MIT CSAIL').
         email: Optional email address used as an additional filter.
         mode: Filtering mode controlling how affiliation and email
-                     filters are combined. Defaults to `FilterMode.ANY`.
+            filters are combined. Defaults to `FilterMode.ANY`.
         client: An authenticated `OpenReviewClient` instance. If not
-                     provided, one is created via `create_client()` using
-                     the `OPENREVIEW_USERNAME` and `OPENREVIEW_PASSWORD`
-                     environment variables.
+            provided, one is created via `create_client()` using
+            the `OPENREVIEW_USERNAME` and `OPENREVIEW_PASSWORD`
+            environment variables.
 
     Returns:
         A sorted list of OpenReview profile ID strings (e.g. ['~Jane_Smith1'])
@@ -163,11 +163,11 @@ def load_or_fetch_profile_ids(
     Args:
         author: The `Author` to look up.
         profile_ids_dir: Directory where profile ID JSON files are stored.
-                          Must already exist.
+            Must already exist.
         client: An authenticated `OpenReviewClient` instance. If
-                          not provided, one is created via `create_client()`
-                          using the `OPENREVIEW_USERNAME` and
-                          `OPENREVIEW_PASSWORD` environment variables.
+            not provided, one is created via `create_client()`
+            using the `OPENREVIEW_USERNAME` and
+            `OPENREVIEW_PASSWORD` environment variables.
 
     Returns:
         A tuple of (author, profile_ids) where profile_ids is a list of
@@ -230,14 +230,14 @@ def extract_profile_ids_by_author(
     Args:
         authors: Sequence of `Author` objects to look up.
         profile_ids_dir: Directory where profile ID JSON files will be
-                           saved. Created automatically if it does not exist.
-                           Each file is named `{author.hash()}.json`.
+            saved. Created automatically if it does not exist.
+            Each file is named `{author.hash()}.json`.
         client: An authenticated `OpenReviewClient` instance. If
-                           not provided, one is created via `create_client()`
-                           using environment variables. The same client is
-                           reused across all threads.
+            not provided, one is created via `create_client()`
+            using environment variables. The same client is
+            reused across all threads.
         max_workers: Maximum number of concurrent threads. Defaults to
-                           4. Reduce if hitting OpenReview API rate limits.
+            4. Reduce if hitting OpenReview API rate limits.
 
     Returns:
         A dictionary mapping each `Author` to their list of profile ID
@@ -301,8 +301,8 @@ def log_profile_ids_stats(profile_ids_by_author: dict[Author, list[str] | None])
 
     Args:
         profile_ids_by_author: A dictionary mapping each `Author` to their list of profile
-             ID strings, or None if the lookup failed, as returned by
-             `extract_profile_ids`.
+            ID strings, or None if the lookup failed, as returned by
+            `extract_profile_ids`.
 
     Example:
         ```pycon

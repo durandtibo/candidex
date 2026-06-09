@@ -25,7 +25,7 @@ def sort_authors(authors: Sequence[Author], *, reverse: bool = False) -> list[Au
     Args:
         authors: A sequence of `Author` objects to sort.
         reverse: If True, sort in descending order. Defaults to False
-                 (ascending).
+            (ascending).
 
     Returns:
         A new sorted list of `Author` objects. The original sequence is

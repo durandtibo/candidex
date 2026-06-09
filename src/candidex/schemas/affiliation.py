@@ -23,15 +23,15 @@ class AuthorAffiliation(BaseModel):
 
     Attributes:
         author: Full name of the author exactly as it appears on the paper
-                      (e.g. 'Jane Smith', 'J. Smith'). Do not normalise or infer
-                      missing name parts.
+            (e.g. 'Jane Smith', 'J. Smith'). Do not normalise or infer
+            missing name parts.
         affiliations: List of institutional affiliations for this author. Each
-                      entry should be a complete affiliation string as it appears
-                      on the paper (e.g. 'MIT CSAIL, Cambridge, MA, USA').
-                      Use an empty list if no affiliation can be determined.
+            entry should be a complete affiliation string as it appears
+            on the paper (e.g. 'MIT CSAIL, Cambridge, MA, USA').
+            Use an empty list if no affiliation can be determined.
         email: Email address of the author if explicitly stated on the
-                      paper. None if not present or not determinable. Do not
-                      infer or construct email addresses from names or affiliations.
+            paper. None if not present or not determinable. Do not
+            infer or construct email addresses from names or affiliations.
     """
 
     author: str = Field(description="Full name of the author exactly as it appears on the paper.")
@@ -128,8 +128,8 @@ class PaperAffiliations(BaseModel):
 
     Attributes:
         authors: Ordered list of all authors and their affiliations. Must
-                 include every author listed on the paper without omission.
-                 Each entry maps one author to their affiliations.
+            include every author listed on the paper without omission.
+            Each entry maps one author to their affiliations.
     """
 
     authors: list[AuthorAffiliation] = Field(

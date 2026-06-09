@@ -38,8 +38,8 @@ def create_session(max_retries: int = 3) -> requests.Session:
 
     Args:
         max_retries: Maximum number of retry attempts on transient failures
-                     (429, 500, 502, 503, 504) with exponential backoff.
-                     Defaults to 3.
+            (429, 500, 502, 503, 504) with exponential backoff.
+            Defaults to 3.
 
     Returns:
         A configured `requests.Session` instance with retry adapters mounted.
@@ -86,14 +86,14 @@ def fetch_html(
         url: The full URL to fetch.
         timeout: Request timeout in seconds per attempt. Defaults to 30.
         max_retries: Maximum number of retry attempts on failure. Defaults to 3.
-                     Set to 0 to disable retries. Ignored if `session` is
-                     provided.
+            Set to 0 to disable retries. Ignored if `session` is
+            provided.
         headers: HTTP headers to send with the request. If not provided,
-                     defaults to `HEADERS` which mimics a real browser to
-                     avoid being blocked. Pass an empty dict to send no
-                     headers.
+            defaults to `HEADERS` which mimics a real browser to
+            avoid being blocked. Pass an empty dict to send no
+            headers.
         session: An optional `requests.Session` instance to reuse. If not
-                     provided, a new session is created with a retry adapter.
+            provided, a new session is created with a retry adapter.
 
     Returns:
         The raw HTML string of the page.

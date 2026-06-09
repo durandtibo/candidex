@@ -1,6 +1,5 @@
 r"""Contain fallback implementations used when ``pdfplumber`` dependency
-is not available.
-"""
+is not available."""
 
 from __future__ import annotations
 

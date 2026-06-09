@@ -54,7 +54,7 @@ class BaseAuthorExtractor(ABC):
 
         Args:
             paper: The `Paper` object to extract authors from. Must have
-                   a valid `pdf_url` or a cached PDF on disk.
+                a valid `pdf_url` or a cached PDF on disk.
 
         Returns:
             A list of `Author` objects, one per author found in the paper.

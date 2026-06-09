@@ -24,7 +24,7 @@ def deduplicate_authors(authors: list[AuthorAffiliation]) -> list[AuthorAffiliat
 
     Args:
         authors: A list of `AuthorAffiliation` objects, potentially containing
-                 duplicate entries.
+            duplicate entries.
 
     Returns:
         A list of `AuthorAffiliation` objects with duplicates removed,

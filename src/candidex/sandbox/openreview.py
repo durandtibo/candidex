@@ -27,17 +27,17 @@ def fetch_openreview_profile(url: str, timeout: int = 30) -> dict[str, Any] | No
 
     Args:
         url: Full OpenReview profile URL, e.g.
-                     'https://openreview.net/profile?id=~Thibaut_Durand1'.
-                     The `id` query parameter is used to query the API.
+            'https://openreview.net/profile?id=~Thibaut_Durand1'.
+            The `id` query parameter is used to query the API.
         timeout: Request timeout in seconds. Defaults to 30.
 
     Returns:
         A dict containing the raw profile data from the OpenReview API,
         or None if the profile could not be fetched or does not exist.
         The dict contains keys such as:
-            - id          (str):  The OpenReview user ID (e.g. '~Thibaut_Durand1').
-            - content     (dict): Profile content including name, history,
-                                  expertise, and relations.
+                - id          (str):  The OpenReview user ID (e.g. '~Thibaut_Durand1').
+                - content     (dict): Profile content including name, history,
+                expertise, and relations.
 
     Raises:
         ValueError: If the URL does not contain a valid `id` query parameter.
@@ -101,17 +101,17 @@ def fetch_openreview_profile_content(url: str, timeout: int = 30) -> dict[str, A
 
     Args:
         url: Full OpenReview profile URL, e.g.
-                     'https://openreview.net/profile?id=~Thibaut_Durand1'.
-                     The `id` query parameter is used to query the API.
+            'https://openreview.net/profile?id=~Thibaut_Durand1'.
+            The `id` query parameter is used to query the API.
         timeout: Request timeout in seconds. Defaults to 30.
 
     Returns:
         A dict containing the raw profile data from the OpenReview API,
         or None if the profile could not be fetched or does not exist.
         The dict contains keys such as:
-            - id          (str):  The OpenReview user ID (e.g. '~Thibaut_Durand1').
-            - content     (dict): Profile content including name, history,
-                                  expertise, and relations.
+                - id          (str):  The OpenReview user ID (e.g. '~Thibaut_Durand1').
+                - content     (dict): Profile content including name, history,
+                expertise, and relations.
 
     Raises:
         ValueError: If the URL does not contain a valid `id` query parameter.

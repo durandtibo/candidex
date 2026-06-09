@@ -38,18 +38,18 @@ def download_pdfs(
 
     Args:
         papers: Sequence of `Paper` objects to download PDFs for.
-                     Papers with `pdf_url=None` are skipped and mapped to
-                     False in the result.
+            Papers with `pdf_url=None` are skipped and mapped to
+            False in the result.
         pdf_dir: Directory where PDF files will be saved. Created
-                     automatically if it does not exist. Each file is named
-                     `{paper.hash()}.pdf`.
+            automatically if it does not exist. Each file is named
+            `{paper.hash()}.pdf`.
         timeout: Request timeout in seconds per download. Defaults to 30.
         chunk_size: Number of bytes per chunk when streaming. Defaults to
-                     8192.
+            8192.
         max_retries: Maximum number of retry attempts on transient failures.
-                     Defaults to 3.
+            Defaults to 3.
         max_workers: Maximum number of concurrent download threads. Defaults
-                     to 4.
+            to 4.
 
     Returns:
         A dictionary mapping each `Paper` to a bool indicating whether its

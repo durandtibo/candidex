@@ -29,12 +29,12 @@ class Paper:
     Attributes:
         title: Title of the paper, unicode-normalized and stripped.
         authors: Tuple of author names, each unicode-normalized and stripped.
-                 None if authors are not available.
+            None if authors are not available.
         venue: Venue where the paper was published (e.g. 'CVPR', 'NeurIPS'),
-                 unicode-normalized and stripped. None if not available.
+            unicode-normalized and stripped. None if not available.
         year: Year the paper was published. None if not available.
         pdf_url: URL of the paper's PDF, stripped of whitespace.
-                 None if not available.
+            None if not available.
     """
 
     title: str
@@ -102,7 +102,7 @@ class Paper:
             title: Title of the paper.
             authors: Sequence of author names, or None if not available.
             venue: Venue where the paper was published (e.g. 'CVPR'),
-                     or None if not available.
+                or None if not available.
             year: Year the paper was published, or None if not available.
             pdf_url: URL of the paper's PDF, or None if not available.
 
@@ -150,7 +150,7 @@ class Paper:
 
         Args:
             extension: File extension to append, including the leading dot
-                       (e.g. '.pdf', '.json'). Defaults to no extension.
+                (e.g. '.pdf', '.json'). Defaults to no extension.
 
         Returns:
             A string of the form `{hash}{extension}` where `{hash}` is the

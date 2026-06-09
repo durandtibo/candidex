@@ -29,7 +29,7 @@ def deduplicate_authors(authors: Sequence[Author]) -> list[Author]:
 
     Args:
         authors: A list of `Author` objects, potentially containing
-                 duplicate entries.
+            duplicate entries.
 
     Returns:
         A list of `Author` objects with exact duplicates removed, preserving

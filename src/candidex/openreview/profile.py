@@ -42,8 +42,8 @@ def get_unique_profiles(profiles_list: list[list[Profile]]) -> list[Profile]:
 
     Args:
         profiles_list: A list of profile lists, as returned by multiple
-                       calls to `search_openreview_profiles`. May contain
-                       duplicates across lists.
+            calls to `search_openreview_profiles`. May contain
+            duplicates across lists.
 
     Returns:
         A flat list of unique `openreview.Profile` objects, deduplicated
@@ -80,11 +80,11 @@ def fetch_profile_by_id(
 
     Args:
         profile_id: The OpenReview profile ID to fetch
-                    (e.g. '~Thibaut_Durand1').
+            (e.g. '~Thibaut_Durand1').
         client: An authenticated `OpenReviewClient` instance. If not
-                    provided, one is created via `create_client()` using
-                    the `OPENREVIEW_USERNAME` and `OPENREVIEW_PASSWORD`
-                    environment variables.
+            provided, one is created via `create_client()` using
+            the `OPENREVIEW_USERNAME` and `OPENREVIEW_PASSWORD`
+            environment variables.
 
     Returns:
         The `Profile` object for the given ID, or None if the profile
@@ -132,11 +132,11 @@ def load_or_fetch_profile_by_author(
         author: The `Author` associated with the profile ID.
         profile_id: The OpenReview profile ID to fetch (e.g. '~Jane_Smith1').
         profiles_dir: Directory where profile JSON files are stored.
-                      Must already exist.
+            Must already exist.
         client: An authenticated `OpenReviewClient` instance. If not
-                     provided, one is created via `create_client()` using
-                     the `OPENREVIEW_USERNAME` and `OPENREVIEW_PASSWORD`
-                     environment variables.
+            provided, one is created via `create_client()` using
+            the `OPENREVIEW_USERNAME` and `OPENREVIEW_PASSWORD`
+            environment variables.
 
     Returns:
         A tuple of (author, profile_id, profile) where profile is the
@@ -196,18 +196,18 @@ def extract_profiles_by_author(
 
     Args:
         profile_ids_by_author: A dictionary mapping each `Author` to their
-                               list of OpenReview profile ID strings, or None
-                               if the lookup previously failed. As returned by
-                               `extract_profile_ids_by_author`.
+            list of OpenReview profile ID strings, or None
+            if the lookup previously failed. As returned by
+            `extract_profile_ids_by_author`.
         profiles_dir: Directory where profile JSON files will be saved.
-                               Created automatically if it does not exist.
-                               Each file is named `{profile_id}.json`.
+            Created automatically if it does not exist.
+            Each file is named `{profile_id}.json`.
         client: An authenticated `OpenReviewClient` instance. If
-                               not provided, one is created via `create_client()`
-                               using environment variables. The same client is
-                               reused across all threads.
+            not provided, one is created via `create_client()`
+            using environment variables. The same client is
+            reused across all threads.
         max_workers: Maximum number of concurrent threads. Defaults
-                               to 4. Reduce if hitting OpenReview API rate limits.
+            to 4. Reduce if hitting OpenReview API rate limits.
 
     Returns:
         A dictionary mapping each `Author` to their list of fetched `Profile`
@@ -285,13 +285,13 @@ def load_or_fetch_profile_by_id(
 
     Args:
         profile_id: The OpenReview profile ID to fetch
-                      (e.g. '~Jane_Smith1').
+            (e.g. '~Jane_Smith1').
         profiles_dir: Directory where profile JSON files are stored.
-                      Must already exist.
+            Must already exist.
         client: An authenticated `OpenReviewClient` instance. If not
-                      provided, one is created via `create_client()` using
-                      the `OPENREVIEW_USERNAME` and `OPENREVIEW_PASSWORD`
-                      environment variables.
+            provided, one is created via `create_client()` using
+            the `OPENREVIEW_USERNAME` and `OPENREVIEW_PASSWORD`
+            environment variables.
 
     Returns:
         A tuple of (profile_id, profile) where profile is the `Profile`
@@ -345,17 +345,17 @@ def extract_profiles_by_id(
 
     Args:
         profile_ids: List of OpenReview profile ID strings to fetch
-                      (e.g. ['~Jane_Smith1', '~John_Doe1']).
+            (e.g. ['~Jane_Smith1', '~John_Doe1']).
         profiles_dir: Directory where profile JSON files will be saved.
-                      Created automatically if it does not exist. Each
-                      file is named `{profile_id}.json`.
+            Created automatically if it does not exist. Each
+            file is named `{profile_id}.json`.
         client: An authenticated `OpenReviewClient` instance. If not
-                      provided, one is created via `create_client()` using
-                      the `OPENREVIEW_USERNAME` and `OPENREVIEW_PASSWORD`
-                      environment variables. The same client is reused
-                      across all threads.
+            provided, one is created via `create_client()` using
+            the `OPENREVIEW_USERNAME` and `OPENREVIEW_PASSWORD`
+            environment variables. The same client is reused
+            across all threads.
         max_workers: Maximum number of concurrent threads. Defaults to 4.
-                      Reduce if hitting OpenReview API rate limits.
+            Reduce if hitting OpenReview API rate limits.
 
     Returns:
         A dictionary mapping each profile ID string to its `Profile` object,
@@ -423,7 +423,7 @@ def log_profiles_by_author_stats(
 
     Args:
         profiles_by_author: A dictionary mapping each `Author` to their list
-                            of `Profile` objects, or None if the lookup failed.
+            of `Profile` objects, or None if the lookup failed.
 
     Example:
         >>> from candidex.openreview.profile import log_profiles_by_author_stats

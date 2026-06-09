@@ -19,16 +19,16 @@ def parse_names_and_history_profile(profile: Profile) -> dict[str, Any]:
 
     Args:
         profile: An `openreview.Profile` object as returned by
-                 `fetch_profile_by_id` or the OpenReview API.
+            `fetch_profile_by_id` or the OpenReview API.
 
     Returns:
         A dictionary with the following keys:
-            - names    (list[dict]): List of name entries from the profile,
-                                     each containing fields such as
-                                     'fullname', 'first', 'last'.
-            - history  (list[dict]): List of career history entries, each
-                                     containing fields such as 'position'
-                                     and 'institution'.
+                - names    (list[dict]): List of name entries from the profile,
+                each containing fields such as
+                'fullname', 'first', 'last'.
+                - history  (list[dict]): List of career history entries, each
+                containing fields such as 'position'
+                and 'institution'.
 
     Example:
         ```pycon

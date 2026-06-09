@@ -31,17 +31,17 @@ def authors_to_dataframe(
     Args:
         authors: A sequence of `Author` objects to convert.
         include_id: If True, includes an `author_id` column containing the
-                    SHA-256 hash of each author as returned by `Author.hash()`.
-                    Defaults to False.
+            SHA-256 hash of each author as returned by `Author.hash()`.
+            Defaults to False.
 
     Returns:
         A Polars DataFrame with columns:
-            - author_name         (String):       Full name of the author.
-            - author_affiliation  (List[String]): List of institutional affiliations.
-                                                  None if affiliations is None.
-            - author_email        (String):       Email address, or null if None.
-            - author_id           (String):       Hash-based author ID, only
-                                                  present if `include_id=True`.
+                - author_name         (String):       Full name of the author.
+                - author_affiliation  (List[String]): List of institutional affiliations.
+                None if affiliations is None.
+                - author_email        (String):       Email address, or null if None.
+                - author_id           (String):       Hash-based author ID, only
+                present if `include_id=True`.
 
     Example:
         >>> from candidex.author import Author

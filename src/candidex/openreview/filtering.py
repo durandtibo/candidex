@@ -30,7 +30,7 @@ def filter_profiles_by_affiliation(
     Args:
         profiles: List of OpenReview profiles to filter.
         affiliation: Target affiliation string to match against each profile's
-                     career history (e.g. 'MIT CSAIL', 'Tsinghua University').
+            career history (e.g. 'MIT CSAIL', 'Tsinghua University').
 
     Returns:
         A filtered list of `openreview.Profile` objects whose career history
@@ -78,7 +78,7 @@ def filter_profiles_by_email(profiles: Sequence[Profile], email: str) -> list[Pr
     Args:
         profiles: List of OpenReview profiles to filter.
         email: Email address whose domain is matched against confirmed
-                  profile emails and institution domains in the career history.
+            profile emails and institution domains in the career history.
 
     Returns:
         A filtered list of `openreview.Profile` objects whose email domain

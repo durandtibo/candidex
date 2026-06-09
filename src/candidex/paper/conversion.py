@@ -32,9 +32,9 @@ def dataframe_to_papers(frame: pl.DataFrame) -> list[Paper]:
 
     Args:
         frame: A Polars DataFrame with at least a `PAPER_TITLE` column.
-               All other columns (`PAPER_AUTHORS`, `PAPER_VENUE`, `PAPER_YEAR`,
-               `PAPER_URL`) are optional — missing columns are treated as None
-               for every row.
+            All other columns (`PAPER_AUTHORS`, `PAPER_VENUE`, `PAPER_YEAR`,
+            `PAPER_URL`) are optional — missing columns are treated as None
+            for every row.
 
     Returns:
         A list of `Paper` objects in the same row order as the input DataFrame.
@@ -116,18 +116,18 @@ def papers_to_dataframe(
     Args:
         papers: A sequence of `Paper` objects to convert.
         include_id: If True, includes a `paper_id` column containing the
-                    BLAKE2b hash of each paper as returned by `Paper.hash()`.
-                    Defaults to False.
+            BLAKE2b hash of each paper as returned by `Paper.hash()`.
+            Defaults to False.
 
     Returns:
         A Polars DataFrame with columns:
-            - paper_title   (String):       Title of the paper.
-            - paper_authors (List[String]): List of author names.
-            - paper_venue   (String):       Venue where the paper was published.
-            - paper_year    (Int32):        Year the paper was published.
-            - paper_url     (String):       URL of the paper's PDF.
-            - paper_id      (String):       Hash-based paper ID, only present
-                                            if `include_id=True`.
+                - paper_title   (String):       Title of the paper.
+                - paper_authors (List[String]): List of author names.
+                - paper_venue   (String):       Venue where the paper was published.
+                - paper_year    (Int32):        Year the paper was published.
+                - paper_url     (String):       URL of the paper's PDF.
+                - paper_id      (String):       Hash-based paper ID, only present
+                if `include_id=True`.
 
     Example:
         >>> from candidex.paper import Paper, papers_to_dataframe

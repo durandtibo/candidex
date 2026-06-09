@@ -45,7 +45,7 @@ def _build_results_table(
 
     Args:
         results: List of (author, affiliation, result_label, expected, got)
-                 tuples as returned by `_run_evaluation`.
+            tuples as returned by `_run_evaluation`.
 
     Returns:
         A tuple of (table, correct, missing, mismatch, unexpected) where the
@@ -94,10 +94,10 @@ def _evaluate_sample(
 
     Args:
         index: The original index of the sample in the dataset, used to
-                reassemble results in order after concurrent execution.
+            reassemble results in order after concurrent execution.
         sample: The `Sample` instance to evaluate.
         client: An authenticated `OpenReviewClient` instance shared across
-                all samples to avoid creating a new connection per sample.
+            all samples to avoid creating a new connection per sample.
 
     Returns:
         A tuple of (index, author, affiliation, result_label, got, expected).
