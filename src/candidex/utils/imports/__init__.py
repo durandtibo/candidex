@@ -11,18 +11,22 @@ from __future__ import annotations
 
 __all__ = [
     "check_colorlog",
+    "check_pdfminer",
     "check_pdfplumber",
     "check_pypdf",
     "check_pypdfium2",
     "colorlog_available",
     "is_colorlog_available",
+    "is_pdfminer_available",
     "is_pdfplumber_available",
     "is_pypdf_available",
     "is_pypdfium2_available",
+    "pdfminer_available",
     "pdfplumber_available",
     "pypdf_available",
     "pypdfium2_available",
     "raise_colorlog_missing_error",
+    "raise_pdfminer_missing_error",
     "raise_pdfplumber_missing_error",
     "raise_pypdf_missing_error",
     "raise_pypdfium2_missing_error",
@@ -33,6 +37,12 @@ from candidex.utils.imports.colorlog import (
     colorlog_available,
     is_colorlog_available,
     raise_colorlog_missing_error,
+)
+from candidex.utils.imports.pdfminer import (
+    check_pdfminer,
+    is_pdfminer_available,
+    pdfminer_available,
+    raise_pdfminer_missing_error,
 )
 from candidex.utils.imports.pdfplumber import (
     check_pdfplumber,
