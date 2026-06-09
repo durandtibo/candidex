@@ -1,4 +1,9 @@
-r"""Contain openreview functionalities."""
+r"""Utilities for interacting with the OpenReview API.
+
+Provides functions for authenticating with OpenReview, searching and fetching
+author profiles, filtering profiles by affiliation or email, and serializing
+profiles for storage in Polars DataFrames.
+"""
 
 from __future__ import annotations
 

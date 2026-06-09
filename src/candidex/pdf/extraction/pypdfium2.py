@@ -7,21 +7,21 @@ __all__ = ["PyPdfium2Extractor", "extract_text_pypdfium2"]
 from typing import TYPE_CHECKING
 
 from candidex.pdf.extraction.base import BasePdfExtractor
-from candidex.utils.imports import check_pypdfium2, is_pypdf_available
+from candidex.utils.imports import check_pypdfium2, is_pypdfium2_available
 
 if TYPE_CHECKING:
     from pathlib import Path
 
-if is_pypdf_available():
+if is_pypdfium2_available():
     import pypdfium2
 else:  # pragma: no cover
     from candidex.utils.fallback.pypdfium2 import pypdfium2
 
 
 class PyPdfium2Extractor(BasePdfExtractor):
-    r"""Extract text from digital PDFs using the `pypdf` library.
+    r"""Extract text from digital PDFs using the `pypdfium2` library.
 
-    Wraps `extract_text_pypdf` as a `BasePdfExtractor` implementation.
+    Wraps `extract_text_pypdfium2` as a `BasePdfExtractor` implementation.
     Pages are separated by form feed characters (``\\f``), consistent
     with the plain-text page separator convention. Suitable for
     digitally-created PDFs where text is embedded as selectable
@@ -33,7 +33,7 @@ class PyPdfium2Extractor(BasePdfExtractor):
             pages are extracted. Defaults to None.
 
     Raises:
-        RuntimeError: If `pypdf` is not installed.
+        RuntimeError: If `pypdfium2` is not installed.
 
     Example:
         ```pycon

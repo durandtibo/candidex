@@ -130,6 +130,7 @@ def papers_to_dataframe(
                 if `include_id=True`.
 
     Example:
+        ```pycon
         >>> from candidex.paper import Paper, papers_to_dataframe
         >>> papers = [
         ...     Paper.from_raw(
@@ -146,7 +147,7 @@ def papers_to_dataframe(
         >>> df_papers.shape
         (1, 5)
 
-        ...
+        ```
     """
     data = {
         PAPER_TITLE: [p.title for p in papers],

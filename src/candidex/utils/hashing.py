@@ -31,11 +31,17 @@ def combine_hashes(hashes: Sequence[str]) -> str:
         ValueError: If `hashes` is empty.
 
     Example:
+        ```pycon
         >>> from candidex.utils.hashing import combine_hashes
-        >>> a = '42db77cda5f9aed8970129d2a9237bdf'
-        >>> b = '3524dbb6b14a5e280f2a5e6bd8c1f7a5'
-        >>> combine_hashes([a, b])  # doctest: +SKIP
-        'e3b0c4...'
+        >>> a = "42db77cda5f9aed8970129d2a9237bdf"
+        >>> b = "3524dbb6b14a5e280f2a5e6bd8c1f7a5"
+        >>> result = combine_hashes([a, b])
+        >>> isinstance(result, str)
+        True
+        >>> len(result)
+        64
+
+        ```
     """
     if not hashes:
         msg = "Cannot combine an empty list of hashes."

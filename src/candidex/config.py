@@ -63,8 +63,15 @@ class ChatModelConfig:
             A 64-character lowercase hexadecimal SHA-256 digest string.
 
         Example:
+            ```pycon
+            >>> from candidex.config import ChatModelConfig
             >>> config = ChatModelConfig(model="openai:gpt-4o", system_prompt="You are helpful.")
-            >>> config.hash()
+            >>> isinstance(config.hash(), str)
+            True
+            >>> len(config.hash())
+            64
+
+            ```
         """
         canonical = json.dumps(
             {

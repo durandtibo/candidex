@@ -64,19 +64,19 @@ def find_author_profile_ids(
     """Find the OpenReview profile IDs of an author by name and
     affiliation.
 
-        Searches OpenReview for profiles matching the given name, then filters
-        by affiliation and optionally by email domain. The `mode` parameter
-        controls how the two filters are combined:
+    Searches OpenReview for profiles matching the given name, then filters
+    by affiliation and optionally by email domain. The `mode` parameter
+    controls how the two filters are combined:
 
-        - `FilterMode.ANY` (default): OR logic — a profile passes if it matches
-          the affiliation OR the email domain. More permissive, reduces false
-          negatives when one source of information is missing or inconsistent.
-        - `FilterMode.ALL`: AND logic — a profile passes only if it matches
-          both the affiliation AND the email domain. More restrictive, reduces
-          false positives.
+    - `FilterMode.ANY` (default): OR logic — a profile passes if it matches
+      the affiliation OR the email domain. More permissive, reduces false
+      negatives when one source of information is missing or inconsistent.
+    - `FilterMode.ALL`: AND logic — a profile passes only if it matches
+      both the affiliation AND the email domain. More restrictive, reduces
+      false positives.
 
-        When no email is provided, both modes behave identically and only
-        affiliation filtering is applied.
+    When no email is provided, both modes behave identically and only
+    affiliation filtering is applied.
 
     Args:
         name: Full name of the author to search for.
@@ -97,17 +97,17 @@ def find_author_profile_ids(
             legitimate empty results.
 
     Example:
-    ```pycon
-    >>> from candidex.openreview import find_author_profile_ids
-    >>> ids = find_author_profile_ids(
-    ...     name="Jane Smith",
-    ...     affiliation="MIT CSAIL",
-    ...     email="jane@mit.edu",
-    ... )  # doctest: +SKIP
-    >>> print(ids)  # doctest: +SKIP
-    ['~Jane_Smith1']
+        ```pycon
+        >>> from candidex.openreview import find_author_profile_ids
+        >>> ids = find_author_profile_ids(
+        ...     name="Jane Smith",
+        ...     affiliation="MIT CSAIL",
+        ...     email="jane@mit.edu",
+        ... )  # doctest: +SKIP
+        >>> print(ids)  # doctest: +SKIP
+        ['~Jane_Smith1']
 
-    ```
+        ```
     """
     client = client or create_client()
     if client is None:

@@ -27,7 +27,7 @@ def deserialize_profiles(serialized: list[str | None]) -> list[Profile | None]:
             order as the input. Returns an empty list if the input is empty.
 
     Example:
-        ```
+        ```pycon
         >>> import openreview
         >>> profile = openreview.Profile(
         ...     id="~Jane_Smith1",
