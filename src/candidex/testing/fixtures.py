@@ -8,13 +8,19 @@ from __future__ import annotations
 __all__ = [
     "colorlog_available",
     "colorlog_not_available",
+    "pdfplumber_available",
+    "pdfplumber_not_available",
     "pypdf_available",
     "pypdf_not_available",
 ]
 
 import pytest
 
-from candidex.utils.imports import is_colorlog_available, is_pypdf_available
+from candidex.utils.imports import (
+    is_colorlog_available,
+    is_pdfplumber_available,
+    is_pypdf_available,
+)
 
 colorlog_available: pytest.MarkDecorator = pytest.mark.skipif(
     not is_colorlog_available(), reason="Requires colorlog"
@@ -26,6 +32,15 @@ colorlog_not_available: pytest.MarkDecorator = pytest.mark.skipif(
 )
 """Skip the test if the ``colorlog`` package is installed."""
 
+pdfplumber_available: pytest.MarkDecorator = pytest.mark.skipif(
+    not is_pdfplumber_available(), reason="Requires pdfplumber"
+)
+"""Skip the test if the ``pdfplumber`` package is not installed."""
+
+pdfplumber_not_available: pytest.MarkDecorator = pytest.mark.skipif(
+    is_pdfplumber_available(), reason="Skip if pdfplumber is available"
+)
+"""Skip the test if the ``pdfplumber`` package is installed."""
 
 pypdf_available: pytest.MarkDecorator = pytest.mark.skipif(
     not is_pypdf_available(), reason="Requires pypdf"
