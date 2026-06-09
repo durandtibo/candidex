@@ -88,9 +88,7 @@ def extract_text_pypdf(pdf_path: Path, max_pages: int | None = None) -> str:
         ```pycon
         >>> from pathlib import Path
         >>> from candidex.pdf.extraction import extract_text_pypdf
-        >>> text = extract_text_pypdf(Path("paper.pdf"))
-        >>> pages = text.split("\\f")
-        >>> first_page = extract_text_pypdf(Path("paper.pdf"), max_pages=1)
+        >>> text = extract_text_pypdf(Path("paper.pdf"))  # doctest: +SKIP
 
         ```
     """

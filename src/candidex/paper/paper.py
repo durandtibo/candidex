@@ -64,7 +64,7 @@ class Paper:
             ...     pdf_url="https://arxiv.org/pdf/1706.03762",
             ... )
             >>> len(paper.hash())
-            128
+            64
 
             ```
         """

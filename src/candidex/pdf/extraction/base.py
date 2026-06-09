@@ -21,6 +21,8 @@ class BasePdfExtractor(ABC):
 
     Example:
         ```pycon
+        >>> from pathlib import Path
+        >>> from candidex.pdf.extraction import BasePdfExtractor
         >>> class MyExtractor(BasePdfExtractor):
         ...     def extract(self, pdf_path: Path) -> str:
         ...         return "extracted text"

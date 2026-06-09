@@ -63,7 +63,7 @@ def download_pdf(
 
     Example:
         >>> from pathlib import Path
-        >>> from candidex.utils.download import download_pdf
+        >>> from candidex.pdf.download import download_pdf
         >>> download_pdf(
         ...     url="https://arxiv.org/pdf/1706.03762",
         ...     pdf_path=Path("papers/attention.pdf"),

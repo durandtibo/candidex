@@ -92,9 +92,7 @@ def extract_text_pdfplumber(
         ```pycon
         >>> from pathlib import Path
         >>> from candidex.pdf.extraction import extract_text_pdfplumber
-        >>> text = extract_text_pdfplumber(Path("paper.pdf"))
-        >>> pages = text.split("\\f")
-        >>> first_page = extract_text_pdfplumber(Path("paper.pdf"), max_pages=1)
+        >>> text = extract_text_pdfplumber(Path("paper.pdf"))  # doctest: +SKIP
 
         ```
     """

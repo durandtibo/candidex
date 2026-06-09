@@ -145,13 +145,12 @@ def load_or_fetch_profile_by_author(
 
     Example:
         ```pycon
+        >>> from candidex.author import Author
         >>> from candidex.openreview import load_or_fetch_profile_by_author
         >>> author = Author.from_raw("Jane Smith", ["MIT"])
         >>> result = load_or_fetch_profile_by_author(
         ...     author, "~Jane_Smith1", Path("data/profiles")
         ... )  # doctest: +SKIP
-        >>> result[2].id  # doctest: +SKIP
-        '~Jane_Smith1'
 
         ```
     """
