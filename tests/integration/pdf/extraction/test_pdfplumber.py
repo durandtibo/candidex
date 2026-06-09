@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from candidex.pdf.extraction import extract_text_pdfplumber
+from candidex.pdf.extraction import PdfPlumberExtractor, extract_text_pdfplumber
 from candidex.testing.fixtures import pdfplumber_available, pdfplumber_not_available
 from tests.integration.pdf.extraction.helpers import make_pdf
 
@@ -22,6 +22,41 @@ def multi_page_pdf(tmp_path: Path) -> Path:
     return make_pdf(
         tmp_path / "multi.pdf", ["Page one text.", "Page two text.", "Page three text."]
     )
+
+
+#########################################
+#     Tests for PdfPlumberExtractor     #
+#########################################
+
+
+@pdfplumber_available
+def test_pdfplumber_extractor_integration_single_page(single_page_pdf: Path) -> None:
+    extractor = PdfPlumberExtractor()
+    assert extractor.extract(single_page_pdf) == "Hello from page one."
+
+
+@pdfplumber_available
+def test_pdfplumber_extractor_integration_multiple_pages(multi_page_pdf: Path) -> None:
+    extractor = PdfPlumberExtractor()
+    assert extractor.extract(multi_page_pdf) == "Page one text.\fPage two text.\fPage three text."
+
+
+@pdfplumber_available
+def test_pdfplumber_extractor_integration_max_pages_one(multi_page_pdf: Path) -> None:
+    extractor = PdfPlumberExtractor(max_pages=1)
+    assert extractor.extract(multi_page_pdf) == "Page one text."
+
+
+@pdfplumber_available
+def test_pdfplumber_extractor_integration_max_pages_two(multi_page_pdf: Path) -> None:
+    extractor = PdfPlumberExtractor(max_pages=2)
+    assert extractor.extract(multi_page_pdf) == "Page one text.\fPage two text."
+
+
+@pdfplumber_not_available
+def test_pdfplumber_extractor_without_pdfplumber() -> None:
+    with pytest.raises(RuntimeError, match=r"'pdfplumber' package is required but not installed."):
+        PdfPlumberExtractor()
 
 
 #############################################

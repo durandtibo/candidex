@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from candidex.pdf.extraction import extract_text_pdfplumber
+from candidex.pdf.extraction import PdfPlumberExtractor, extract_text_pdfplumber
 from candidex.testing.fixtures import pdfplumber_available
 
 MODULE = "candidex.pdf.extraction.pdfplumber"
@@ -27,6 +27,98 @@ def make_pdf(pages: list[Mock]) -> MagicMock:
     pdf.__enter__ = Mock(return_value=pdf)
     pdf.__exit__ = Mock(return_value=False)
     return pdf
+
+
+#########################################
+#     Tests for PdfPlumberExtractor     #
+#########################################
+
+
+# --- Construction ---
+
+
+@pdfplumber_available
+def test_pdfplumber_extractor_calls_check_pdfplumber_on_init() -> None:
+    with patch(f"{MODULE}.check_pdfplumber") as mock_check:
+        PdfPlumberExtractor()
+        mock_check.assert_called_once()
+
+
+@pdfplumber_available
+def test_pdfplumber_extractor_raises_when_pdfplumber_not_available() -> None:
+    with (
+        patch(f"{MODULE}.check_pdfplumber", side_effect=RuntimeError("pdfplumber not installed")),
+        pytest.raises(RuntimeError, match="pdfplumber not installed"),
+    ):
+        PdfPlumberExtractor()
+
+
+@pdfplumber_available
+def test_pdfplumber_extractor_default_max_pages_is_none() -> None:
+    assert PdfPlumberExtractor()._max_pages is None
+
+
+@pdfplumber_available
+def test_pdfplumber_extractor_stores_max_pages() -> None:
+    assert PdfPlumberExtractor(max_pages=2)._max_pages == 2
+
+
+# --- __repr__ ---
+
+
+@pdfplumber_available
+def test_pdfplumber_extractor_repr_no_max_pages() -> None:
+    assert repr(PdfPlumberExtractor()) == "PdfPlumberExtractor(max_pages=None)"
+
+
+@pdfplumber_available
+def test_pdfplumber_extractor_repr_with_max_pages() -> None:
+    assert repr(PdfPlumberExtractor(max_pages=2)) == "PdfPlumberExtractor(max_pages=2)"
+
+
+# --- extract ---
+
+
+@pdfplumber_available
+def test_pdfplumber_extractor_calls_extract_text_pdfplumber() -> None:
+    with patch(f"{MODULE}.extract_text_pdfplumber", return_value="extracted text") as mock_extract:
+        PdfPlumberExtractor().extract(Path("paper.pdf"))
+        mock_extract.assert_called_once_with(pdf_path=Path("paper.pdf"), max_pages=None)
+
+
+@pdfplumber_available
+def test_pdfplumber_extractor_passes_max_pages_to_extract_text_pdfplumber() -> None:
+    with patch(f"{MODULE}.extract_text_pdfplumber", return_value="extracted text") as mock_extract:
+        PdfPlumberExtractor(max_pages=2).extract(Path("paper.pdf"))
+        mock_extract.assert_called_once_with(pdf_path=Path("paper.pdf"), max_pages=2)
+
+
+@pdfplumber_available
+def test_pdfplumber_extractor_returns_extracted_text() -> None:
+    with patch(f"{MODULE}.extract_text_pdfplumber", return_value="Hello world"):
+        assert PdfPlumberExtractor().extract(Path("paper.pdf")) == "Hello world"
+
+
+@pdfplumber_available
+def test_pdfplumber_extractor_returns_empty_string_when_no_text() -> None:
+    with patch(f"{MODULE}.extract_text_pdfplumber", return_value=""):
+        assert PdfPlumberExtractor().extract(Path("paper.pdf")) == ""
+
+
+@pdfplumber_available
+def test_pdfplumber_extractor_passes_pdf_path_correctly() -> None:
+    pdf_path = Path("papers/attention.pdf")
+    with patch(f"{MODULE}.extract_text_pdfplumber", return_value="text") as mock_extract:
+        PdfPlumberExtractor().extract(pdf_path)
+        _, kwargs = mock_extract.call_args
+        assert kwargs["pdf_path"] == pdf_path
+
+
+@pdfplumber_available
+def test_pdfplumber_extractor_integration_file_not_found(tmp_path: Path) -> None:
+    extractor = PdfPlumberExtractor()
+    with pytest.raises(FileNotFoundError, match="No such file or directory"):
+        extractor.extract(tmp_path / "nonexistent.pdf")
 
 
 #############################################
