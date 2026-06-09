@@ -8,7 +8,7 @@ import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import TYPE_CHECKING
 
-from candidex.utils.download import download_pdf
+from candidex.pdf.download import download_pdf
 from candidex.utils.http import create_session
 from candidex.utils.progressbar import make_progressbar
 
@@ -53,20 +53,25 @@ def download_pdfs(
 
     Returns:
         A dictionary mapping each `Paper` to a bool indicating whether its
-        PDF was downloaded successfully (or already existed). Papers with no
-        `pdf_url` are mapped to False.
+            PDF was downloaded successfully (or already existed). Papers with no
+            `pdf_url` are mapped to False.
 
     Example:
+        ```pycon
         >>> from pathlib import Path
         >>> from candidex.paper import download_pdfs, Paper
-        >>> papers = [Paper.from_raw(
-        ...     title="Attention Is All You Need",
-        ...     authors=["Ashish Vaswani"],
-        ...     venue="NeurIPS",
-        ...     year=2017,
-        ...     pdf_url="https://arxiv.org/pdf/1706.03762",
-        ... )]
+        >>> papers = [
+        ...     Paper.from_raw(
+        ...         title="Attention Is All You Need",
+        ...         authors=["Ashish Vaswani"],
+        ...         venue="NeurIPS",
+        ...         year=2017,
+        ...         pdf_url="https://arxiv.org/pdf/1706.03762",
+        ...     )
+        ... ]
         >>> results = download_pdfs(papers, pdf_dir=Path("data/pdfs"))  # doctest: +SKIP
+
+        ```
     """
     pdf_dir.mkdir(parents=True, exist_ok=True)
     results: dict[Paper, bool] = {}
