@@ -13,15 +13,19 @@ __all__ = [
     "check_colorlog",
     "check_pdfplumber",
     "check_pypdf",
+    "check_pypdfium2",
     "colorlog_available",
     "is_colorlog_available",
     "is_pdfplumber_available",
     "is_pypdf_available",
+    "is_pypdfium2_available",
     "pdfplumber_available",
     "pypdf_available",
+    "pypdfium2_available",
     "raise_colorlog_missing_error",
     "raise_pdfplumber_missing_error",
     "raise_pypdf_missing_error",
+    "raise_pypdfium2_missing_error",
 ]
 
 from candidex.utils.imports.colorlog import (
@@ -41,4 +45,10 @@ from candidex.utils.imports.pypdf import (
     is_pypdf_available,
     pypdf_available,
     raise_pypdf_missing_error,
+)
+from candidex.utils.imports.pypdfium2 import (
+    check_pypdfium2,
+    is_pypdfium2_available,
+    pypdfium2_available,
+    raise_pypdfium2_missing_error,
 )
