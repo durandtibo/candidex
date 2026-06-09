@@ -46,7 +46,6 @@ dependencies = [
     "coola >=1.1.7,<2.0",
     "iden >= 0.4,<1.0",
     "openreview-py>=2.2,<3.0",
-    "pdfplumber >=0.11.9,<5.0",
     "polars >=1.0,<2.0",
     "python-dotenv >= 1.2,<2.0",
     "rich >=15.0,<16.0",
@@ -64,6 +63,7 @@ dependencies = [
 
 [project.optional-dependencies]
 colorlog = ["colorlog >=6.10,<7.0"]
+pdfplumber = ["pdfplumber >=0.11.9,<1.0",]
 pypdf = ["pypdf >=6.13,<7.0"]
 
 [dependency-groups]
