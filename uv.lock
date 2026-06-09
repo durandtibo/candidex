@@ -246,11 +246,17 @@ dependencies = [
 colorlog = [
     { name = "colorlog" },
 ]
+pdfminer = [
+    { name = "pdfminer-six" },
+]
 pdfplumber = [
     { name = "pdfplumber" },
 ]
 pypdf = [
     { name = "pypdf" },
+]
+pypdfium2 = [
+    { name = "pypdfium2" },
 ]
 
 [package.dev-dependencies]
@@ -292,14 +298,16 @@ requires-dist = [
     { name = "langchain-openai", specifier = ">=1.2,<2.0" },
     { name = "langgraph", specifier = ">=1.2,<2.0" },
     { name = "openreview-py", specifier = ">=2.2,<3.0" },
+    { name = "pdfminer-six", marker = "extra == 'pdfminer'", specifier = ">=20251230" },
     { name = "pdfplumber", marker = "extra == 'pdfplumber'", specifier = ">=0.11.9,<1.0" },
     { name = "polars", specifier = ">=1.0,<2.0" },
     { name = "pypdf", marker = "extra == 'pypdf'", specifier = ">=6.13,<7.0" },
+    { name = "pypdfium2", marker = "extra == 'pypdfium2'", specifier = ">=5.9,<6.0" },
     { name = "python-dotenv", specifier = ">=1.2,<2.0" },
     { name = "rich", specifier = ">=15.0,<16.0" },
     { name = "tqdm", specifier = ">=4.67,<5.0" },
 ]
-provides-extras = ["colorlog", "pdfplumber", "pypdf"]
+provides-extras = ["colorlog", "pdfminer", "pdfplumber", "pypdf", "pypdfium2"]
 
 [package.metadata.requires-dev]
 dev = [
