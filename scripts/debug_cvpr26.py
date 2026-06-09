@@ -12,7 +12,9 @@ from dotenv import load_dotenv
 from rich.logging import RichHandler
 
 from candidex.paper import dataframe_to_papers, download_pdfs
+from candidex.pdf.extraction import PyPdfExtractor, extract_text_pypdf, extract_text_pypdfium2
 from candidex.scraper import CVFPaperScraper
+from candidex.utils.pdf2 import extract_text_pdfminer_high
 
 logging.basicConfig(
     level=logging.INFO,
@@ -96,6 +98,35 @@ def main() -> None:
     logger.info(papers)
 
     download_pdfs(papers=papers, pdf_dir=path_config.paper_pdf_dir)
+
+    extractor = PyPdfExtractor()
+    logger.info(extractor)
+
+    for paper in papers:
+        # logger.info(paper)
+        # logger.info(extractor.extract(path_config.paper_pdf_dir / paper.to_filename(".pdf"))[:1000])
+        # logger.info("===== pymupdf =====")
+        # logger.info(
+        #     extract_text_pymupdf(path_config.paper_pdf_dir / paper.to_filename(".pdf"))[:1000]
+        # )
+        # logger.info("===== pdfplumber =====")
+        # logger.info(
+        #     extract_text_pdfplumber(path_config.paper_pdf_dir / paper.to_filename(".pdf"))[:1000]
+        # )
+        logger.info("===== pypdf =====")
+        logger.info(
+            extract_text_pypdf(path_config.paper_pdf_dir / paper.to_filename(".pdf"))[:1000]
+        )
+        logger.info("===== pypdfium2 =====")
+        logger.info(
+            extract_text_pypdfium2(path_config.paper_pdf_dir / paper.to_filename(".pdf"))[:1000]
+        )
+        logger.info("===== pdfminer =====")
+        logger.info(
+            extract_text_pdfminer_high(path_config.paper_pdf_dir / paper.to_filename(".pdf"))[:1000]
+        )
+
+        break
 
 
 if __name__ == "__main__":
