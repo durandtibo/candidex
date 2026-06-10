@@ -1,3 +1,2 @@
-r"""Utilities for downloading and extracting text from digital PDF files.
-
-"""
+r"""Utilities for downloading and extracting text from digital PDF
+files."""

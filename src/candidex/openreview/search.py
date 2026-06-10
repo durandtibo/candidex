@@ -48,6 +48,7 @@ def search_profiles_by_name(
         >>> profiles = search_profiles_by_name("Thibaut Durand")  # doctest: +SKIP
         >>> for profile in profiles:  # doctest: +SKIP
         ...     print(profile.id)
+        ...
 
         ```
     """
