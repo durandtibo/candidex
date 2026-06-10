@@ -88,11 +88,11 @@ def filter_profiles_by_email(profiles: Sequence[Profile], email: str) -> list[Pr
     Example:
         ```pycon
         >>> from candidex.openreview import filter_profiles_by_email
-        >>> profiles = [...] # doctest: +SKIP
+        >>> profiles = [...]  # doctest: +SKIP
         >>> matched = filter_profiles_by_email(
         ...     profiles,
         ...     email="jane@csail.mit.edu",
-        ... ) # doctest: +SKIP
+        ... )  # doctest: +SKIP
 
         ```
     """
