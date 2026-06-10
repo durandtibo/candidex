@@ -1,1 +1,3 @@
-r"""Contain functions to process digital PDFs."""
+r"""Utilities for downloading and extracting text from digital PDF files.
+
+"""

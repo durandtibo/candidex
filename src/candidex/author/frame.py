@@ -108,6 +108,7 @@ def add_openreview_profile_ids_to_dataframe(
         ```pycon
         >>> from candidex.author import Author, authors_to_dataframe
         >>> from candidex.author import add_openreview_profile_ids_to_dataframe
+        >>> from candidex.columns import AUTHOR_OPENREVIEW_PROFILE_ID
         >>> authors = [Author.from_raw("Jane Smith", ["MIT"], "jane@mit.edu")]
         >>> frame = authors_to_dataframe(authors, include_id=True)
         >>> result = add_openreview_profile_ids_to_dataframe(frame, {authors[0]: ["~Jane_Smith1"]})
@@ -155,6 +156,7 @@ def add_openreview_profiles_to_dataframe(
         ```pycon
         >>> from candidex.author import Author, authors_to_dataframe
         >>> from candidex.author import add_openreview_profiles_to_dataframe
+        >>> from candidex.columns import AUTHOR_OPENREVIEW_PROFILE
         >>> authors = [Author.from_raw("Jane Smith", ["MIT"], "jane@mit.edu")]
         >>> frame = authors_to_dataframe(authors, include_id=True)
         >>> result = add_openreview_profiles_to_dataframe(frame, {authors[0]: None})

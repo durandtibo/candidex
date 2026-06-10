@@ -29,10 +29,10 @@ class BasePaperScraper(ABC):
 
     @abstractmethod
     def scrape(self) -> pl.DataFrame:
-        """Scrape papers from the venue URL.
+        """Scrape papers from the venue.
 
-        Fetches and parses the paper listing page at `self.url` and returns
-        all papers as a Polars DataFrame. Implementations should handle
+        Fetches and parses the paper listing for the configured venue and
+        returns all papers as a Polars DataFrame. Implementations should handle
         pagination, retries, and parsing errors internally.
 
         Returns:

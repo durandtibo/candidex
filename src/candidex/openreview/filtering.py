@@ -40,11 +40,11 @@ def filter_profiles_by_affiliation(
     Example:
         ```pycon
         >>> from candidex.openreview import filter_profiles_by_affiliation
-        >>> >>> profiles = [...] # doctest: +SKIP
+        >>> profiles = [...]  # doctest: +SKIP
         >>> matched = filter_profiles_by_affiliation(
         ...     profiles,
         ...     affiliation="MIT CSAIL",
-        ... ) # doctest: +SKIP
+        ... )  # doctest: +SKIP
 
         ```
     """

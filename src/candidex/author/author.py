@@ -75,8 +75,10 @@ class Author:
             ```pycon
             >>> from candidex.author import Author
             >>> author = Author.from_raw("Jane Smith", ["MIT"], "jane@mit.edu")
-            >>> author.hash()
-            '...'
+            >>> isinstance(author.hash(), str)
+            True
+            >>> len(author.hash())
+            64
 
             ```
         """

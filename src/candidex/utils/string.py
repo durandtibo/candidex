@@ -65,7 +65,26 @@ def remove_spaces(s: str) -> str:
 def normalize_unicode(s: str) -> str:
     """Normalize unicode characters to their ASCII equivalents.
 
-    Converts accented characters to their base form (e.g. 'é' -> 'e',
-    'ü' -> 'u').
+    Converts accented characters to their base form using NFKD decomposition
+    followed by ASCII encoding (e.g. 'é' → 'e', 'ü' → 'u'). Useful for
+    normalizing author names or affiliations before comparison or storage.
+
+    Args:
+        s: The string to normalize.
+
+    Returns:
+        The input string with all accented/unicode characters replaced by
+        their closest ASCII equivalents. Characters with no ASCII equivalent
+        are dropped.
+
+    Example:
+        ```pycon
+        >>> from candidex.utils.string import normalize_unicode
+        >>> normalize_unicode("café")
+        'cafe'
+        >>> normalize_unicode("Müller")
+        'Muller'
+
+        ```
     """
     return unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode("ascii")

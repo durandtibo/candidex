@@ -44,6 +44,7 @@ def authors_to_dataframe(
                 present if `include_id=True`.
 
     Example:
+        ```pycon
         >>> from candidex.author import Author
         >>> from candidex.author import authors_to_dataframe
         >>> authors = [
@@ -61,7 +62,7 @@ def authors_to_dataframe(
         │ John Doe    ┆ ["Stanford"]       ┆ null         │
         └─────────────┴────────────────────┴──────────────┘
 
-        ...
+        ```
     """
     data = {
         AUTHOR_NAME: [a.name for a in authors],

@@ -43,10 +43,13 @@ def search_profiles_by_name(
             be created, or the API call fails.
 
     Example:
+        ```pycon
         >>> from candidex.openreview import search_profiles_by_name
-        >>> profiles = search_profiles_by_name("Thibaut Durand") # doctest: +SKIP
+        >>> profiles = search_profiles_by_name("Thibaut Durand")  # doctest: +SKIP
         >>> for profile in profiles:  # doctest: +SKIP
         ...     print(profile.id)
+
+        ```
     """
     client = client or create_client()
     if client is None:
