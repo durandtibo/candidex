@@ -312,7 +312,7 @@ provides-extras = ["colorlog", "pdfminer", "pdfplumber", "pypdf", "pypdfium2"]
 [package.metadata.requires-dev]
 dev = [
     { name = "black", specifier = ">=26.5.1" },
-    { name = "coverage", extras = ["toml"], specifier = ">=7.14,<8.0" },
+    { name = "coverage", extras = ["toml"], specifier = ">=7.14.1,<8.0" },
     { name = "docformatter", extras = ["tomli"], specifier = ">=1.7.8,<2.0" },
     { name = "feu", extras = ["all"], specifier = ">=0.6.2,<1.0" },
     { name = "fpdf2", specifier = ">=2.8.7,<3.0" },
