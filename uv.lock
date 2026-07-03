@@ -297,7 +297,7 @@ requires-dist = [
     { name = "langchain-ollama", specifier = ">=1.1,<2.0" },
     { name = "langchain-openai", specifier = ">=1.2,<2.0" },
     { name = "langgraph", specifier = ">=1.2,<2.0" },
-    { name = "openreview-py", specifier = ">=2.2,<3.0" },
+    { name = "openreview-py", specifier = ">=2.3.0,<3.0" },
     { name = "pdfminer-six", marker = "extra == 'pdfminer'", specifier = ">=20251230" },
     { name = "pdfplumber", marker = "extra == 'pdfplumber'", specifier = ">=0.11.9,<1.0" },
     { name = "polars", specifier = ">=1.0,<2.0" },
@@ -872,7 +872,7 @@ name = "exceptiongroup"
 version = "1.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "typing-extensions" },
+    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/50/79/66800aadf48771f6b62f7eb014e352e5d06856655206165d775e675a02c9/exceptiongroup-1.3.1.tar.gz", hash = "sha256:8b412432c6055b0b7d14c310000ae93352ed6754f70fa8f7c34141f91c4e3219", size = 30371, upload-time = "2025-11-21T23:01:54.787Z" }
 wheels = [
@@ -1995,7 +1995,7 @@ wheels = [
 
 [[package]]
 name = "openreview-py"
-version = "2.2.3"
+version = "2.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "deprecated" },
@@ -2007,9 +2007,10 @@ dependencies = [
     { name = "requests" },
     { name = "tld" },
     { name = "tqdm" },
+    { name = "urllib3" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8c/46/24e460af888fbe1b7819d1510e0fbc17831ccc4c3c1510454fb79341a114/openreview_py-2.2.3-py3-none-any.whl", hash = "sha256:86a6816af11f16cd9aaa5b6c84f4bf93497fde2f041297aa127413958d36db51", size = 702289, upload-time = "2026-06-11T15:01:16.113Z" },
+    { url = "https://files.pythonhosted.org/packages/69/db/c47c91f4179c313dd869b3dc37a5a00cd6f14e7fdda8387dfa2c61d4b688/openreview_py-2.3.0-py3-none-any.whl", hash = "sha256:555f6d3a96c64b27b68dfbee7bb07bb1a412157aa3920bf318ebf122474cabc8", size = 706046, upload-time = "2026-06-30T16:33:07.612Z" },
 ]
 
 [[package]]
